@@ -5,7 +5,7 @@ const NEXT_MONTH = new Date();
 NEXT_MONTH.setMonth(NEXT_MONTH.getMonth() + 1);
 
 const App = () => {
-	const [value, setValue] = useState({
+	const [value, setValue] = useState<any>({
 		startDate: new Date(),
 		endDate: NEXT_MONTH,
 	});
