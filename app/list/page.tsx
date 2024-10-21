@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaArrowDown, FaEdit } from 'react-icons/fa';
 
-const List: React.FC = () => {
+const ListPage = () => {
   // Sample data for the list items
   const items = [
     { id: 'BRS', name: 'Blair Ridge P.S', status: 'APPROVED', date: '02/10/2024' },
@@ -43,4 +43,4 @@ const List: React.FC = () => {
   );
 };
 
-export default List;
+export default ListPage;
