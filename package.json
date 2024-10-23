@@ -16,6 +16,8 @@
     "@nextui-org/system": "^2.2.6",
     "@nextui-org/table": "^2.0.40",
     "@nextui-org/theme": "^2.2.11",
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.6",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "framer-motion": "^11.11.9",
