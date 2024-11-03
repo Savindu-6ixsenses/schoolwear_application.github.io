@@ -37,7 +37,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store, productData, des
             <span className="text-black">Design</span>
             <span className="bg-gray-200 rounded-full w-10 h-10"></span>
           </div>
-          <input type="text" className="border border-gray-300 rounded-md p-2 text-black" value={designCode} readOnly />
+          <input type="text" className="border border-gray-300 rounded-md p-2 text-black" value={designCode} />
         </div>
       </div>
 
@@ -60,10 +60,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store, productData, des
       {/* Product Section */}
       <div className="mt-4 bg-gray-200 w-full h-[400px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
         {productData.map((item) => (
-          <SingleRecord key={item['Product ID']} item={item} />
+          <SingleRecord key={item['Product ID']} item={item} store_code={`${store?.store_code}`} />
         ))}
       </div>
-      <div className="text-lg text-black">{`Products list length: ${productData.length}`}</div>
     </div>
   );
 };

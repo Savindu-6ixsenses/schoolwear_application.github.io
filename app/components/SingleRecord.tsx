@@ -1,7 +1,10 @@
+'use client';
+
 import React, { useState } from 'react';
+import AddToList from './AddToList';
 
 type Product = {
-  'Product ID': string;
+  'SAGE Code': string;
   'Product Name': string;
   'SM': boolean;
   'MD': boolean;
@@ -12,7 +15,7 @@ type Product = {
   'Price': number;
 };
 
-const SingleRecord= ({item}: {item: Product}) => {
+const SingleRecord= ({item,store_code}: {item: Product, store_code: string}) => {
 
   // State to track selected sizes
   const [selectedSizes, setSelectedSizes] = useState<{ [key: string]: boolean }>({});
@@ -42,7 +45,7 @@ const SingleRecord= ({item}: {item: Product}) => {
           {/* ID Column */}
           <td className="border border-gray-700 p-2 bg-gray-200 text-gray-900 ">
             <button className="bg-gray-300 text-gray-900 px-3 py-1 rounded">
-              {item['Product ID']}
+              {item['SAGE Code']}
             </button>
           </td>
           
@@ -72,9 +75,9 @@ const SingleRecord= ({item}: {item: Product}) => {
           
           {/* Actions Column */}
           <td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">
-            <button className="bg-black text-white px-3 py-1 rounded hover:shadow-lg">
-              Add to List
-            </button>
+            <AddToList store_code={`${store_code}`} sage_code={`${item['SAGE Code']
+
+            }`} design_code="F-FF" />
           </td>
         </tr>
       </tbody>
