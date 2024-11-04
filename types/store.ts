@@ -9,3 +9,10 @@ export interface StoreCreationProps {
 	end_date: string;
   status: string;
 }
+
+export interface DesignItemProps {
+	Design_Id: string;
+	Design_Guideline: string;
+	Image_URL: string;
+	size_variations: string[];
+}

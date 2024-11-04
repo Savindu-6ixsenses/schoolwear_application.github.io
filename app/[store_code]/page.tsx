@@ -11,13 +11,13 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 
 	// Fetch store data
 	const { data: store_data, error: storeError } = await supabase
-		.from("Stores")
+		.from("stores")
 		.select("*")
 		.eq("store_code", params.store_code);
 
 	// Fetch product data
 	const { data: product_data, error: productError } = await supabase
-		.from("Products_Table")
+		.from("products_table")
 		.select("*");
 
 	const store = store_data ? store_data[0] : null;
@@ -26,7 +26,6 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 		<ProductDisplay
 			store={store}
 			productData={product_data || []}
-			designCode={params.design_code}
 		/>
 	);
 };

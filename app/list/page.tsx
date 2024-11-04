@@ -12,7 +12,7 @@ const ListPage = async () => {
 
   const supabase = createClient();
 
-  const { data, error } = await supabase.from('Stores').select('*');
+  const { data, error } = await supabase.from('stores').select('*');
 
   console.log(error);
 

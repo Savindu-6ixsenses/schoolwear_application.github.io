@@ -7,7 +7,7 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/react-tailwindcss-datepicker/dist/index.esm.js",
-    "./node_modules/@nextui-org/theme/dist/components/(table|checkbox|spacer).js"
+    "./node_modules/@nextui-org/theme/dist/components/(button|dropdown|table|ripple|spinner|menu|divider|popover|checkbox|spacer).js"
   ],
   theme: {
     extend: {

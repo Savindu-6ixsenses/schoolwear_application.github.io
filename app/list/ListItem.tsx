@@ -1,4 +1,3 @@
-// ListItem.tsx - Client Component
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -14,7 +13,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 
   // Handle click to navigate to the dynamic route
   const handleClick = () => {
-    router.push(`/${item.store_code}/F-FF`);
+    router.push(`/${item.store_code}`);
   };
 
   return (

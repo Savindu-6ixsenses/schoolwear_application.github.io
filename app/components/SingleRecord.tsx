@@ -15,7 +15,7 @@ type Product = {
   'Price': number;
 };
 
-const SingleRecord= ({item,store_code}: {item: Product, store_code: string}) => {
+const SingleRecord= ({item,store_code,design_id}: {item: Product, store_code: string, design_id: string}) => {
 
   // State to track selected sizes
   const [selectedSizes, setSelectedSizes] = useState<{ [key: string]: boolean }>({});
@@ -77,7 +77,7 @@ const SingleRecord= ({item,store_code}: {item: Product, store_code: string}) => 
           <td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">
             <AddToList store_code={`${store_code}`} sage_code={`${item['SAGE Code']
 
-            }`} design_code="F-FF" />
+            }`} design_id={`${design_id}`} size_variations={selectedSizes}/>
           </td>
         </tr>
       </tbody>
