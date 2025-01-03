@@ -14,11 +14,15 @@ const AddToList = ({
 	size_variations: { [key: string]: boolean };
 }) => {
 	const [addedToList, setAddedToList] = React.useState(false);
-	const [selected_sizes, setSelectedSizes] = React.useState<string[]>([]);
+	const [selected_sizes, setSelectedSizes] = React.useState<string>("");
 
 	React.useEffect(() => {
-		setSelectedSizes(Object.keys(size_variations).filter((size) => size_variations[size] === true));
-	},[size_variations])
+		setSelectedSizes(
+		  Object.keys(size_variations)
+			.filter((size) => size_variations[size] === true)
+			.join(",") // Create a comma-separated string
+		);
+	  }, [size_variations]);
 
 	const handleClick = async () => {
 		console.log(store_code, sage_code, design_id,selected_sizes);
@@ -46,8 +50,8 @@ const AddToList = ({
 	const handleClickEdit = async () => {
 		console.log(store_code, sage_code, design_id,selected_sizes);
 		try {
-			const response = await fetch("/api/add_to_list", {
-				method: "PUT",
+			const response = await fetch("/api/edit_list", {
+				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},

@@ -5,10 +5,11 @@ import { FaFilter } from "react-icons/fa";
 import SingleRecord from "./SingleRecord";
 import { StoreCreationProps } from "@/types/store";
 import DropDownList from "./DropDownList";
+import { useRouter } from "next/navigation";
+import { generate_pl, get_products_list } from "../[store_code]/actions";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
-	productData: any[];
 }
 
 const fetchDesignItems = async () => {
@@ -23,19 +24,31 @@ const fetchDesignItems = async () => {
 	return design_items.designItems;
 };
 
-const ProductDisplay: React.FC<ProductDisplayProps> = ({
-	store,
-	productData,
-}) => {
+const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
-
+	
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
-
+	
+	const [productData, setProductData] = useState<any[]>([]);
+	
 	const [designId, setDesignId] = useState<string>("0");
-
+	
 	const [designItems, setDesignItems] = useState<any[]>([]);
+	
+	const router = useRouter();
+
+	const handleClick = async () => {
+		const data = await generate_pl(store? store.store_code: "");
+		console.log(data);
+		router.push("/list");
+	}
+	
+	const get_products_list_by_design = async (design_id: string, store_code:string) => {
+		const data = await get_products_list(store_code,design_id);
+		setProductData(data || []);
+	};
 
 	const setCurrentDesign = ({
 		image,
@@ -46,6 +59,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	}) => {
 		setImageUrl(`${image}`);
 		setDesignId(`${designId}`);
+		get_products_list_by_design(designId, store? store.store_code: "");
 	};
 
 	useEffect(() => {
@@ -54,9 +68,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		});
 	}, []);
 
-	useEffect(() => {
-		console.log("Fetched design items:", designItems); // Logs only when designItems is updated
-	}, [designItems]);
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
@@ -124,9 +135,19 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 						Filter
 					</button>
 				</div>
-				<button className="mt-4 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600">
-					Generate PL
-				</button>
+				<div>
+					<button className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600" onClick={()=>handleClick()}>
+						Generate PL
+					</button>
+					<button
+						className="mt-4 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600"
+						onClick={() => {
+							router.push("/list");
+						}}
+					>
+						Go to List
+					</button>
+				</div>
 			</div>
 
 			{/* Product Section */}

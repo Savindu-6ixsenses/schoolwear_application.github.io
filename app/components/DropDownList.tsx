@@ -47,7 +47,7 @@ const DropDownList: React.FC<DesignItemsListProps> = ({
 		<Dropdown>
 			<DropdownTrigger>
 				<Button
-					color="default"
+					color="primary"
 					variant="bordered"
 					className="capitalize"
 				>
@@ -56,7 +56,7 @@ const DropDownList: React.FC<DesignItemsListProps> = ({
 			</DropdownTrigger>
 			<DropdownMenu
 				aria-label="Selected Design"
-				color="default"
+				color="primary"
 				selectionMode="single"
 				selectedKeys={new Set([selectedValue])}
 				onSelectionChange={handleSelection}

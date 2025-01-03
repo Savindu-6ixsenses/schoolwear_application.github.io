@@ -12,7 +12,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
   const router = useRouter();
 
   // Handle click to navigate to the dynamic route
-  const handleClick = () => {
+  const handleClick = async () => {
     router.push(`/${item.store_code}`);
   };
 

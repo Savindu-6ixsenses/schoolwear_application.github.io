@@ -65,9 +65,11 @@ const SchoolForm = () => {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				toast.error(`${errorText}`);
+				toast.error(`Error creating the store.\n ${JSON.parse(errorText).error}`);
 				return;
 			}
+
+			router.push(`/${storeCreationBody.store_code}`)
 
 			toast.success(`Store created successfully`);
 		} catch (error: any) {
