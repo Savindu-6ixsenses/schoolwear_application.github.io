@@ -14,5 +14,5 @@ export interface DesignItemProps {
 	Design_Id: string;
 	Design_Guideline: string;
 	Image_URL: string;
-	size_variations: string[];
+	Design_Description: string
 }

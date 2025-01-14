@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../utils/supabase/ssr_client/server";
 
+//TODO: Fix this action
 export async function get_products_list(
 	in_store_code: string,
 	in_design_id: string
@@ -20,7 +21,7 @@ export async function get_products_list(
 		in_design_id: in_design_id,
 	});
 	if (error) console.error(error);
-	else console.log(data);
+	else console.log("Products in the list are",data);
 	return data;
 }
 

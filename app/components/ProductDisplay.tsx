@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
 import SingleRecord from "./SingleRecord";
 import { StoreCreationProps } from "@/types/store";
-import DropDownList from "./DropDownList";
+import AddNewDesign from "./AddNewDesign";
 import { useRouter } from "next/navigation";
 import { generate_pl, get_products_list } from "../[store_code]/actions";
 
@@ -26,40 +26,48 @@ const fetchDesignItems = async () => {
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
-	
+
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
-	
+
 	const [productData, setProductData] = useState<any[]>([]);
-	
 	const [designId, setDesignId] = useState<string>("0");
-	
+	const [designGuideline, setDesignGuideline] = useState<string>("");
 	const [designItems, setDesignItems] = useState<any[]>([]);
-	
 	const router = useRouter();
 
 	const handleClick = async () => {
-		const data = await generate_pl(store? store.store_code: "");
+		const data = await generate_pl(store ? store.store_code : "");
 		console.log(data);
 		router.push("/list");
-	}
-	
-	const get_products_list_by_design = async (design_id: string, store_code:string) => {
-		const data = await get_products_list(store_code,design_id);
+	};
+
+	const get_products_list_by_design = async (
+		design_id: string,
+		store_code: string
+	) => {
+		const data = await get_products_list(store_code, design_id);
 		setProductData(data || []);
 	};
+
+	const changeDesign = () => {setDesignGuideline("");
+		setDesignId("0")
+	}
 
 	const setCurrentDesign = ({
 		image,
 		designId,
+		Design_Guideline
 	}: {
 		image: string;
 		designId: string;
+		Design_Guideline: string;
 	}) => {
 		setImageUrl(`${image}`);
 		setDesignId(`${designId}`);
-		get_products_list_by_design(designId, store? store.store_code: "");
+		setDesignGuideline(`${Design_Guideline}`);
+		get_products_list_by_design(designId, store ? store.store_code : "");
 	};
 
 	useEffect(() => {
@@ -68,7 +76,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		});
 	}, []);
 
-
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
 			<div className="bg-white border border-gray-300 p-4 rounded-lg shadow-md flex items-center space-x-4 text-black">
@@ -76,7 +83,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					<input
 						type="text"
 						className="border border-gray-300 rounded-md p-2"
-						value={`${store?.store_code} | ${store?.store_name} | Required on ${store?.end_date}`}
+						value={`${store?.store_code} | ${store?.store_name}`}
 						readOnly
 					/>
 					<button className="p-2 border border-gray-400 rounded-md hover:bg-gray-200">
@@ -109,10 +116,16 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 							/>
 						</div>
 					</div>
-					<DropDownList
-						designItems={designItems}
-						setCurrentDesign={setCurrentDesign}
-					/>
+					{designGuideline !="" && <div><div className="border border-gray-300 px-4 py-2 w-20 h-10 flex items-center justify-center rounded ">
+							{designGuideline}
+					</div>
+					<div className="border border-gray-400 px-4 py-2" onClick={changeDesign}>
+						Change Design
+					</div>
+					</div>}
+					<div>
+						
+					</div>
 				</div>
 			</div>
 
@@ -136,7 +149,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					</button>
 				</div>
 				<div>
-					<button className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600" onClick={()=>handleClick()}>
+					<button
+						className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600"
+						onClick={() => handleClick()}
+					>
 						Generate PL
 					</button>
 					<button
@@ -162,11 +178,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 						/>
 					))}
 				{designId == "0" && (
-					<div className="flex items-center justify-center h-full">
-						<div className="text-red-500 text-lg border px-3 py-1 border-red-500 rounded">
-							Please Select a Design
-						</div>
-					</div>
+					<AddNewDesign designItems={designItems} setDesignItems={setDesignItems} setCurrentDesign={setCurrentDesign} />
 				)}
 			</div>
 		</div>

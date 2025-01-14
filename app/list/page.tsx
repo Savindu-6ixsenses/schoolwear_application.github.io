@@ -1,5 +1,4 @@
 import React from 'react';
-import { FaArrowDown, FaEdit } from 'react-icons/fa';
 import { createClient } from '@/utils/supabase/ssr_client/server';
 import { StoreCreationProps } from '@/types/store'
 import ListItem from './ListItem';

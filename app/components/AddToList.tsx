@@ -7,13 +7,15 @@ const AddToList = ({
 	sage_code,
 	design_id,
 	size_variations,
+	added_to_list,
 }: {
 	store_code: string;
 	sage_code: string;
 	design_id: string;
 	size_variations: { [key: string]: boolean };
+	added_to_list: boolean;
 }) => {
-	const [addedToList, setAddedToList] = React.useState(false);
+	const [addedToList, setAddedToList] = React.useState(added_to_list);
 	const [selected_sizes, setSelectedSizes] = React.useState<string>("");
 
 	React.useEffect(() => {
