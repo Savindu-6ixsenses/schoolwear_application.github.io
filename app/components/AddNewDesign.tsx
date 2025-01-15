@@ -36,61 +36,8 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 	const supabase = createClient();
 
-
-	async function listBuckets() {
-		try {
-			const { data, error } = await supabase.storage.listBuckets();
-
-			if (error) {
-				console.error("Error listing buckets:", error);
-				return;
-			}
-
-			console.log("Buckets:", data);
-		} catch (error) {
-			console.error("Unexpected error:", error);
-		}
-	}
-
-	const uploadImage3 = async (file: File) => {
-		try {
-			const formData = new FormData();
-			formData.append("file", file);
-
-			// Generate a unique file path
-			const filePath = `${uuidv4()}-${file.name}`;
-
-			// Replace with your Supabase project details
-			const projectUrl = "https://fceaelwbsvllwgbqaeck.supabase.co";
-			const bucketName = "uploads";
-
-			listBuckets()
-
-			const response = await fetch(
-				`${projectUrl}/storage/v1/object/${bucketName}/${filePath}`,
-				{
-					method: "POST",
-					body: formData,
-					headers: {
-						Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-					},
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error("Failed to upload image");
-			}
-
-			const data = await response.json();
-			console.log("Image uploaded successfully:", data);
-			return data;
-		} catch (error) {
-			console.error("Error uploading image:", error);
-		}
-	};
-
 	// Handle the file upload
-	const uploadImage2 = async (imageFile: File) => {
+	const uploadImage = async (imageFile: File) => {
 		try {
 			setUploading(true);
 
@@ -98,7 +45,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			if (!file) throw new Error("No file selected");
 
 			// Generate a unique file path
-			const filePath = `${uuidv4()}-${file.name}`;
+			const filePath = `Logo_Images/${uuidv4()}-${file.name}`;
 
 
 			// Upload the file to Supabase Storage
@@ -106,7 +53,10 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				.from("design-logo-images")
 				.upload(filePath, file);
 
-			if (uploadError) throw uploadError;
+			if (uploadError) {
+				console.error("Error uploading image:", uploadError);
+				return { publicUrl: "" };
+			}
 
 			// Get the public URL of the uploaded file
 			const { data: publicUrl } = supabase.storage
@@ -120,32 +70,6 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			console.error("Error uploading image:", error);
 		} finally {
 			setUploading(false);
-		}
-	};
-
-	const uploadImage = async (imageFile: File) => {
-		try {
-			const formData = new FormData();
-			formData.append("file", imageFile); // Append the image file to the form data
-
-			const response = await fetch("/api/upload_image", {
-				method: "POST",
-				body: formData, // Use formData as the body
-				// duplex: "half"
-			});
-
-			if (response.ok) {
-				const responseData = await response.json(); // Parse the JSON response
-				console.log("Image uploaded successfully:", responseData);
-				return responseData; // Return the uploaded image URL or metadata
-			} else {
-				console.error(
-					"Error uploading the image: Response not Okay ",
-					response
-				);
-			}
-		} catch (error) {
-			console.error("Error uploading the image", error);
 		}
 	};
 
@@ -173,19 +97,16 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	const handleAddNewDesign = async () => {
 		if (newDesign && newDescription && imageFile) {
 			// Uploading and get the Public URL for the image
-			const publicUrl = await uploadImage2(imageFile);
+			const {publicUrl} = await uploadImage(imageFile)??{publicUrl:""};
 
 			console.log("Public URL :", publicUrl);
-
-			await listBuckets()
 
 			// Create a new design item
 			const newDesignItem: DesignItemProps = {
 				Design_Id: uuidv4(),
 				Design_Guideline: newDesign,
 				Design_Description: newDescription,
-				Image_URL:
-					"https://fceaelwbsvllwgbqaeck.supabase.co/storage/v1/object/public/design-logo-images/Logo_Images/bird-colorful-logo-gradient-vector_343694-1365.jpg?t=2024-11-03T08%3A13%3A54.194Z",
+				Image_URL:publicUrl,
 			};
 
 			// Update the list of design items

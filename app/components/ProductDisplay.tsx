@@ -7,6 +7,7 @@ import { StoreCreationProps } from "@/types/store";
 import AddNewDesign from "./AddNewDesign";
 import { useRouter } from "next/navigation";
 import { generate_pl, get_products_list } from "../[store_code]/actions";
+import Search from "./Search";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -43,6 +44,20 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		router.push("/list");
 	};
 
+	// Function to handle search queries
+	const handleSearch = async (
+		query: string,
+	) => {
+		const response = await fetch(
+			`/api/search_products?store_code=${store? store.store_code:""}&design_id=${designId}&q=${query}`,
+			{
+				method: "GET",
+			}
+		);
+		const products = await response.json();
+		setProductData(products || []);
+	};
+
 	const get_products_list_by_design = async (
 		design_id: string,
 		store_code: string
@@ -51,14 +66,15 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		setProductData(data || []);
 	};
 
-	const changeDesign = () => {setDesignGuideline("");
-		setDesignId("0")
-	}
+	const changeDesign = () => {
+		setDesignGuideline("");
+		setDesignId("0");
+	};
 
 	const setCurrentDesign = ({
 		image,
 		designId,
-		Design_Guideline
+		Design_Guideline,
 	}: {
 		image: string;
 		designId: string;
@@ -78,7 +94,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
-			<div className="bg-white border border-gray-300 p-4 rounded-lg shadow-md flex items-center space-x-4 text-black">
+			<div className="bg-white border border-gray-300 p-4 rounded-lg shadow-md flex items-center justify-between text-black">
 				<div className="flex items-center space-x-2">
 					<input
 						type="text"
@@ -87,7 +103,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 						readOnly
 					/>
 					<button className="p-2 border border-gray-400 rounded-md hover:bg-gray-200">
-						{/* Icon */}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="h-6 w-6"
@@ -116,16 +131,23 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 							/>
 						</div>
 					</div>
-					{designGuideline !="" && <div><div className="border border-gray-300 px-4 py-2 w-20 h-10 flex items-center justify-center rounded ">
-							{designGuideline}
-					</div>
-					<div className="border border-gray-400 px-4 py-2" onClick={changeDesign}>
-						Change Design
-					</div>
-					</div>}
-					<div>
-						
-					</div>
+					{designGuideline != "" && (
+						<div className="flex flex-row gap-2">
+							<div className="border border-gray-300 px-4 py-2 w-20 h-10 flex items-center justify-center rounded ">
+								{designGuideline}
+							</div>
+							<div
+								className="px-4 py-2 bg-blue-500 rounded-md text-white hover:bg-blue-200  active:bg-blue-400"
+								onClick={changeDesign}
+							>
+								Change Design
+							</div>
+						</div>
+					)}
+					<div></div>
+				</div>
+				<div className="ml-auto">
+					<Search onSearch={handleSearch} />
 				</div>
 			</div>
 
@@ -178,7 +200,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 						/>
 					))}
 				{designId == "0" && (
-					<AddNewDesign designItems={designItems} setDesignItems={setDesignItems} setCurrentDesign={setCurrentDesign} />
+					<AddNewDesign
+						designItems={designItems}
+						setDesignItems={setDesignItems}
+						setCurrentDesign={setCurrentDesign}
+					/>
 				)}
 			</div>
 		</div>
