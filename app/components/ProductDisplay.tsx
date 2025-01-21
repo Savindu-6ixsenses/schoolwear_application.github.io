@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { startTransition, useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
 import SingleRecord from "./SingleRecord";
 import { StoreCreationProps } from "@/types/store";
 import AddNewDesign from "./AddNewDesign";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { generate_pl, get_products_list } from "../[store_code]/actions";
 import Search from "./Search";
+import FilterComponent from "./Category_filter/FilterComponent";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -36,7 +37,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const [designId, setDesignId] = useState<string>("0");
 	const [designGuideline, setDesignGuideline] = useState<string>("");
 	const [designItems, setDesignItems] = useState<any[]>([]);
+	const searchParams = useSearchParams();
 	const router = useRouter();
+	const query= searchParams.get("q") || "";
+	const categories= searchParams.getAll("category");
 
 	const handleClick = async () => {
 		const data = await generate_pl(store ? store.store_code : "");
@@ -44,18 +48,40 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		router.push("/list");
 	};
 
+	const fetchFilteredProducts = async () => {
+		try {
+			// Construct base URL
+			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
+	
+			// Add query and categories if they exist
+			if (query) url += `&q=${query}`;
+			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
+	
+			const response = await fetch(url);
+			const products = await response.json();
+			setProductData(products || []);
+		} catch (error) {
+			console.error("Error fetching products:", error);
+		} finally {
+			// TODO: Add something
+		}
+	};
+
 	// Function to handle search queries
-	const handleSearch = async (
-		query: string,
-	) => {
-		const response = await fetch(
-			`/api/search_products?store_code=${store? store.store_code:""}&design_id=${designId}&q=${query}`,
-			{
-				method: "GET",
-			}
-		);
-		const products = await response.json();
-		setProductData(products || []);
+	const handleSearch = (query: string) => {
+		console.log("Handle search invoked")
+		startTransition(async () => {
+			// Construct base URL
+			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
+	
+			// Add query and categories if they exist
+			if (query) url += `&q=${query}`;
+			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
+	
+			const response = await fetch(url);
+			const products = await response.json();
+			setProductData(products || []);
+		});
 	};
 
 	const get_products_list_by_design = async (
@@ -69,6 +95,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const changeDesign = () => {
 		setDesignGuideline("");
 		setDesignId("0");
+		// Update the URL params
+		const params = new URLSearchParams(searchParams);
+		params.delete("designId");
+		router.push(`?${params.toString()}`); 
 	};
 
 	const setCurrentDesign = ({
@@ -84,6 +114,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		setDesignId(`${designId}`);
 		setDesignGuideline(`${Design_Guideline}`);
 		get_products_list_by_design(designId, store ? store.store_code : "");
+		
+		// Update the URL params
+		const params = new URLSearchParams(searchParams);
+		params.set("designId", designId);
+		router.push(`?${params.toString()}`); 
 	};
 
 	useEffect(() => {
@@ -153,17 +188,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
-					{["Adult", "Men", "Women", "Youth", "Accessories"].map((category) => (
-						<button
-							key={category}
-							className="py-2 px-4 bg-white border border-gray-300 rounded-md hover:bg-gray-100"
-						>
-							{category}
-						</button>
-					))}
+					<FilterComponent/>
 
 					<button
-						onClick={() => setIsFilterOpen(!isFilterOpen)}
+						onClick={fetchFilteredProducts}
 						className="py-2 px-4 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center"
 					>
 						<FaFilter className="mr-2" />
