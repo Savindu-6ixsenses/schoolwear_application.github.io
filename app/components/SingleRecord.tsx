@@ -13,7 +13,6 @@ type Product = {
 	XL: boolean;
 	X2: boolean;
 	X3: boolean;
-	Price: number;
 };
 
 const SingleRecord = ({
@@ -98,12 +97,12 @@ const SingleRecord = ({
 						</div>
 					</td>
 
-					{/* Price Column */}
+					{/* Price Column
 					<td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">
 						<span className="bg-gray-300 px-3 py-1 rounded">
 							{item["Price"]}
 						</span>
-					</td>
+					</td> */}
 
 					{/* Actions Column */}
 					<td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">

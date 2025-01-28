@@ -30,6 +30,7 @@ export default function Home() {
 						<span className="text-black">Update Web Store</span>
 					</label>
 				</div>
+				{/* TODO: Fix loading status for this button */}
 				<button type="button" onClick={() => {router.push("/list")}}>
 				<div className="mt-[27px] mr-5 rounded flex justify-center items-center text-black border border-green bg-green-500 w-[110px] h-[51px]">
 					Store List

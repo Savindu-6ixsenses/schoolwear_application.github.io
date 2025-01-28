@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { generate_pl, get_products_list } from "../[store_code]/actions";
 import Search from "./Search";
 import FilterComponent from "./Category_filter/FilterComponent";
+import CreateStore from "./CreateStore";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -68,6 +69,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	};
 
 	// Function to handle search queries
+	// TODO: Add Debounce Effect for this.
 	const handleSearch = (query: string) => {
 		console.log("Handle search invoked")
 		startTransition(async () => {
@@ -235,6 +237,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					/>
 				)}
 			</div>
+			<div><CreateStore store={store} /></div>
 		</div>
 	);
 };
