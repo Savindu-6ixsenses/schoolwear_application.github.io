@@ -1,15 +1,16 @@
 "use client";
 
+import { StoreProduct } from "@/types/products";
+import { StoreCreationProps } from "@/types/store";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { startTransition, useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
-import SingleRecord from "./SingleRecord";
-import { StoreCreationProps } from "@/types/store";
-import AddNewDesign from "./AddNewDesign";
-import { useRouter, useSearchParams } from "next/navigation";
 import { generate_pl, get_products_list } from "../[store_code]/actions";
-import Search from "./Search";
+import AddNewDesign from "./AddNewDesign";
 import FilterComponent from "./Category_filter/FilterComponent";
 import CreateStore from "./CreateStore";
+import Search from "./Search";
+import SingleRecord from "./SingleRecord";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -28,38 +29,40 @@ const fetchDesignItems = async () => {
 };
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
-	const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
 
-	const [productData, setProductData] = useState<any[]>([]);
+	const [productData, setProductData] = useState<StoreProduct[]>([]);
 	const [designId, setDesignId] = useState<string>("0");
 	const [designGuideline, setDesignGuideline] = useState<string>("");
 	const [designItems, setDesignItems] = useState<any[]>([]);
+	const [addedList, setAddedList] = useState<string[]>([])
+	const [productDataInList, setproductDataInList] = useState<StoreProduct[]>([])
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const query= searchParams.get("q") || "";
-	const categories= searchParams.getAll("category");
+	const query = searchParams.get("q") || "";
+	const categories = searchParams.getAll("category");
 
 	const handleClick = async () => {
 		const data = await generate_pl(store ? store.store_code : "");
 		console.log(data);
 		router.push("/list");
 	};
-
+	
+	// TODO: Same as the handleSearch function. Check with it. 
 	const fetchFilteredProducts = async () => {
 		try {
 			// Construct base URL
 			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
-	
+
 			// Add query and categories if they exist
 			if (query) url += `&q=${query}`;
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
-	
+
 			const response = await fetch(url);
-			const products = await response.json();
+			const products: StoreProduct[] = await response.json();
 			setProductData(products || []);
 		} catch (error) {
 			console.error("Error fetching products:", error);
@@ -71,17 +74,17 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	// Function to handle search queries
 	// TODO: Add Debounce Effect for this.
 	const handleSearch = (query: string) => {
-		console.log("Handle search invoked")
+		console.log("Handle search invoked");
 		startTransition(async () => {
 			// Construct base URL
 			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
-	
+
 			// Add query and categories if they exist
 			if (query) url += `&q=${query}`;
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
-	
+
 			const response = await fetch(url);
-			const products = await response.json();
+			const products: StoreProduct[] = await response.json();
 			setProductData(products || []);
 		});
 	};
@@ -90,8 +93,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		design_id: string,
 		store_code: string
 	) => {
-		const data = await get_products_list(store_code, design_id);
+		const data: StoreProduct[] = await get_products_list(store_code, design_id);
 		setProductData(data || []);
+		productData.map((item) => console.log(`Product: ${item.productName}`));
 	};
 
 	const changeDesign = () => {
@@ -100,7 +104,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		// Update the URL params
 		const params = new URLSearchParams(searchParams);
 		params.delete("designId");
-		router.push(`?${params.toString()}`); 
+		router.push(`?${params.toString()}`);
 	};
 
 	const setCurrentDesign = ({
@@ -116,11 +120,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		setDesignId(`${designId}`);
 		setDesignGuideline(`${Design_Guideline}`);
 		get_products_list_by_design(designId, store ? store.store_code : "");
-		
+
 		// Update the URL params
 		const params = new URLSearchParams(searchParams);
 		params.set("designId", designId);
-		router.push(`?${params.toString()}`); 
+		router.push(`?${params.toString()}`);
 	};
 
 	useEffect(() => {
@@ -190,7 +194,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
-					<FilterComponent/>
+					<FilterComponent />
 
 					<button
 						onClick={fetchFilteredProducts}
@@ -223,10 +227,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 				{designId != "0" &&
 					productData.map((item) => (
 						<SingleRecord
-							key={item["Product ID"]}
+							key={item.productId}
 							item={item}
 							store_code={`${store?.store_code}`}
 							design_id={designId ? designId : ""}
+							setAddedtoList={setAddedList}
+							added_list={addedList}
 						/>
 					))}
 				{designId == "0" && (
@@ -237,7 +243,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					/>
 				)}
 			</div>
-			<div><CreateStore store={store} /></div>
+			<div>
+				<CreateStore store={store} design_item={designId}/>
+			</div>
 		</div>
 	);
 };

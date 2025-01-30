@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 interface ListProps {
 	store_code: string;
-	sage_code: string;
+	product_id: string;
 	design_code: string;
 	size_variations: string[];
 }
@@ -11,7 +11,7 @@ interface ListProps {
 
 const addToList = async ({
 	store_code,
-	sage_code,
+	product_id,
 	design_code,
 	size_variations,
 }: ListProps) => {
@@ -19,18 +19,18 @@ const addToList = async ({
 		console.log(
 			"Adding to list: ",
 			store_code,
-			sage_code,
+			product_id,
 			design_code,
 			size_variations
 		);
 		const supabase = createClient();
 		const { data, error } = await supabase
-			.from("stores_products_designs")
+			.from("stores_products_designs_2")
 			.insert([
 				{
 					Store_Code: `${store_code}`,
-					Product_Sage_Code: `${sage_code}`,
-					Design_Id: `${design_code}`,
+					Product_ID: `${product_id}`,
+					Design_ID: `${design_code}`,
 					size_variations: size_variations,
 				},
 			])
@@ -45,7 +45,7 @@ const addToList = async ({
 
 const updateItem = async ({
 	store_code,
-	sage_code,
+	product_id,
 	design_code,
 	size_variations,
 }: ListProps) => {
@@ -53,19 +53,19 @@ const updateItem = async ({
 		console.log(
 			"Updating item: ",
 			store_code,
-			sage_code,
+			product_id,
 			design_code,
 			size_variations
 		);
 		const supabase = createClient();
 		const { data, error } = await supabase
-			.from("stores_products_designs")
+			.from("stores_products_designs_2")
 			.update({
 				size_variations: size_variations,
 			})
 			.eq("Store_Code", store_code)
-			.eq("Product_Sage_Code", sage_code)
-			.eq("Design_Id", design_code)
+			.eq("Product_ID", product_id)
+			.eq("Design_ID", design_code)
 			.select();
 		console.log("Updated data:", data, "Error:", error);
 		return data;
@@ -78,12 +78,12 @@ const updateItem = async ({
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { store_code, sage_code, design_code, size_variations } = body;
+		const { store_code, product_id, design_code, size_variations } = body;
 
 		console.log(
 			"Request Body: ",
 			store_code,
-			sage_code,
+			product_id,
 			design_code,
 			size_variations
 		);
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 		// Add to list
 		const response = await addToList({
 			store_code,
-			sage_code,
+			product_id,
 			design_code,
 			size_variations,
 		});
@@ -117,13 +117,13 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { store_code, sage_code, design_code, size_variations } = body;
+		const { store_code, product_id, design_code, size_variations } = body;
 
 		console.log("Request Body for PUT:", body);
 
 		const response = await updateItem({
 			store_code,
-			sage_code,
+			product_id,
 			design_code,
 			size_variations,
 		});

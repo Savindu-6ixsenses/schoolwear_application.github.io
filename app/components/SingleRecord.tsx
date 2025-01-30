@@ -2,36 +2,31 @@
 
 import React, { useEffect, useState } from "react";
 import AddToList from "./AddToList";
+import { StoreProduct } from "@/types/products";
 
-type Product = {
-	"SAGE Code": string;
-	"Product Name": string;
-	size_variations: string;
-	SM: boolean;
-	MD: boolean;
-	LG: boolean;
-	XL: boolean;
-	X2: boolean;
-	X3: boolean;
-};
+interface SingleRecordProps {
+	item: StoreProduct;
+	store_code: string;
+	design_id: string;
+	setAddedtoList: React.Dispatch<React.SetStateAction<string[]>>;
+	added_list: string[];
+}
 
 const SingleRecord = ({
 	item,
 	store_code,
 	design_id,
-}: {
-	item: Product;
-	store_code: string;
-	design_id: string;
-}) => {
+	setAddedtoList,
+	added_list,
+}: SingleRecordProps) => {
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
 		[key: string]: boolean;
 	}>({});
-  
+
 	// Parse the size_variations string and initialize selectedSizes state
 	useEffect(() => {
-		const sizesArray = item.size_variations?.split(",") || []; // Split string into array
+		const sizesArray = item.sizeVariations?.split(",") || []; // Split string into array
 		const initialSizes: { [key: string]: boolean } = {};
 
 		// Initialize sizes as true if they exist in size_variations
@@ -62,7 +57,7 @@ const SingleRecord = ({
 						colSpan={4}
 						className="border border-gray-700 p-2 text-left"
 					>
-						{item["Product Name"]}
+						{item.productName}
 					</th>
 				</tr>
 			</thead>
@@ -71,7 +66,7 @@ const SingleRecord = ({
 					{/* ID Column */}
 					<td className="border border-gray-700 p-2 bg-gray-200 text-gray-900 ">
 						<button className="bg-gray-300 text-gray-900 px-3 py-1 rounded">
-							{item["SAGE Code"]}
+							{item.sageCode}
 						</button>
 					</td>
 
@@ -80,7 +75,7 @@ const SingleRecord = ({
 						<div className="flex flex-wrap gap-2">
 							{sizes.map(
 								(size) =>
-									item[size as keyof Product] && ( // Only render if size is true
+									item[size as keyof StoreProduct] && ( // Only render if size is true
 										<button
 											key={size}
 											onClick={() => toggleSize(size)}
@@ -106,19 +101,28 @@ const SingleRecord = ({
 
 					{/* Actions Column */}
 					<td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">
-						{item.size_variations == null ? (<AddToList
-							store_code={`${store_code}`}
-							sage_code={`${item["SAGE Code"]}`}
-							design_id={`${design_id}`}
-							size_variations={selectedSizes}
-              added_to_list = {false}
-						/> ) : (<AddToList
-							store_code={`${store_code}`}
-							sage_code={`${item["SAGE Code"]}`}
-							design_id={`${design_id}`}
-							size_variations={selectedSizes}
-              added_to_list = {true}
-						/>)}
+						{/* TODO: Here checking whether added to list from item variations being null is not correct. To check it it should be "" instead of null and for the products without item variations then this added to list won't change.*/}
+						{item.sizeVariations == null ? (
+							<AddToList
+								store_code={`${store_code}`}
+								product_id={`${item.productId}`}
+								design_id={`${design_id}`}
+								size_variations={selectedSizes}
+								added_to_list={false}
+								set_added_to_list={setAddedtoList}
+								added_list={added_list}
+							/>
+						) : (
+							<AddToList
+								store_code={`${store_code}`}
+								product_id={`${item.productId}`}
+								design_id={`${design_id}`}
+								size_variations={selectedSizes}
+								added_to_list={true}
+								set_added_to_list={setAddedtoList}
+								added_list={added_list}
+							/>
+						)}
 					</td>
 				</tr>
 			</tbody>

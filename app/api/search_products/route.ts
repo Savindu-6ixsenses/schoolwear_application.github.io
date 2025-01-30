@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/ssr_client/server";
+import { StoreProduct } from "@/types/products";
 
 // GET: /api/search_products
 export async function GET(request: Request) {
 	const supabase = createClient();
-	console.log("URL :",request.url)
+	console.log("URL :", request.url);
 	try {
 		// Parse the query parameters
 		const { searchParams } = new URL(request.url);
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 			);
 		}
 
-		let { data: products, error } = await supabase.rpc("get_store_products", {
+		let { data: products, error } = await supabase.rpc("get_store_products_4", {
 			in_store_code: store_code,
 			in_design_id: design_id,
 		});
@@ -34,10 +35,10 @@ export async function GET(request: Request) {
 		}
 
 		let filteredProducts = products;
-
+		// If query doesn't exists.
 		if (!query) {
 			filteredProducts = products;
-		} else {
+		} else { // Filter using the query (SageCode) 
 			filteredProducts = products.filter((product: any) =>
 				product["SAGE Code"]?.toLowerCase().includes(query.toLowerCase())
 			);
@@ -63,8 +64,28 @@ export async function GET(request: Request) {
 
 		console.log("These are the filtered Products", filteredProducts);
 
-		// Return the fetched products
-		return NextResponse.json(filteredProducts);
+		// Normalize the keys
+		const normalizedProducts: StoreProduct[] = products.map((product: any) => ({
+			productId: product["Product ID"],
+			sageCode: product["SAGE Code"],
+			productName: product["Product Name"],
+			brandName: product["Brand Name"],
+			productDescription: product["Product Description"],
+			productWeight: product["Product Weight"],
+			category: product["Category"],
+			parentSageCode: product["Product Code/SKU"],
+			designId: product["Design_Id"],
+			sizeVariations: product["size_variations"],
+			isAdded: product["is_added"],
+			SM: product["SM"],
+			MD: product["MD"],
+			LG: product["LG"],
+			XL: product["XL"],
+			X2: product["X2"],
+			X3: product["X3"],
+		}));
+
+		return NextResponse.json(normalizedProducts);
 	} catch (error) {
 		console.error("Error fetching products:", error);
 		return NextResponse.json(

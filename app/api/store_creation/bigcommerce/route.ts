@@ -1,6 +1,11 @@
 import { CreateStoreResponse, StoreCreationProps } from "@/types/store";
-import { ProductCreationProps, ProductResponse } from "@/types/products";
+import {
+	ProductCreationProps,
+	ProductResponse,
+	StoreProduct,
+} from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/ssr_client/server";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH;
 const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/trees/categories`;
@@ -135,9 +140,105 @@ const createBigCommerceStore = async (
 	}
 };
 
+export const getStoreProducts = async (
+	storeCode: string,
+	designCode: string
+): Promise<StoreProduct[]> => {
+	const supabase = createClient();
+
+	console.log("Fetching products for store:", storeCode + " and design:", designCode);
+
+	try {
+		// Call the Supabase RPC function
+		const { data: products, error } = await supabase.rpc(
+			"get_products_to_create",
+			{
+				in_store_code: storeCode,
+				in_design_code: designCode,
+			}
+		);
+
+		if (error) {
+			console.error("Supabase RPC Error:", error);
+			throw new Error("Failed to fetch products from Supabase.");
+		}
+
+		// Normalize the data into the StoreProduct format
+		const normalizedProducts: StoreProduct[] = products.map((product: any) => ({
+			productId: product["Product ID"],
+			sageCode: product["SAGE Code"],
+			productName: product["Product Name"],
+			brandName: product["Brand Name"],
+			productDescription: product["Product Description"],
+			productWeight: product["Product Weight"],
+			category: product["Category"],
+			parentSageCode: product["Product Code/SKU"],
+			sizeVariations: product["size_variations"],
+		}));
+
+		return normalizedProducts;
+	} catch (error) {
+		console.error("Error fetching and normalizing products:", error);
+		throw error;
+	}
+};
+
+const getProductConfigs = (products: StoreProduct[]) => {
+	const productList: ProductCreationProps[] = products.map((product) => {
+		const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
+		return {
+			name: product.productName || "Default Product Name", // Default if name is missing
+			type: "physical", // Default type
+			sku:
+				product.parentSageCode ||
+				`SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, // Generate SKU if missing
+			description: `${product.productDescription}`, // Generate a description
+			weight: product.productWeight || 1, // Default weight, adjust if necessary
+			price: 10.0, // Default price, adjust if necessary
+			categories: [2987], // Default category ID, adjust if necessary
+			brand_name: product.brandName || "Default Brand", // Use the brand name or default
+			inventory_level: 100, // Default inventory
+			is_visible: product.isAdded, // Map directly to is_visible
+			custom_url: {
+				url: `/${product.productName || "default-product"}`, // Generate a URL
+				is_customized: true,
+			},
+			variants: sizeVariants?.length
+				? sizeVariants.map((variant) => ({
+						sku: `${product.parentSageCode}-${
+							product.sageCode
+						}-${variant.toUpperCase()}`,
+						price: 10.0, // Default price
+						inventory_level: 50, // Default inventory for variants
+						weight: 1.0, // Default weight
+						option_values: [
+							{
+								id: 0,
+								label: variant,
+								option_id: 151,
+								option_display_name: "Size",
+							},
+						],
+				  }))
+				: [], // No variants if no sizes are selected
+		};
+	});
+
+	return productList;
+};
+
 export async function POST(request: NextRequest) {
 	try {
-		const store_body = await request.json();
+		// Contains both Store and products in the request
+		const store_creation_body = await request.json();
+
+		// Destructure the store and products from the body
+		const { store, designId } = store_creation_body;
+
+		if (!store) {
+			throw new Error("Store or Products data is missing in the request body");
+		}
+
 		const {
 			store_name: storeName,
 			account_manager: accountManager,
@@ -147,7 +248,7 @@ export async function POST(request: NextRequest) {
 			store_code: StoreCode,
 			start_date: startDate,
 			end_date: endDate,
-		}: StoreCreationProps = store_body;
+		}: StoreCreationProps = store;
 
 		if (!token && !store_hash) {
 			throw new Error("Token or store hash is missing");
@@ -166,41 +267,15 @@ export async function POST(request: NextRequest) {
 		// 	status: "Pending",
 		// });
 
-		const productData: ProductCreationProps[] = [
-			{
-				name: "Smith Journal 13",
-				type: "physical",
-				sku: "SM-13",
-				description: "<p>A great journal for your notes</p>",
-				weight: 1.5,
-				price: 12.99,
-				// categories: [category_id],
-				categories: [2987],
-				brand_name: "Under Armour",
-				inventory_level: 100,
-				is_visible: true,
-				custom_url: {
-					url: "/smith-journal-13",
-					is_customized: true,
-				},
-				variants: [
-					{
-						sku: "SM-13-V1",
-						price: 12.99,
-						inventory_level: 50,
-						weight: 1.5,
-						option_values: [
-							{
-								id: 0,
-								label: "Beige",
-								option_id: 151,
-								option_display_name: "Color",
-							},
-						],
-					},
-				],
-			},
-		];
+		const storeProducts: StoreProduct[] = await getStoreProducts(
+			StoreCode,
+			designId
+		);
+
+		console.log("Store Products:", storeProducts);
+
+		const productData: ProductCreationProps[] =
+			getProductConfigs(storeProducts);
 
 		const response = await createBigCommerceProducts(productData);
 

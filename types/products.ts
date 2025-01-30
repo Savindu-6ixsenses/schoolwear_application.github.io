@@ -200,3 +200,23 @@ export interface ProductResponse {
 	bulk_pricing_rules: BulkPricingRule[];
 	images: Image[];
 }
+
+export interface StoreProduct {
+	productId: string;
+	sageCode: string;
+	productName: string;
+	brandName: string;
+	productDescription: string;
+	productWeight: number;
+	category: string;
+	parentSageCode: string;
+	designId?: string;
+	sizeVariations: string | null;
+	isAdded?: boolean;
+	SM?: boolean;
+	MD?: boolean;
+	LG?: boolean;
+	XL?: boolean;
+	X2?: boolean;
+	X3?: boolean;
+}
