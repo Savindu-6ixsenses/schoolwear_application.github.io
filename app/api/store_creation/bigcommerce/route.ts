@@ -183,7 +183,7 @@ export const getStoreProducts = async (
 	}
 };
 
-const getProductConfigs = (products: StoreProduct[]) => {
+const getProductConfigs = (products: StoreProduct[], category_id:number) => {
 	const productList: ProductCreationProps[] = products.map((product) => {
 		const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
 		return {
@@ -195,7 +195,7 @@ const getProductConfigs = (products: StoreProduct[]) => {
 			description: `${product.productDescription}`, // Generate a description
 			weight: product.productWeight || 1, // Default weight, adjust if necessary
 			price: 10.0, // Default price, adjust if necessary
-			categories: [2987], // Default category ID, adjust if necessary
+			categories: [category_id], // Default category ID, adjust if necessary
 			brand_name: product.brandName || "Default Brand", // Use the brand name or default
 			inventory_level: 100, // Default inventory
 			is_visible: product.isAdded, // Map directly to is_visible
@@ -255,17 +255,17 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Create a new store in BigCommerce
-		// const category_id = await createBigCommerceStore({
-		// 	store_name: storeName,
-		// 	account_manager: accountManager,
-		// 	store_address: storeAddress,
-		// 	main_client_name: mainClientContact,
-		// 	main_client_contact_number: mainClientContactNumber,
-		// 	store_code: StoreCode,
-		// 	start_date: startDate,
-		// 	end_date: endDate,
-		// 	status: "Pending",
-		// });
+		const category_id = await createBigCommerceStore({
+			store_name: storeName,
+			account_manager: accountManager,
+			store_address: storeAddress,
+			main_client_name: mainClientContact,
+			main_client_contact_number: mainClientContactNumber,
+			store_code: StoreCode,
+			start_date: startDate,
+			end_date: endDate,
+			status: "Pending",
+		});
 
 		const storeProducts: StoreProduct[] = await getStoreProducts(
 			StoreCode,
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
 		console.log("Store Products:", storeProducts);
 
 		const productData: ProductCreationProps[] =
-			getProductConfigs(storeProducts);
+			getProductConfigs(storeProducts, category_id);
 
 		const response = await createBigCommerceProducts(productData);
 

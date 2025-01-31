@@ -38,7 +38,8 @@ export async function GET(request: Request) {
 		// If query doesn't exists.
 		if (!query) {
 			filteredProducts = products;
-		} else { // Filter using the query (SageCode) 
+		} else {
+			// Filter using the query (SageCode)
 			filteredProducts = products.filter((product: any) =>
 				product["SAGE Code"]?.toLowerCase().includes(query.toLowerCase())
 			);
@@ -62,10 +63,10 @@ export async function GET(request: Request) {
 			);
 		}
 
-		console.log("These are the filtered Products", filteredProducts);
+		// console.log("These are the filtered Products", filteredProducts);
 
 		// Normalize the keys
-		const normalizedProducts: StoreProduct[] = products.map((product: any) => ({
+		const normalizedProducts: StoreProduct[] = filteredProducts.map((product: any) => ({
 			productId: product["Product ID"],
 			sageCode: product["SAGE Code"],
 			productName: product["Product Name"],
@@ -84,6 +85,8 @@ export async function GET(request: Request) {
 			X2: product["X2"],
 			X3: product["X3"],
 		}));
+
+		console.log("Products in the list are", normalizedProducts);
 
 		return NextResponse.json(normalizedProducts);
 	} catch (error) {

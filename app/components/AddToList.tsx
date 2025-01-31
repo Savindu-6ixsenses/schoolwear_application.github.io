@@ -2,22 +2,19 @@
 
 import React, { useEffect } from "react";
 
+// TODO: Handle when there are no sizes originally.
 const AddToList = ({
 	store_code,
 	product_id,
 	design_id,
 	size_variations,
 	added_to_list,
-	set_added_to_list,
-	added_list,
 }: {
 	store_code: string;
 	product_id: string;
 	design_id: string;
 	size_variations: { [key: string]: boolean };
 	added_to_list: boolean;
-	set_added_to_list: React.Dispatch<React.SetStateAction<string[]>>;
-	added_list: string[];
 }) => {
 	const [addedToList, setAddedToList] = React.useState(added_to_list);
 	const [selected_sizes, setSelectedSizes] = React.useState<string>("");

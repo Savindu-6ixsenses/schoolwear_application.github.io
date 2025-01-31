@@ -38,8 +38,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const [designId, setDesignId] = useState<string>("0");
 	const [designGuideline, setDesignGuideline] = useState<string>("");
 	const [designItems, setDesignItems] = useState<any[]>([]);
-	const [addedList, setAddedList] = useState<string[]>([])
-	const [productDataInList, setproductDataInList] = useState<StoreProduct[]>([])
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const query = searchParams.get("q") || "";
@@ -231,8 +229,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 							item={item}
 							store_code={`${store?.store_code}`}
 							design_id={designId ? designId : ""}
-							setAddedtoList={setAddedList}
-							added_list={addedList}
 						/>
 					))}
 				{designId == "0" && (

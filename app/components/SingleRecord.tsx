@@ -8,16 +8,12 @@ interface SingleRecordProps {
 	item: StoreProduct;
 	store_code: string;
 	design_id: string;
-	setAddedtoList: React.Dispatch<React.SetStateAction<string[]>>;
-	added_list: string[];
 }
 
 const SingleRecord = ({
 	item,
 	store_code,
 	design_id,
-	setAddedtoList,
-	added_list,
 }: SingleRecordProps) => {
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
@@ -102,15 +98,13 @@ const SingleRecord = ({
 					{/* Actions Column */}
 					<td className="border border-gray-700 p-2 bg-gray-200 text-gray-900">
 						{/* TODO: Here checking whether added to list from item variations being null is not correct. To check it it should be "" instead of null and for the products without item variations then this added to list won't change.*/}
-						{item.sizeVariations == null ? (
+						{item.isAdded == false ? (
 							<AddToList
 								store_code={`${store_code}`}
 								product_id={`${item.productId}`}
 								design_id={`${design_id}`}
 								size_variations={selectedSizes}
 								added_to_list={false}
-								set_added_to_list={setAddedtoList}
-								added_list={added_list}
 							/>
 						) : (
 							<AddToList
@@ -119,8 +113,6 @@ const SingleRecord = ({
 								design_id={`${design_id}`}
 								size_variations={selectedSizes}
 								added_to_list={true}
-								set_added_to_list={setAddedtoList}
-								added_list={added_list}
 							/>
 						)}
 					</td>

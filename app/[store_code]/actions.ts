@@ -43,7 +43,9 @@ export async function get_products_list(
 		X2: product["X2"],
 		X3: product["X3"],
 	}));
-	// console.log("Products in the list are", normalizedProducts);
+
+	console.log("Products in the list are", normalizedProducts);
+	
 	return normalizedProducts;
 }
 
