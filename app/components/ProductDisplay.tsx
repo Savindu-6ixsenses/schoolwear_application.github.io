@@ -16,17 +16,7 @@ interface ProductDisplayProps {
 	store: StoreCreationProps | null;
 }
 
-const fetchDesignItems = async () => {
-	const response = await fetch("/api/get_design_items", {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
-	const design_items = await response.json();
-	console.log("Design Items", design_items.designItems);
-	return design_items.designItems;
-};
+
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
@@ -43,10 +33,23 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const query = searchParams.get("q") || "";
 	const categories = searchParams.getAll("category");
 
-	const handleClick = async () => {
+	const handleGeneratePL = async () => {
 		const data = await generate_pl(store ? store.store_code : "");
 		console.log(data);
 		router.push("/list");
+	};
+
+	// Fetch design items from Supabase
+	const fetchDesignItems = async () => {
+		const response = await fetch("/api/get_design_items", {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		const design_items = await response.json();
+		console.log("Design Items", design_items.designItems);
+		return design_items.designItems;
 	};
 	
 	// TODO: Same as the handleSearch function. Check with it. 
@@ -205,7 +208,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 				<div>
 					<button
 						className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600"
-						onClick={() => handleClick()}
+						onClick={() => handleGeneratePL()}
 					>
 						Generate PL
 					</button>
