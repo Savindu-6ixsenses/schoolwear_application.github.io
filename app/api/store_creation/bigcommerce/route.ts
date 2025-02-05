@@ -1,5 +1,5 @@
 import { CreateStoreResponse, StoreCreationProps } from "@/types/store";
-import { ProductCreationProps, StoreProduct, SupabaseProduct } from "@/types/products";
+import { ProductCreationProps, StoreProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
 import { updateStoreStatus } from "@/services/stores";
 import { getStoreProducts } from "@/services/products";
