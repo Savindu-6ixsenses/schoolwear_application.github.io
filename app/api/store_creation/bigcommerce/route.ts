@@ -1,8 +1,5 @@
 import { CreateStoreResponse, StoreCreationProps } from "@/types/store";
-import {
-	ProductCreationProps,
-	StoreProduct,
-} from "@/types/products";
+import { ProductCreationProps, StoreProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import { updateStoreStatus } from "@/services/stores";
@@ -145,7 +142,11 @@ export const getStoreProducts = async (
 ): Promise<StoreProduct[]> => {
 	const supabase = createClient();
 
-	console.log("Fetching products for store:", storeCode + " and design:", designCode);
+	console.log(
+		"Fetching products for store:",
+		storeCode + " and design:",
+		designCode
+	);
 
 	try {
 		// Call the Supabase RPC function
@@ -163,17 +164,21 @@ export const getStoreProducts = async (
 		}
 
 		// Normalize the data into the StoreProduct format
-		const normalizedProducts: StoreProduct[] = products.map((product: Record<string,any>) => ({
-			productId: product["Product ID"],
-			sageCode: product["SAGE Code"],
-			productName: product["Product Name"],
-			brandName: product["Brand Name"],
-			productDescription: product["Product Description"],
-			productWeight: product["Product Weight"],
-			category: product["Category"],
-			parentSageCode: product["Product Code/SKU"],
-			sizeVariations: product["size_variations"],
-		}));
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+		const normalizedProducts: StoreProduct[] = products.map(
+			(product: Record<string, any>) => ({
+				productId: product["Product ID"],
+				sageCode: product["SAGE Code"],
+				productName: product["Product Name"],
+				brandName: product["Brand Name"],
+				productDescription: product["Product Description"],
+				productWeight: product["Product Weight"],
+				category: product["Category"],
+				parentSageCode: product["Product Code/SKU"],
+				sizeVariations: product["size_variations"],
+			})
+		);
 
 		return normalizedProducts;
 	} catch (error) {
@@ -182,7 +187,7 @@ export const getStoreProducts = async (
 	}
 };
 
-const getProductConfigs = (products: StoreProduct[], category_id:number) => {
+const getProductConfigs = (products: StoreProduct[], category_id: number) => {
 	const productList: ProductCreationProps[] = products.map((product) => {
 		const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
 		return {
@@ -262,8 +267,10 @@ export async function POST(request: NextRequest) {
 
 		console.log("Store Products:", storeProducts);
 
-		const productData: ProductCreationProps[] =
-			getProductConfigs(storeProducts, category_id);
+		const productData: ProductCreationProps[] = getProductConfigs(
+			storeProducts,
+			category_id
+		);
 
 		await createBigCommerceProducts(productData);
 
@@ -276,6 +283,7 @@ export async function POST(request: NextRequest) {
 			},
 			{ status: 201 }
 		);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (e: any) {
 		console.error("Error in POST handler:", e);
 

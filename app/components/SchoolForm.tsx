@@ -51,7 +51,7 @@ const SchoolForm = () => {
 			store_code: formData.storeCode,
 			start_date: dateRange.startDate.toISOString(),
 			end_date: dateRange.endDate.toISOString(),
-      		status: "Draft",
+			status: "Draft",
 		};
 
 		try {
@@ -65,16 +65,21 @@ const SchoolForm = () => {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				toast.error(`Error creating the store.\n ${JSON.parse(errorText).error}`);
+				toast.error(
+					`Error creating the store.\n ${JSON.parse(errorText).error}`
+				);
 				return;
 			}
 
-			router.push(`/${storeCreationBody.store_code}`)
+			router.push(`/${storeCreationBody.store_code}`);
 
 			toast.success(`Store created successfully`);
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		} catch (error: any) {
-			toast.error(`Error creating the store: ${error.message}`);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				toast.error(`Error creating the store: ${error.message}`);
+			} else {
+				toast.error(`An unknown error occurred`);
+			}
 		}
 	};
 
@@ -165,12 +170,12 @@ const SchoolForm = () => {
 			</div>
 			<Calender onDateChange={handleDateChange} />
 			<div>
-					<button
-						className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
-						onClick={handleSubmit}
-					>
-						Create the WebStore
-					</button>
+				<button
+					className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+					onClick={handleSubmit}
+				>
+					Create the WebStore
+				</button>
 			</div>
 		</div>
 	);
