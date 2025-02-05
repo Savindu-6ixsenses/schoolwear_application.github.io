@@ -220,3 +220,17 @@ export interface StoreProduct {
 	X2?: boolean;
 	X3?: boolean;
 }
+
+// Supabase Product Attributes
+export interface SupabaseProduct {
+	"Product ID": number;
+	"SAGE Code": string;
+	"Product Name": string;
+	"Brand Name": string;
+	"Product Description": string;
+	"Product Weight": number;
+	"Category": string;
+	"Product Code/SKU": string;
+	"size_variations": string;
+}
+

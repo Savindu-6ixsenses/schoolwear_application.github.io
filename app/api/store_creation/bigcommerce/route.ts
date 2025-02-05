@@ -1,5 +1,5 @@
 import { CreateStoreResponse, StoreCreationProps } from "@/types/store";
-import { ProductCreationProps, StoreProduct } from "@/types/products";
+import { ProductCreationProps, StoreProduct, SupabaseProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import { updateStoreStatus } from "@/services/stores";
@@ -59,7 +59,7 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 			} catch (error) {
 				attempt++;
 				console.error(
-					`Failed to create product: ${product.name}, Attempt: ${attempt}`
+					`Failed to create product: ${product.name}, Attempt: ${attempt}, error: ${error}`
 				);
 				if (attempt < maxRetries) {
 					console.log("Retrying in 2.5 seconds...");
@@ -156,9 +156,8 @@ export const getStoreProducts = async (
 		});
 
 		// Normalize the data into the StoreProduct format
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const normalizedProducts: StoreProduct[] = products.map(
-			(product: Record<string, any>) => ({
+			(product: SupabaseProduct) => ({
 				productId: product["Product ID"],
 				sageCode: product["SAGE Code"],
 				productName: product["Product Name"],

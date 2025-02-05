@@ -50,3 +50,5 @@ export interface CreateStoreResponse {
 		failed: number;
 	};
 }
+
+
