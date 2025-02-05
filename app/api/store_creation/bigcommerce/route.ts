@@ -150,16 +150,12 @@ export const getStoreProducts = async (
 
 	try {
 		// Call the Supabase RPC function
-		const { data: products } = await supabase.rpc(
-			"get_products_to_create",
-			{
-				in_store_code: storeCode,
-				in_design_code: designCode,
-			}
-		);
+		const { data: products } = await supabase.rpc("get_products_to_create", {
+			in_store_code: storeCode,
+			in_design_code: designCode,
+		});
 
 		// Normalize the data into the StoreProduct format
-
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const normalizedProducts: StoreProduct[] = products.map(
 			(product: Record<string, any>) => ({
