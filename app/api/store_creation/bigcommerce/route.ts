@@ -159,8 +159,8 @@ export const getStoreProducts = async (
 		);
 
 		// Normalize the data into the StoreProduct format
-
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 		const normalizedProducts: StoreProduct[] = products.map(
 			(product: Record<string, any>) => ({
 				productId: product["Product ID"],
