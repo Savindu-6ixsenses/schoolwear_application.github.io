@@ -51,7 +51,7 @@ const SchoolForm = () => {
 			store_code: formData.storeCode,
 			start_date: dateRange.startDate.toISOString(),
 			end_date: dateRange.endDate.toISOString(),
-      status: "Pending",
+      		status: "Draft",
 		};
 
 		try {
@@ -72,6 +72,7 @@ const SchoolForm = () => {
 			router.push(`/${storeCreationBody.store_code}`)
 
 			toast.success(`Store created successfully`);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (error: any) {
 			toast.error(`Error creating the store: ${error.message}`);
 		}

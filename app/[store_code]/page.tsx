@@ -14,14 +14,14 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 		.from("stores")
 		.select("*")
 		.eq("store_code", params.store_code);
-	
+
+	if (storeError) {
+		console.error(storeError);
+	}
+
 	const store = store_data ? store_data[0] : null;
 
-	return (
-		<ProductDisplay
-			store={store}
-		/>
-	);
+	return <ProductDisplay store={store} />;
 };
 
 export default ProductPage;

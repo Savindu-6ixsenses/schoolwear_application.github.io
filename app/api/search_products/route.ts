@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
 		// If categories are provided, filter by them
 		if (categories && categories.length > 0) {
-			filteredProducts = filteredProducts.filter((product: any) =>
+			filteredProducts = filteredProducts.filter((product: StoreProduct) =>
 				categories.some((category) =>
 					product.productName
 						?.toLowerCase()

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useState, useEffect } from "react";
 
 // TODO: Handle when there are no sizes originally.
 const AddToList = ({
@@ -16,10 +16,10 @@ const AddToList = ({
 	size_variations: { [key: string]: boolean };
 	added_to_list: boolean;
 }) => {
-	const [addedToList, setAddedToList] = React.useState(added_to_list);
-	const [selected_sizes, setSelectedSizes] = React.useState<string>("");
+	const [addedToList, setAddedToList] = useState(added_to_list);
+	const [selected_sizes, setSelectedSizes] = useState<string>("");
 
-	React.useEffect(() => {
+	useEffect(() => {
 		setSelectedSizes(
 			Object.keys(size_variations)
 				.filter((size) => size_variations[size] === true)

@@ -27,6 +27,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 	const [productData, setProductData] = useState<StoreProduct[]>([]);
 	const [designId, setDesignId] = useState<string>("0");
 	const [designGuideline, setDesignGuideline] = useState<string>("");
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [designItems, setDesignItems] = useState<any[]>([]);
 	const searchParams = useSearchParams();
 	const router = useRouter();

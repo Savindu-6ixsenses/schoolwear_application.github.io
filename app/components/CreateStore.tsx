@@ -1,4 +1,3 @@
-import { ProductCreationProps, StoreProduct } from "@/types/products";
 import { StoreCreationProps } from "@/types/store";
 import React from "react";
 
@@ -9,21 +8,15 @@ const CreateStore = (props: { store: StoreCreationProps | null ,design_item:stri
 
 	const createStore = async () => {
 		// If the store object is null or undefined, log an error and return
-		console.log(1)
 		if (!props.store) {
 			console.error("Store object is null or undefined");
 			return;
 		}
-		console.log(2)
-
-		console.log(3)
 
 		const storeCreationItems = {
 			store: props.store,
 			designId: props.design_item
 		}
-		console.log(4)
-
 
 		setLoading(true);
 		console.log("Creating store on BigCommerce...");

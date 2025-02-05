@@ -8,7 +8,7 @@ export interface StoreCreationProps {
 	store_code: string;
 	start_date: string;
 	end_date: string;
-  status: string;
+	status: string;
 }
 
 // Props for Design Items in the Database
@@ -17,37 +17,36 @@ export interface DesignItemProps {
 	Design_Id: string;
 	Design_Guideline: string;
 	Image_URL: string;
-	Design_Description: string
+	Design_Description: string;
 }
 
 // Props for response return after creating a store
-export interface CreateStoreResponse  {
+export interface CreateStoreResponse {
 	data: {
-	  category_id: number;
-	  category_uuid: string;
-	  parent_id: number;
-	  tree_id: number;
-	  name: string;
-	  description: string;
-	  views: number;
-	  sort_order: number;
-	  page_title: string;
-	  meta_keywords: string[];
-	  meta_description: string;
-	  layout_file: string;
-	  image_url: string;
-	  is_visible: boolean;
-	  search_keywords: string;
-	  default_product_sort: string;
-	  url: {
-		path: string;
-		is_customized: boolean;
-	  };
+		category_id: number;
+		category_uuid: string;
+		parent_id: number;
+		tree_id: number;
+		name: string;
+		description: string;
+		views: number;
+		sort_order: number;
+		page_title: string;
+		meta_keywords: string[];
+		meta_description: string;
+		layout_file: string;
+		image_url: string;
+		is_visible: boolean;
+		search_keywords: string;
+		default_product_sort: string;
+		url: {
+			path: string;
+			is_customized: boolean;
+		};
 	}[];
 	meta: {
-	  total: number;
-	  success: number;
-	  failed: number;
+		total: number;
+		success: number;
+		failed: number;
 	};
-  };
-  
+}

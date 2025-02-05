@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { DesignItemProps } from "@/types/store";
 import { createClient } from "@/utils/supabase/ssr_client/client";
+import { FaSpinner } from "react-icons/fa";
 
 interface AddNewDesignProps {
 	designItems: DesignItemProps[];
@@ -49,7 +50,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 
 			// Upload the file to Supabase Storage
-			const { data: uploadData, error: uploadError } = await supabase.storage
+			const { error: uploadError } = await supabase.storage
 				.from("design-logo-images")
 				.upload(filePath, file);
 
@@ -237,12 +238,19 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			</div>
 
 			{/* Button to Add New Design */}
-			<button
-				className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600"
+			{!uploading? <button
+				className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10"
 				onClick={handleAddNewDesign}
 			>
 				Add Design
-			</button>
+			</button> : 
+			<button
+			className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10 flex justify-center items-center"
+			disabled = {true}
+		>
+			<div><FaSpinner className="animate-spin" /></div>
+		</button>
+			}
 		</div>
 	);
 };

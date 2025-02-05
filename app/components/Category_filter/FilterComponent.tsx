@@ -1,7 +1,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { MultiSelect, Option } from "react-multi-select-component";
-import CategoryToggleGroup from "../CategoryToggleGroup";
 
 const FilterComponent = () => {
     const router = useRouter() 

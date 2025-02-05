@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${uuidv4()}-${file.name}`;
 
     // Upload the file to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("design-logo-images") // Your Supabase bucket name
       .upload(fileName, file.stream(), {
         contentType: file.type, // Set the content type

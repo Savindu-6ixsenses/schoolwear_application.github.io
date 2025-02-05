@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../utils/supabase/ssr_client/server";
 import { StoreProduct } from "@/types/products";
 import { fetchProductsFromSupabase } from "@/utils/productFetcher";
+import { updateStoreStatus } from "@/services/stores";
 
 //TODO: Fix this action
 export async function get_products_list(
@@ -26,16 +27,6 @@ export async function get_products_list(
 }
 
 export async function generate_pl(store_code: string) {
-	const supabase = createClient();
-
-	const { data: store_data, error: store_data_error } = await supabase
-		.from("stores")
-		.update({
-			status: "Pending",
-		})
-		.eq("store_code", store_code)
-		.select();
-	if (store_data_error) console.error(store_data_error);
-	else console.log(store_data);
+	const store_data = await updateStoreStatus(store_code, "Pending");
 	return store_data;
 }
