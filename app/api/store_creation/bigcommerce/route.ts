@@ -1,8 +1,8 @@
 import { CreateStoreResponse, StoreCreationProps } from "@/types/store";
 import { ProductCreationProps, StoreProduct, SupabaseProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/ssr_client/server";
 import { updateStoreStatus } from "@/services/stores";
+import { getStoreProducts } from "@/services/products";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH;
 const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/trees/categories`;
@@ -133,47 +133,6 @@ const createBigCommerceStore = async (
 	} catch (e) {
 		console.error("Error creating the store:", e);
 		throw e;
-	}
-};
-
-export const getStoreProducts = async (
-	storeCode: string,
-	designCode: string
-): Promise<StoreProduct[]> => {
-	const supabase = createClient();
-
-	console.log(
-		"Fetching products for store:",
-		storeCode + " and design:",
-		designCode
-	);
-
-	try {
-		// Call the Supabase RPC function
-		const { data: products } = await supabase.rpc("get_products_to_create", {
-			in_store_code: storeCode,
-			in_design_code: designCode,
-		});
-
-		// Normalize the data into the StoreProduct format
-		const normalizedProducts: StoreProduct[] = products.map(
-			(product: SupabaseProduct) => ({
-				productId: product["Product ID"],
-				sageCode: product["SAGE Code"],
-				productName: product["Product Name"],
-				brandName: product["Brand Name"],
-				productDescription: product["Product Description"],
-				productWeight: product["Product Weight"],
-				category: product["Category"],
-				parentSageCode: product["Product Code/SKU"],
-				sizeVariations: product["size_variations"],
-			})
-		);
-
-		return normalizedProducts;
-	} catch (error) {
-		console.error("Error fetching and normalizing products:", error);
-		throw error;
 	}
 };
 

@@ -1,0 +1,1 @@
+export { getStoreProducts } from './getStoreProducts';
