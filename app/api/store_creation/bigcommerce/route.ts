@@ -150,18 +150,13 @@ export const getStoreProducts = async (
 
 	try {
 		// Call the Supabase RPC function
-		const { data: products, error } = await supabase.rpc(
+		const { data: products } = await supabase.rpc(
 			"get_products_to_create",
 			{
 				in_store_code: storeCode,
 				in_design_code: designCode,
 			}
 		);
-		
-		if (error) {
-			console.error("Supabase RPC Error:", error);
-			throw new Error(`Failed to fetch products from Supabase: ${error.message}`);
-		}
 
 		// Normalize the data into the StoreProduct format
 
