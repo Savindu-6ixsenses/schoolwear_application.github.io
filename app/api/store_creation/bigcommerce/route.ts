@@ -8,6 +8,11 @@ const store_hash = process.env.BIGCOMMERCE_STORE_HASH;
 const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/trees/categories`;
 const token = process.env.BIGCOMMERCE_ACCESS_TOKEN ?? "";
 
+interface storeCreationBodyProps {
+	store: StoreCreationProps;
+	designId: string;
+}
+
 const fetchFromBigCommerce = async (
 	url: string,
 	method: string,
@@ -78,6 +83,12 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 const createBigCommerceStore = async (
 	StoreCreationProps: StoreCreationProps
 ) => {
+
+	// Validate the store creation properties
+	if (!StoreCreationProps.store_code || typeof StoreCreationProps.store_code !== "string") {
+		throw new Error("Invalid store_code: Expected a string but got undefined or null");
+	}
+
 	// Body of the Store creation object
 	const store_creation_body = [
 		{
@@ -183,14 +194,16 @@ const getProductConfigs = (products: StoreProduct[], category_id: number) => {
 export async function POST(request: NextRequest) {
 	try {
 		// Contains both Store and products in the request
-		const store_creation_body = await request.json();
+		const store_creation_body : storeCreationBodyProps  = await request.json();
 
 		// Destructure the store and products from the body
 		const { store, designId } = store_creation_body;
 
-		if (!store) {
-			throw new Error("Store or Products data is missing in the request body");
+		if (!store || typeof store.store_code !== "string") {
+			throw new Error("Invalid store_code: Expected a string but got undefined or null");
 		}
+
+		console.log("Store Creation Body:", store);
 
 		if (!token && !store_hash) {
 			throw new Error("Token or store hash is missing");
@@ -198,19 +211,19 @@ export async function POST(request: NextRequest) {
 
 		// Create a new store in BigCommerce
 		const category_id = await createBigCommerceStore({
-			store_name: store.storeName,
-			account_manager: store.accountManager,
-			store_address: store.storeAddress,
-			main_client_name: store.mainClientContact,
-			main_client_contact_number: store.mainClientContactNumber,
-			store_code: store.StoreCode,
-			start_date: store.startDate,
-			end_date: store.endDate,
+			store_name: store.store_name,
+			account_manager: store.account_manager,
+			store_address: store.store_address,
+			main_client_name: store.main_client_name,
+			main_client_contact_number: store.main_client_contact_number,
+			store_code: store.store_code,
+			start_date: store.start_date,
+			end_date: store.end_date,
 			status: store.status,
 		});
 
 		const storeProducts: StoreProduct[] = await getStoreProducts(
-			store.StoreCode,
+			store.store_code,
 			designId
 		);
 
@@ -223,7 +236,7 @@ export async function POST(request: NextRequest) {
 
 		await createBigCommerceProducts(productData);
 
-		await updateStoreStatus(store.StoreCode, "Approved");
+		await updateStoreStatus(store.store_code, "Approved");
 
 		// Return a successful response with the created store data
 		return NextResponse.json(
