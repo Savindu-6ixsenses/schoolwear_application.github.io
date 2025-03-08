@@ -11,34 +11,34 @@ import FilterComponent from "./Category_filter/FilterComponent";
 import CreateStore from "./CreateStore";
 import Search from "./Search";
 import SingleRecord from "./SingleRecord";
+import Pagination from "./Pagination";
+import PageSize from "./PageSize";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
 }
-
-
-
 const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
-
+	// TODO: Temporary total pages
+	const [totalPages,setTotalPages] = useState<number>(10);
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
 
 	const [productData, setProductData] = useState<StoreProduct[]>([]);
-	const [designId, setDesignId] = useState<string>("0");
 	const [designGuideline, setDesignGuideline] = useState<string>("");
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [designItems, setDesignItems] = useState<any[]>([]);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const query = searchParams.get("q") || "";
+	const [designId, setDesignId] = useState<string>(
+		searchParams.get("designId") || "0"
+	);
+	const page_size = searchParams.get("page_size") ? parseInt(searchParams.get("page_size") as string, 10) : 20;
+	const page = searchParams.get("page") ? parseInt(searchParams.get("page") as string, 10) : 1;
+	const [currentPage, setCurrentPage] = useState<number>(page);
+	const [currentPageSize, setCurrentPageSize] = useState<number>(page_size);
 	const categories = searchParams.getAll("category");
-
-	const handleGeneratePL = async () => {
-		const data = await generate_pl(store ? store.store_code : "");
-		console.log(data);
-		router.push("/list");
-	};
 
 	// Fetch design items from Supabase
 	const fetchDesignItems = async () => {
@@ -52,19 +52,22 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		console.log("Design Items", design_items.designItems);
 		return design_items.designItems;
 	};
-	
-	// TODO: Same as the handleSearch function. Check with it. 
+
+	// TODO: Same as the handleSearch function. Check with it.
 	const fetchFilteredProducts = async () => {
 		try {
 			// Construct base URL
-			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
+			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}&page=${currentPage}&page_size=${currentPageSize}`;
 
 			// Add query and categories if they exist
 			if (query) url += `&q=${query}`;
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
 
 			const response = await fetch(url);
-			const products: StoreProduct[] = await response.json();
+			const response_data:{products: StoreProduct[],totalPages: number} = await response.json();
+			const products: StoreProduct[] = response_data.products;
+			const totalPages: number = response_data.totalPages;
+			setTotalPages(totalPages);
 			setProductData(products || []);
 		} catch (error) {
 			console.error("Error fetching products:", error);
@@ -79,7 +82,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		console.log("Handle search invoked");
 		startTransition(async () => {
 			// Construct base URL
-			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}`;
+			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}&page=${currentPage}&page_size=${currentPageSize}`;
 
 			// Add query and categories if they exist
 			if (query) url += `&q=${query}`;
@@ -91,22 +94,53 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		});
 	};
 
-	const get_products_list_by_design = async (
-		design_id: string,
-		store_code: string
-	) => {
-		const data: StoreProduct[] = await get_products_list(store_code, design_id);
-		setProductData(data || []);
-		productData.map((item) => console.log(`Product: ${item.productName}`));
+	const handleGeneratePL = async () => {
+		const data = await generate_pl(store ? store.store_code : "");
+		console.log(data);
+		router.push("/list");
 	};
 
+	const handlePageSizeChange = (page_size: number) => {
+		setCurrentPageSize(page_size);
+		
+		const params = new URLSearchParams(searchParams);
+		params.delete("page_size");
+		params.set("page_size", page_size.toString());
+		
+		router.push(`?${params.toString()}`);
+	};
+
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+		
+		const params = new URLSearchParams(searchParams);
+		params.delete("page");
+		params.set("page", page.toString());
+		
+		router.push(`?${params.toString()}`);
+	};
+
+	
 	const changeDesign = () => {
 		setDesignGuideline("");
 		setDesignId("0");
 		// Update the URL params
 		const params = new URLSearchParams(searchParams);
 		params.delete("designId");
+		params.delete("page");
+		params.delete("page_size");
+		
 		router.push(`?${params.toString()}`);
+	};
+	
+	const get_products_list_by_design = async (
+		design_id: string,
+		store_code: string
+	) => {
+		const data: [StoreProduct[],number] = await get_products_list(store_code, design_id,currentPageSize,currentPage);
+		setTotalPages(data[1])
+		setProductData(data[0] || []);
+		productData.map((item) => console.log(`Product: ${item.productName}`));
 	};
 
 	const setCurrentDesign = ({
@@ -126,14 +160,42 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		// Update the URL params
 		const params = new URLSearchParams(searchParams);
 		params.set("designId", designId);
+		params.set("page", currentPage.toString());
+		params.set("page_size", currentPageSize.toString());
 		router.push(`?${params.toString()}`);
 	};
 
+	// Make sure state is updated before making the API call
 	useEffect(() => {
-		fetchDesignItems().then((data) => {
-			setDesignItems(data);
-		});
-	}, []);
+		if (currentPageSize && currentPage) {
+			fetchFilteredProducts();
+		}
+	}, [currentPageSize, currentPage]); 
+	
+	useEffect(() => {
+		fetchDesignItems()
+			.then((data) => {
+				setDesignItems(data);
+			})
+			.catch((error) => {
+				console.error("Error fetching design items:", error);
+			});
+	}, []); // Fetch design items on mount
+
+	useEffect(() => {
+		if (designId !== "0" && designItems.length > 0) {
+			const selectedDesign = designItems.find(
+				(item) => item.Design_Id === designId
+			);
+			console.log("Selected Design", selectedDesign);
+
+			if (selectedDesign) {
+				setDesignGuideline(selectedDesign.Design_Guideline);
+			}
+
+			get_products_list_by_design(designId, store ? store.store_code : "");
+		}
+	}, [designItems]); // Run after designItems are updated
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
@@ -226,7 +288,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
 			{/* Product Section */}
 			<div className="mt-4 bg-gray-200 w-full h-[400px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
-				{designId != "0" &&
+				{designId != "0" && ( productData.length > 0 ?
 					productData.map((item) => (
 						<SingleRecord
 							key={item.productId}
@@ -234,7 +296,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 							store_code={`${store?.store_code}`}
 							design_id={designId ? designId : ""}
 						/>
-					))}
+					)): <div className="text-center text-gray-500">No products found</div>)}
 				{designId == "0" && (
 					<AddNewDesign
 						designItems={designItems}
@@ -243,8 +305,17 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					/>
 				)}
 			</div>
-			<div>
-				<CreateStore store={store} design_item={designId}/>
+			<div className="mt-4 flex justify-between">
+				<PageSize pageSize={currentPageSize} setPageSize={handlePageSizeChange}/>
+				<Pagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
+				/>
+				<CreateStore
+					store={store}
+					design_item={designId}
+				/>
 			</div>
 		</div>
 	);
