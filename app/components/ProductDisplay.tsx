@@ -89,7 +89,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
 
 			const response = await fetch(url);
-			const products: StoreProduct[] = await response.json();
+			const response_data:{products: StoreProduct[],totalPages: number} = await response.json();
+			const products: StoreProduct[] = response_data.products;
+			const totalPages: number = response_data.totalPages;
+			setTotalPages(totalPages);
 			setProductData(products || []);
 		});
 	};
@@ -170,7 +173,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 		if (currentPageSize && currentPage) {
 			fetchFilteredProducts();
 		}
-	}, [currentPageSize, currentPage]); 
+	}, [currentPageSize, currentPage]); // Fetch products on page change
 	
 	useEffect(() => {
 		fetchDesignItems()
@@ -193,7 +196,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 				setDesignGuideline(selectedDesign.Design_Guideline);
 			}
 
-			get_products_list_by_design(designId, store ? store.store_code : "");
+			if (query !== "" && categories.length > 0) {
+				console.log("Query and Categories", query, categories);
+				fetchFilteredProducts();
+			} else {
+				get_products_list_by_design(designId, store ? store.store_code : "");
+			}
 		}
 	}, [designItems]); // Run after designItems are updated
 
@@ -258,7 +266,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
-					<FilterComponent />
+					<FilterComponent preSelectedCategories={categories}/>
 
 					<button
 						onClick={fetchFilteredProducts}

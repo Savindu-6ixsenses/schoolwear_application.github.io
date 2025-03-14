@@ -48,8 +48,8 @@ export async function fetchFilteredProductsFromSupabase(
 	supabase: any,
 	in_store_code: string,
 	in_design_id: string,
-	in_search_query: string | undefined,
-	in_category: string[] | undefined,
+	in_search_query: string | undefined | null,
+	in_category: string[] | undefined | null,
 	in_page_size: number | undefined,
 	in_page: number | undefined
 ): Promise<[StoreProduct[], number]> {
@@ -60,7 +60,7 @@ export async function fetchFilteredProductsFromSupabase(
 		"\nin_design_id",
 		in_design_id,
 		"\nin_search_query",
-		in_search_query,
+		`${in_search_query?.toUpperCase()}`,
 		"\nin_category",
 		in_category,
 		"\nin_page_size",
@@ -69,12 +69,25 @@ export async function fetchFilteredProductsFromSupabase(
 		in_page
 	);
 
+	if (!in_store_code || !in_design_id) {
+		throw new Error("store_code and design_id are required");
+	}
+
+	// Handle when no category or search query is provided. Convert to NULL for the stored procedure
+	if (in_category?.length === 0) {
+		in_category = null;
+	}
+
+	if (!in_search_query) {
+		in_search_query = null;
+	}
+
 	const { data: products, error } = await supabase.rpc(
 		"get_filtered_store_products_v2",
 		{
 			in_store_code,
 			in_design_id,
-			search_query: in_search_query, 
+			search_query: in_search_query?.toUpperCase(), 
         	category_list: in_category,  
 			in_page_size,
 			in_page,
@@ -82,7 +95,7 @@ export async function fetchFilteredProductsFromSupabase(
 	);
 
 	if (error) {
-		throw new Error(`Error fetching products: ${error.message}`);
+		throw new Error(`Error fetching products 1: ${error.message}`);
 	}
 
 	const totalFilteredProducts: number = products[0]["TotalCount"];

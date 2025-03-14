@@ -40,38 +40,16 @@ export async function GET(request: Request) {
 		const filteredProducts: StoreProduct[] = data[0];
 		const totalFilteredProducts: number = data[1];
 
-		// let filteredProducts = products;
-		// // If query doesn't exists.
-		// if (!query) {
-		// 	filteredProducts = products;
-		// } else {
-		// 	// Filter using the query (SageCode)
-		// 	filteredProducts = products.filter((product: StoreProduct) =>
-		// 		product.sageCode?.toLowerCase().includes(query.toLowerCase())
-		// 	);
-		// }
-
-		// // If categories are provided, filter by them
-		// if (categories && categories.length > 0) {
-		// 	filteredProducts = filteredProducts.filter((product: StoreProduct) =>
-		// 		categories.some((category) =>
-		// 			product.productName?.toLowerCase().includes(category.toLowerCase())
-		// 		)
-		// 	);
-		// }
-
 		const totalPages = Math.ceil(
 			totalFilteredProducts / (page_size ? parseInt(page_size) : 10)
 		);
 
 		console.log(
-			// "Products in the list are",
-			// filteredProducts,
-			"\n Total Pages are",
+			"\nTotal Pages are",
 			totalPages,
-			"\n Total Products are",
+			"\nTotal Products are",
 			totalFilteredProducts,
-			"\n Page size is",
+			"\nPage size is",
 			page_size
 		);
 
@@ -82,7 +60,7 @@ export async function GET(request: Request) {
 
 		return NextResponse.json(response);
 	} catch (error) {
-		console.error("Error fetching products:", error);
+		console.error("Error fetching products 2:", error);
 		return NextResponse.json(
 			{ error: "Failed to fetch products" },
 			{ status: 500 }

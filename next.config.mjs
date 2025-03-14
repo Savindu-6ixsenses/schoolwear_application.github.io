@@ -1,4 +1,13 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/auth/confirm',
+        destination: '/auth/confirm', 
+      },
+    ]
+  },
+}
 
-export default nextConfig;
+export default nextConfig

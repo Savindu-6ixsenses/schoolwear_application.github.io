@@ -38,7 +38,7 @@ export async function get_products_list(
 
 	console.log(
 		"Products in the list are",
-		normalizedProducts,
+		// normalizedProducts,
 		totalFilteredProducts
 	);
 

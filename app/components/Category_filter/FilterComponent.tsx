@@ -2,16 +2,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { MultiSelect, Option } from "react-multi-select-component";
 
-const FilterComponent = () => {
+const FilterComponent = ({preSelectedCategories}:{preSelectedCategories:string[]}) => {
     const router = useRouter() 
 	const categories = [
-		{ label: "Adult", value: "adult" },
-		{ label: "Men", value: "men" },
-		{ label: "Women", value: "women" },
-		{ label: "Youth", value: "youth" },
-		{ label: "Accessories", value: "accessories" },
+		{ label: "Adult", value: "Adult" },
+		{ label: "Men", value: "Men" },
+		{ label: "Women", value: "Women" },
+		{ label: "Youth", value: "Youth" },
+		{ label: "Accessories", value: "Accessories" },
 	];
-	const [selectedCategories, setSelectedCategories] = useState<Option[]>([]);
+
+	// ✅ Convert preSelectedCategories to Option[] format
+	const initialSelectedCategories: Option[] = preSelectedCategories
+    .map((cat) => categories.find((option) => option.value === cat))
+    .filter((option): option is Option => option !== undefined); // Filter out undefined values
+
+
+	const [selectedCategories, setSelectedCategories] = useState<Option[]>(initialSelectedCategories);
+	
 	const searchParams = useSearchParams();
 
     const handleCategorySelect = (selectedCategories: Option[]) => {

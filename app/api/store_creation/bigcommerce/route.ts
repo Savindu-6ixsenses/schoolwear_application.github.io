@@ -13,7 +13,7 @@ interface storeCreationBodyProps {
 	designId: string;
 }
 
-const fetchFromBigCommerce = async (
+const addToBigCommerce = async (
 	url: string,
 	method: string,
 	body?: unknown
@@ -58,7 +58,7 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 		while (attempt < maxRetries && !success) {
 			try {
 				console.log(`Creating product: ${product.name}`);
-				await fetchFromBigCommerce(productUrl, "POST", product);
+				await addToBigCommerce(productUrl, "POST", product);
 				console.log(`Product created successfully: ${product.name}`);
 				success = true;
 			} catch (error) {
@@ -83,10 +83,14 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 const createBigCommerceStore = async (
 	StoreCreationProps: StoreCreationProps
 ) => {
-
 	// Validate the store creation properties
-	if (!StoreCreationProps.store_code || typeof StoreCreationProps.store_code !== "string") {
-		throw new Error("Invalid store_code: Expected a string but got undefined or null");
+	if (
+		!StoreCreationProps.store_code ||
+		typeof StoreCreationProps.store_code !== "string"
+	) {
+		throw new Error(
+			"Invalid store_code: Expected a string but got undefined or null"
+		);
 	}
 
 	// Body of the Store creation object
@@ -147,14 +151,69 @@ const createBigCommerceStore = async (
 	}
 };
 
-const getProductConfigs = (products: StoreProduct[], category_id: number) => {
+// Function to create a unique sage code
+const createUniqueSageCode = (
+	rawsageCode: string,
+	originalStoreCode: string,
+	offsetNumber: number
+): string => {
+	if (!rawsageCode) {
+		throw new Error("rawsageCode is required");
+	}
+
+	const sageCode = rawsageCode.includes(".")
+		? rawsageCode.split(".")[0]
+		: rawsageCode;
+
+	// Split and validate the structure of sageCode
+	const parts = sageCode.split("-");
+
+	if (parts.length < 3) {
+		throw new Error("Invalid sageCode format");
+	}
+
+	let designCode = parts[1];
+	const colorCode = parts[2];
+
+	// ✅ Attempt to add offsetNumber to designCode (if numeric)
+	const designCodeNumber = parseInt(designCode, 10);
+
+	if (!isNaN(designCodeNumber)) {
+		designCode = String(designCodeNumber + offsetNumber);
+	} else {
+		// Fallback: Just append offset if not a valid number
+		designCode = `${designCode}${offsetNumber}`;
+	}
+
+	// ✅ Create new sage code using template literals
+	const newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+
+	return newSageCode;
+};
+
+export default createUniqueSageCode;
+
+const getProductConfigs = (
+	products: StoreProduct[],
+	category_id: number,
+	storeCode: string
+) => {
+	// Map the store products to BigCommerce product configurations
 	const productList: ProductCreationProps[] = products.map((product) => {
 		const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
+
+		// get the new sage code
+		const newSageCode = createUniqueSageCode(
+			product.parentSageCode,
+			storeCode,
+			1
+		);
+
 		return {
 			name: product.productName || "Default Product Name", // Default if name is missing
 			type: "physical", // Default type
 			sku:
-				product.parentSageCode ||
+				newSageCode ||
 				`SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, // Generate SKU if missing
 			description: `${product.productDescription}`, // Generate a description
 			weight: product.productWeight || 1, // Default weight, adjust if necessary
@@ -194,13 +253,15 @@ const getProductConfigs = (products: StoreProduct[], category_id: number) => {
 export async function POST(request: NextRequest) {
 	try {
 		// Contains both Store and products in the request
-		const store_creation_body : storeCreationBodyProps  = await request.json();
+		const store_creation_body: storeCreationBodyProps = await request.json();
 
 		// Destructure the store and products from the body
 		const { store, designId } = store_creation_body;
 
 		if (!store || typeof store.store_code !== "string") {
-			throw new Error("Invalid store_code: Expected a string but got undefined or null");
+			throw new Error(
+				"Invalid store_code: Expected a string but got undefined or null"
+			);
 		}
 
 		console.log("Store Creation Body:", store);
@@ -231,7 +292,8 @@ export async function POST(request: NextRequest) {
 
 		const productData: ProductCreationProps[] = getProductConfigs(
 			storeProducts,
-			category_id
+			category_id,
+			store.store_code
 		);
 
 		await createBigCommerceProducts(productData);
