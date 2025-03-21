@@ -32,7 +32,7 @@ export default function RootLayout({
 			>
 				<Toaster />
 				<Header />
-				<div className="min-h-screen bg-white pl-[37px]">{children}</div>
+				<div className="min-h-screen bg-[#f0f8ff] pl-[37px]">{children}</div>
 			</body>
 		</html>
 	);

@@ -250,7 +250,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 								{designGuideline}
 							</div>
 							<div
-								className="px-4 py-2 bg-blue-500 rounded-md text-white hover:bg-blue-200  active:bg-blue-400"
+								className="px-4 py-2 bg-blue-500 rounded-md text-white hover:bg-blue-400  active:bg-blue-500
+								hover:cursor-pointer"
 								onClick={changeDesign}
 							>
 								Change Design
@@ -295,7 +296,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 			</div>
 
 			{/* Product Section */}
-			<div className="mt-4 bg-gray-200 w-full h-[400px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
+			<div className="mt-4 bg-gray-200 w-full h-[800px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
 				{designId != "0" && ( productData.length > 0 ?
 					productData.map((item) => (
 						<SingleRecord
@@ -306,11 +307,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 						/>
 					)): <div className="text-center text-gray-500">No products found</div>)}
 				{designId == "0" && (
-					<AddNewDesign
-						designItems={designItems}
-						setDesignItems={setDesignItems}
-						setCurrentDesign={setCurrentDesign}
-					/>
+					<div className="flex items-center justify-center">
+						<AddNewDesign
+							designItems={designItems}
+							setDesignItems={setDesignItems}
+							setCurrentDesign={setCurrentDesign}
+						/>
+					</div>
 				)}
 			</div>
 			<div className="mt-4 flex justify-between">

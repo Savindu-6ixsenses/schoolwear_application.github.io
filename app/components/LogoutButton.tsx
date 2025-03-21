@@ -10,11 +10,11 @@ const LogoutButton: React.FC = () => {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login'); // Redirect to login page after logout
+    router.push('/login'); 
   };
 
   return (
-    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">
+    <button onClick={handleLogout} className="bg-red-500 text-white mx-3 px-4 py-2 rounded">
       Logout
     </button>
   );

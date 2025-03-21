@@ -20,7 +20,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
     <div
       key={item.store_code}
       onClick={handleClick}
-      className="flex items-center justify-between border-2 border-gray-300 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="flex items-center justify-between border-2 border-gray-300 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer bg-[#fff0f5]"
     >
       {/* Information Section */}
       <div className="flex items-center space-x-4">
@@ -34,11 +34,12 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
           {item.status}
         </span>
         {/* Action Icons */}
-        <button className="bg-gray-200 p-2 rounded-full hover:bg-gray-300 text-black">
+        {/* <button className="bg-gray-200 p-2 rounded-full hover:bg-gray-300 text-black">
           <FaArrowDown />
-        </button>
-        <button className="bg-gray-200 p-2 rounded-full hover:bg-gray-300 text-black">
-          <FaEdit />
+        </button> */}
+        <button className="flex flex-row align-baseline bg-blue-300 px-5 py-1 rounded-full hover:bg-blue-200 text-black gap-2 ">
+          Edit
+          <div className="mt-[2.57px] mx-2"><FaEdit /></div>
         </button>
       </div>
     </div>
