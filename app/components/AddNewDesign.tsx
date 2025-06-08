@@ -8,6 +8,7 @@ import { FaSpinner } from "react-icons/fa";
 
 interface AddNewDesignProps {
 	designItems: DesignItemProps[];
+	designList?: string[]; // Contains the list of design IDs added to the store
 	setDesignItems: React.Dispatch<React.SetStateAction<DesignItemProps[]>>;
 	setCurrentDesign: ({
 		image,
@@ -22,6 +23,7 @@ interface AddNewDesignProps {
 
 const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	designItems,
+	designList,
 	setDesignItems,
 	setCurrentDesign,
 }) => {
@@ -34,8 +36,29 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 	const inputRef = useRef(null);
 
-
 	const supabase = createClient();
+
+	// Prioritize selected designs and mark them as "Added"
+	const sortedDesignItems = !designList
+		? designItems
+		: [...designItems]
+				.sort((a, b) => {
+					const aIndex = designList.indexOf(a.Design_Id);
+					const bIndex = designList.indexOf(b.Design_Id);
+					if (aIndex === -1 && bIndex === -1) return 0; // neither in designList
+					if (aIndex === -1) return 1; // b is in designList, so b comes first
+					if (bIndex === -1) return -1; // a is in designList, so a comes first
+					return aIndex - bIndex; // maintain order from designList
+				})
+				.map((item) => ({
+					...item,
+					Design_Guideline: designList.includes(item.Design_Id)
+						? `${item.Design_Guideline} (Added)`
+						: item.Design_Guideline,
+				}));
+
+	console.log("Sorted Design Items:", sortedDesignItems);
+	console.log("Design List:", designList);
 
 	// Handle the file upload
 	const uploadImage = async (imageFile: File) => {
@@ -47,7 +70,6 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 			// Generate a unique file path
 			const filePath = `Logo_Images/${uuidv4()}-${file.name}`;
-
 
 			// Upload the file to Supabase Storage
 			const { error: uploadError } = await supabase.storage
@@ -66,7 +88,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 			console.log("Image uploaded successfully:", publicUrl);
 
-			return publicUrl
+			return publicUrl;
 		} catch (error) {
 			console.error("Error uploading image:", error);
 		} finally {
@@ -98,7 +120,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	const handleAddNewDesign = async () => {
 		if (newDesign && newDescription && imageFile) {
 			// Uploading and get the Public URL for the image
-			const {publicUrl} = await uploadImage(imageFile)??{publicUrl:""};
+			const { publicUrl } = (await uploadImage(imageFile)) ?? { publicUrl: "" };
 
 			console.log("Public URL :", publicUrl);
 
@@ -107,7 +129,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				Design_Id: uuidv4(),
 				Design_Guideline: newDesign,
 				Design_Description: newDescription,
-				Image_URL:publicUrl,
+				Image_URL: publicUrl,
 			};
 
 			// Update the list of design items
@@ -161,24 +183,33 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				</label>
 				<select
 					id="existingDesign"
-					className="border border-gray-400 p-2 rounded-md"
+					className="border border-gray-400 p-2 rounded-md text-black"
 					onChange={(e) => handleSelectExistingDesign(e.target.value)}
 					value={selectedDesignId || ""}
 				>
 					<option
 						value=""
 						disabled
+						hidden
 					>
 						-- Select a Design --
 					</option>
-					{designItems.map((item) => (
-						<option
-							key={item.Design_Id}
-							value={item.Design_Id}
-						>
-							{item.Design_Guideline}
-						</option>
-					))}
+					{sortedDesignItems.map((item) => {
+						const isAdded = designList?.includes(item.Design_Id);
+						return (
+							<option
+								key={item.Design_Id}
+								value={item.Design_Id}
+								style={{
+									color: isAdded ? "green" : "black", // very limited effect
+								}}
+							>
+								{isAdded
+									? `🟢 ${item.Design_Guideline}`
+									: item.Design_Guideline}
+							</option>
+						);
+					})}
 				</select>
 			</div>
 
@@ -238,19 +269,23 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			</div>
 
 			{/* Button to Add New Design */}
-			{!uploading? <button
-				className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10"
-				onClick={handleAddNewDesign}
-			>
-				Add Design
-			</button> : 
-			<button
-			className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10 flex justify-center items-center"
-			disabled = {true}
-		>
-			<div><FaSpinner className="animate-spin" /></div>
-		</button>
-			}
+			{!uploading ? (
+				<button
+					className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10"
+					onClick={handleAddNewDesign}
+				>
+					Add Design
+				</button>
+			) : (
+				<button
+					className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 h-10 flex justify-center items-center"
+					disabled={true}
+				>
+					<div>
+						<FaSpinner className="animate-spin" />
+					</div>
+				</button>
+			)}
 		</div>
 	);
 };

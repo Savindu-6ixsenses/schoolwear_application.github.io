@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/ssr_client/server";
 import ProductDisplay from "@/app/components/ProductDisplay";
 
 interface ProductPageProps {
-	params: { store_code: string; design_code: string };
+	params: { store_code: string};
 }
 
 const ProductPage = async ({ params }: ProductPageProps) => {
@@ -19,9 +19,26 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 		console.error(storeError);
 	}
 
-	const store = store_data ? store_data[0] : null;
+	const {data: design_data, error: designError} = await supabase
+		.from("stores_products_designs_2")
+		.select("*")
+		.eq("Store_Code", params.store_code);
 
-	return <ProductDisplay store={store} />;
+	if (designError) {
+		console.error(designError);
+	}
+
+	const store = store_data ? store_data[0] : null;
+	const designs = design_data ? design_data : null;
+
+	const designList: string[] = Array.from(
+		new Set((designs || []).map((design) => design?.["Design_ID"]).filter(Boolean))
+	);	
+
+	console.log("Store data:", store);
+	console.log("Design data:", designList);	
+
+	return <ProductDisplay store={store} designIdList={designList}/>;
 };
 
 export default ProductPage;

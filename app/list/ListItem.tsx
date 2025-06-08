@@ -1,11 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FaArrowDown, FaEdit } from "react-icons/fa";
+import { FaEdit } from "react-icons/fa";
 import { StoreCreationProps } from "@/types/store";
 
 interface ListItemProps {
   item: StoreCreationProps;
+}
+
+// Change the status button color 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Pending":
+      return "bg-yellow-500";
+    case "Approved":
+      return "bg-green-500";
+    case "Rejected":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
 }
 
 const ListItem: React.FC<ListItemProps> = ({ item }) => {
@@ -15,6 +29,8 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
   const handleClick = async () => {
     router.push(`/${item.store_code}`);
   };
+
+  const statusColor = getStatusColor(item.status);
 
   return (
     <div
@@ -30,7 +46,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 
       {/* Status Section */}
       <div className="flex items-center space-x-4">
-        <span className="bg-green-600 text-white px-4 py-1 rounded-full text-sm">
+        <span className={`${statusColor} text-white px-4 py-1 rounded-full text-sm`}>
           {item.status}
         </span>
         {/* Action Icons */}

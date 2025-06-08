@@ -16,8 +16,9 @@ import PageSize from "./PageSize";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
+	designIdList?: string[]
 }
-const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
+const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) => {
 	// TODO: Temporary total pages
 	const [totalPages,setTotalPages] = useState<number>(10);
 	const [imageUrl, setImageUrl] = useState<string>(
@@ -49,7 +50,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 			},
 		});
 		const design_items = await response.json();
-		console.log("Design Items", design_items.designItems);
 		return design_items.designItems;
 	};
 
@@ -310,6 +310,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store }) => {
 					<div className="flex items-center justify-center">
 						<AddNewDesign
 							designItems={designItems}
+							designList={designIdList}
 							setDesignItems={setDesignItems}
 							setCurrentDesign={setCurrentDesign}
 						/>

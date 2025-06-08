@@ -3,6 +3,7 @@ import { ProductCreationProps, StoreProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
 import { updateStoreStatus } from "@/services/stores";
 import { getStoreProducts } from "@/services/products";
+import { GLOBAL_SUBCATEGORIES } from "@/constants/categories";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH;
 const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/trees/categories`;
@@ -12,6 +13,8 @@ interface storeCreationBodyProps {
 	store: StoreCreationProps;
 	designId: string;
 }
+
+const createdSageCodes : string[] = [];
 
 const addToBigCommerce = async (
 	url: string,
@@ -151,8 +154,54 @@ const createBigCommerceStore = async (
 	}
 };
 
+// Accepts array of names instead of just one
+const createBigCommereceRelatedCategories = async (
+	parentCategoryId: number,
+	subCategories: string[]
+): Promise<Record<string, number>> => {
+	const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/categories`;
+
+	const createdCategoryIds: Record<string, number> = {};
+
+	for (const subCat of subCategories) {
+		const categoryBody = {
+			name: subCat,
+			parent_id: parentCategoryId,
+		};
+
+		try {
+			const response = await fetch(categoryUrl, {
+				method: "POST",
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+					"X-Auth-Token": token,
+				},
+				body: JSON.stringify(categoryBody),
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to create category '${subCat}'. Status: ${response.status}, Message: ${response.statusText}`
+				);
+			}
+
+			const responseData = await response.json();
+			const createdId = responseData.data?.id;
+			console.log(`✅ Created subcategory '${subCat}' with ID ${createdId}`);
+			createdCategoryIds[subCat] = createdId; // Store the created category ID
+		} catch (error) {
+			console.error(`❌ Error creating subcategory '${subCat}':`, error);
+			throw error;
+		}
+	}
+
+	return createdCategoryIds;
+};
+
 // Function to create a unique sage code
 const createUniqueSageCode = (
+	productName: string,
 	rawsageCode: string,
 	originalStoreCode: string,
 	offsetNumber: number
@@ -179,24 +228,55 @@ const createUniqueSageCode = (
 	const designCodeNumber = parseInt(designCode, 10);
 
 	if (!isNaN(designCodeNumber)) {
-		designCode = String(designCodeNumber + offsetNumber);
+		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
 	} else {
 		// Fallback: Just append offset if not a valid number
 		designCode = `${designCode}${offsetNumber}`;
 	}
 
 	// ✅ Create new sage code using template literals
-	const newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+	let newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+
+	
+	// Check if the newSageCode is unique
+	while (createdSageCodes.includes(newSageCode)) {
+		offsetNumber = offsetNumber+1;
+		designCode = String(designCodeNumber+offsetNumber).padStart(3, "0"); // Ensure two digits
+		newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+		console.log(`Duplicate sage code found. New sage code generated: ${newSageCode}`);
+	}
+
+	createdSageCodes.push(newSageCode); // Add to the list of created sage codes
+	
+	console.log("Product Name:", productName);
+
+	console.log(
+		`Sage Code: ${rawsageCode} => New Sage Code: ${newSageCode}`)
 
 	return newSageCode;
 };
 
-export default createUniqueSageCode;
+const createUniqueProductNames = (
+	productName: string,
+	store_code: string,
+	offsetNumber: number
+): string => {
+	const updated_productName: string =
+		store_code +
+		" " +
+		productName +
+		" - (Design " +
+		offsetNumber.toString() +
+		")"; // Create a unique product name
+	return updated_productName;
+};
 
 const getProductConfigs = (
-	products: StoreProduct[],
+products: StoreProduct[],
 	category_id: number,
-	storeCode: string
+	storeCode: string,
+	offsetNumber: number = 1,
+	relatedCategoryIds: Record<string, number>
 ) => {
 	// Map the store products to BigCommerce product configurations
 	const productList: ProductCreationProps[] = products.map((product) => {
@@ -204,13 +284,24 @@ const getProductConfigs = (
 
 		// get the new sage code
 		const newSageCode = createUniqueSageCode(
+			product.productName,
 			product.parentSageCode,
 			storeCode,
-			1
+			offsetNumber
 		);
 
+		const categories: number[] = [
+			category_id,
+			relatedCategoryIds[product.category],
+		];
+
 		return {
-			name: product.productName || "Default Product Name", // Default if name is missing
+			name:
+				createUniqueProductNames(
+					product.productName,
+					storeCode,
+					offsetNumber
+				) || "Default Product Name", // Default if name is missing
 			type: "physical", // Default type
 			sku:
 				newSageCode ||
@@ -218,7 +309,7 @@ const getProductConfigs = (
 			description: `${product.productDescription}`, // Generate a description
 			weight: product.productWeight || 1, // Default weight, adjust if necessary
 			price: 10.0, // Default price, adjust if necessary
-			categories: [category_id], // Default category ID, adjust if necessary
+			categories: categories, // Default category ID, adjust if necessary
 			brand_name: product.brandName || "Default Brand", // Use the brand name or default
 			inventory_level: 100, // Default inventory
 			is_visible: product.isAdded, // Map directly to is_visible
@@ -228,7 +319,7 @@ const getProductConfigs = (
 			},
 			variants: sizeVariants?.length
 				? sizeVariants.map((variant) => ({
-						sku: `${product.parentSageCode}-${
+						sku: `${newSageCode}-${
 							product.sageCode
 						}-${variant.toUpperCase()}`,
 						price: 10.0, // Default price
@@ -256,6 +347,7 @@ export async function POST(request: NextRequest) {
 		const store_creation_body: storeCreationBodyProps = await request.json();
 
 		// Destructure the store and products from the body
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { store, designId } = store_creation_body;
 
 		if (!store || typeof store.store_code !== "string") {
@@ -283,20 +375,56 @@ export async function POST(request: NextRequest) {
 			status: store.status,
 		});
 
-		const storeProducts: StoreProduct[] = await getStoreProducts(
-			store.store_code,
-			designId
-		);
+		const storeProductsList: Record<string, StoreProduct[]> =
+			await getStoreProducts(store.store_code);
 
-		console.log("Store Products:", storeProducts);
+		if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
+			throw new Error("No products found for the store.");
+		}
 
-		const productData: ProductCreationProps[] = getProductConfigs(
-			storeProducts,
+		// Create related categories in BigCommerce
+		const relatedCategoryIds = await createBigCommereceRelatedCategories(
 			category_id,
-			store.store_code
+			GLOBAL_SUBCATEGORIES
 		);
 
-		await createBigCommerceProducts(productData);
+		const productBatches: {
+			productData: ProductCreationProps[];
+		}[] = [];
+
+		let offsetNumber = 0; // Initialize the offset counter
+
+		for (const [designCode, storeProducts] of Object.entries(storeProductsList)) {
+			console.log(`Design Code: ${designCode}`);
+			storeProducts.forEach((product) => {
+				console.log(`Product Name: ${product.productName}`);
+			});
+
+			offsetNumber = offsetNumber + 1; // Increment the offset for each design code
+
+			console.log(`Offset Number: ${offsetNumber}`);
+		
+			const productData: ProductCreationProps[] = getProductConfigs(
+				storeProducts,
+				category_id,
+				store.store_code,
+				offsetNumber,
+				relatedCategoryIds
+			);
+		
+			productBatches.push({productData});
+		}
+
+		await Promise.all(
+			productBatches.map(async ({productData}) => {
+				try {
+					await createBigCommerceProducts(productData);
+				} catch (err) {
+					console.error(`Error creating products for design code: ${err}`);
+					throw err; // Rethrow the error to be caught in the outer catch block
+				}
+			})
+		);
 
 		await updateStoreStatus(store.store_code, "Approved");
 
