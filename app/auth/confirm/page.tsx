@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/ssr_client/client'
 import toast from 'react-hot-toast'
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -24,7 +24,6 @@ export default function ConfirmPage() {
       }
 
       try {
-        // Confirm user using Supabase
         const { error } = await supabase.auth.verifyOtp({
           token_hash: token,
           type: type as 'signup',
@@ -58,5 +57,14 @@ export default function ConfirmPage() {
         <p className="text-gray-700">Redirecting...</p>
       )}
     </div>
+  )
+}
+
+// 👇 Wrap it with Suspense
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<p className="text-gray-700">Loading...</p>}>
+      <ConfirmPageContent />
+    </Suspense>
   )
 }

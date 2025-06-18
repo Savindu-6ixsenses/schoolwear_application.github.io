@@ -62,7 +62,7 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 		while (attempt < maxRetries && !success) {
 			try {
 				console.log(`Creating product: ${product.name}`);
-				// await addToBigCommerce(productUrl, "POST", product);
+				await addToBigCommerce(productUrl, "POST", product);
 				console.log(`Product created successfully: ${product.name}`);
 				success = true;
 			} catch (error) {
@@ -473,19 +473,19 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Create a new store in BigCommerce
-		// const category_id = await createBigCommerceStore({
-		// 	store_name: store.store_name,
-		// 	account_manager: store.account_manager,
-		// 	store_address: store.store_address,
-		// 	main_client_name: store.main_client_name,
-		// 	main_client_contact_number: store.main_client_contact_number,
-		// 	store_code: store.store_code,
-		// 	start_date: store.start_date,
-		// 	end_date: store.end_date,
-		// 	status: store.status,
-		// });
+		const category_id = await createBigCommerceStore({
+			store_name: store.store_name,
+			account_manager: store.account_manager,
+			store_address: store.store_address,
+			main_client_name: store.main_client_name,
+			main_client_contact_number: store.main_client_contact_number,
+			store_code: store.store_code,
+			start_date: store.start_date,
+			end_date: store.end_date,
+			status: store.status,
+		});
 
-		const category_id = 3088; // Hardcoded for testing purposes
+		// const category_id = 3088; // Hardcoded for testing purposes
 
 		const storeProductsList: Record<string, StoreProduct[]> =
 			await getStoreProducts(store.store_code);
@@ -495,18 +495,18 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Create related categories in BigCommerce
-		// const relatedCategoryIds = await createBigCommereceRelatedCategories(
-		// 	category_id,
-		// 	GLOBAL_SUBCATEGORIES
-		// );
+		const relatedCategoryIds = await createBigCommereceRelatedCategories(
+			category_id,
+			GLOBAL_SUBCATEGORIES
+		);
 
-		const relatedCategoryIds = {
-			Adult: 3089,
-			Men: 3090,
-			Women: 3091,
-			Youth: 3092,
-			Accessories: 3093,
-		};
+		// const relatedCategoryIds = {
+		// 	Adult: 3089,
+		// 	Men: 3090,
+		// 	Women: 3091,
+		// 	Youth: 3092,
+		// 	Accessories: 3093,
+		// };
 
 		const productBatches: {
 			productData: ProductCreationProps[];
