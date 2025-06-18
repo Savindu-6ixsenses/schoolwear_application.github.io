@@ -6,6 +6,8 @@ interface ListProps {
 	product_id: string;
 	design_code: string;
 	size_variations: string[];
+	method?: string;
+	naming_fields?: { [key: string]: string };
 }
 
 const updateItem = async ({
@@ -13,6 +15,8 @@ const updateItem = async ({
 	product_id,
 	design_code,
 	size_variations,
+	method,
+	naming_fields,
 }: ListProps) => {
 	try {
 		console.log(
@@ -20,7 +24,9 @@ const updateItem = async ({
 			store_code,
 			product_id,
 			design_code,
-			size_variations
+			size_variations,
+			method,
+			naming_fields
 		);
 		const supabase = createClient();
 
@@ -30,7 +36,9 @@ const updateItem = async ({
 				Store_Code: store_code,
 				Product_ID: product_id,
 				Design_ID: design_code,
-				size_variations: size_variations, // example data
+				size_variations: size_variations, 
+				naming_method: method || 1, // Default to 1 if not provided
+				naming_fields: naming_fields || {}, // Default to empty object if not provided
 			})
 			.eq("Store_Code", store_code)
 			.eq("Product_ID", product_id)
@@ -48,7 +56,14 @@ const updateItem = async ({
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { store_code, product_id, design_code, size_variations } = body;
+		const {
+			store_code,
+			product_id,
+			design_code,
+			size_variations,
+			method,
+			naming_fields,
+		} = body;
 
 		console.log("Request Body for POST:", body);
 
@@ -57,6 +72,8 @@ export async function POST(request: NextRequest) {
 			product_id,
 			design_code,
 			size_variations,
+			method: method,
+			naming_fields,
 		});
 		console.log("Response from updateItem:", response);
 

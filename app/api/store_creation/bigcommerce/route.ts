@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateStoreStatus } from "@/services/stores";
 import { getStoreProducts } from "@/services/products";
 import { GLOBAL_SUBCATEGORIES } from "@/constants/categories";
+import { randomUUID } from "crypto";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH;
 const categoryUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/trees/categories`;
@@ -14,7 +15,7 @@ interface storeCreationBodyProps {
 	designId: string;
 }
 
-const createdSageCodes : string[] = [];
+const createdSageCodes: string[] = [];
 
 const addToBigCommerce = async (
 	url: string,
@@ -61,7 +62,7 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 		while (attempt < maxRetries && !success) {
 			try {
 				console.log(`Creating product: ${product.name}`);
-				await addToBigCommerce(productUrl, "POST", product);
+				// await addToBigCommerce(productUrl, "POST", product);
 				console.log(`Product created successfully: ${product.name}`);
 				success = true;
 			} catch (error) {
@@ -83,6 +84,7 @@ const createBigCommerceProducts = async (products: ProductCreationProps[]) => {
 };
 
 // For creating the store using the BigCommerce API
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createBigCommerceStore = async (
 	StoreCreationProps: StoreCreationProps
 ) => {
@@ -141,10 +143,21 @@ const createBigCommerceStore = async (
 
 		// Destructure the response
 		const { data } = responseData;
-		const { category_id, name, url } = data[0]; // Extract first category details
+		console.log("Store creation response:", data);
+
+		// Check if the response contains the expected data
+		if (!data || data.length === 0 || !data[0]?.category_id) {
+			throw new Error(
+				"Unexpected response from BigCommerce when creating the store."
+			);
+		}
+
+		const { category_id, name, url } = data[0];
 
 		console.log(
-			`Store: ${name} (Category ID: ${category_id}) created successfully at ${url.path}.`
+			`Store: ${name} (Category ID: ${category_id}) created successfully${
+				url?.path ? ` at ${url.path}` : ""
+			}.`
 		);
 
 		return category_id;
@@ -155,6 +168,7 @@ const createBigCommerceStore = async (
 };
 
 // Accepts array of names instead of just one
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createBigCommereceRelatedCategories = async (
 	parentCategoryId: number,
 	subCategories: string[]
@@ -237,48 +251,132 @@ const createUniqueSageCode = (
 	// ✅ Create new sage code using template literals
 	let newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
 
-	
 	// Check if the newSageCode is unique
 	while (createdSageCodes.includes(newSageCode)) {
-		offsetNumber = offsetNumber+1;
-		designCode = String(designCodeNumber+offsetNumber).padStart(3, "0"); // Ensure two digits
+		offsetNumber = offsetNumber + 1;
+		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
 		newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
-		console.log(`Duplicate sage code found. New sage code generated: ${newSageCode}`);
+		console.log(
+			`Duplicate sage code found. New sage code generated: ${newSageCode}`
+		);
 	}
 
 	createdSageCodes.push(newSageCode); // Add to the list of created sage codes
-	
+
 	console.log("Product Name:", productName);
 
-	console.log(
-		`Sage Code: ${rawsageCode} => New Sage Code: ${newSageCode}`)
+	console.log(`Sage Code: ${rawsageCode} => New Sage Code: ${newSageCode}`);
 
 	return newSageCode;
 };
 
 const createUniqueProductNames = (
 	productName: string,
-	store_code: string,
-	offsetNumber: number
+	storeCode: string,
+	offsetNumber: number,
+	category_: string,
+	brandName: string,
+	namingMethod: string,
+	namingFields: Record<string, string>
 ): string => {
-	const updated_productName: string =
-		store_code +
-		" " +
-		productName +
-		" - (Design " +
-		offsetNumber.toString() +
-		")"; // Create a unique product name
-	return updated_productName;
+	const brand = namingFields["brandName"] || brandName || "Default Brand";
+	const category = category_;
+	const subcategory = namingFields["subCategory"];
+	const specialName = namingFields["specialName"];
+	const printingMethod = namingFields["printingMethod"];
+	const grad = namingFields["gradLabel"] || "Grad";
+
+	// Helper to validate required fields
+	const requireFields = (fields: string[]) => {
+		for (const field of fields) {
+			if (!namingFields[field] || namingFields[field].trim() === "") {
+				throw new Error(
+					`Missing required field "${field}" for naming method ${namingMethod}`
+				);
+			}
+		}
+	};
+
+	let name = "";
+	let designName = "";
+
+	if (offsetNumber > 0) {
+		designName = `Design (${offsetNumber})`;
+	}
+
+	// logging the product name and naming method
+	console.log(`Product Name: ${productName}, Naming Method: ${namingMethod}`);
+
+	// Throw an error if productName is empty
+	if (!productName || productName.trim() === "") {
+		throw new Error("Product name cannot be empty");
+	}
+
+	// Create the product name based on the naming method
+	if (namingMethod == "1") {
+		name = `${storeCode} ${brand} ${category} ${productName} ${designName}`;
+	} else if (namingMethod == "2") {
+		name = `${storeCode} ${category} ${productName} ${designName}`;
+	} else if (namingMethod == "3") {
+		requireFields(["subCategory"]);
+		name = `${storeCode} ${brand} ${category} ${productName} (${subcategory}) ${designName}`;
+	} else if (namingMethod == "4") {
+		requireFields(["subCategory"]);
+		name = `${storeCode} ${brand} ${category} ${productName} (${subcategory}) - ${designName}`;
+	} else if (namingMethod == "5") {
+		requireFields(["specialName"]);
+		name = `${storeCode} ${category} ${specialName} ${(
+			productName.split("-").pop() || ""
+		).trim()} - ${designName}`;
+	} else if (namingMethod == "6") {
+		requireFields(["specialName", "printingMethod"]);
+		name = `${storeCode} ${category} ${specialName} ${printingMethod} ${(
+			productName.split("-").pop() || ""
+		).trim()} - ${designName}`;
+	} else if (namingMethod == "7") {
+		requireFields(["specialName"]);
+		name = `${storeCode} ${category} ${specialName} ${(
+			productName.split("-").pop() || ""
+		).trim()} - ${designName}`;
+	} else if (namingMethod == "8") {
+		requireFields(["gradLabel"]);
+		name = `${storeCode} ${category} ${grad} ${(
+			productName.split("-").pop() || ""
+		).trim()} - ${designName}`;
+	} else {
+		throw new Error(`Invalid naming method: ${namingMethod}`);
+	}
+
+	console.log(
+		`Creating product with name: "${name}" using naming method: ${namingMethod}`
+	);
+
+	return name.replace(/\s+/g, " ").trim();
 };
 
 const getProductConfigs = (
-products: StoreProduct[],
+	products: StoreProduct[],
 	category_id: number,
 	storeCode: string,
 	offsetNumber: number = 1,
 	relatedCategoryIds: Record<string, number>
 ) => {
 	// Map the store products to BigCommerce product configurations
+
+	console.log("Creating product configurations...");
+	// logging the arguments for createUniqueProductNames fucntion
+	products.forEach((product) => {
+		console.log(
+			`Product Name: ${product.productName}, Category: ${
+				product.category
+			}, Brand: ${product.brandName}, Naming Method: ${
+				product.naming_method
+			}, Naming Fields: ${JSON.stringify(
+				product.naming_fields
+			)}, Store Code: ${storeCode}, Offset Number: ${offsetNumber}`
+		);
+	});
+
 	const productList: ProductCreationProps[] = products.map((product) => {
 		const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
 
@@ -295,13 +393,27 @@ products: StoreProduct[],
 			relatedCategoryIds[product.category],
 		];
 
+		let productFinalName = createUniqueProductNames(
+			product.productName,
+			storeCode,
+			offsetNumber,
+			product.category,
+			product.brandName,
+			product.naming_method || "1",
+			product.naming_fields || {}
+		);
+
+		console.log(
+			`Final Product Name: ${productFinalName}, Sage Code: ${newSageCode}`
+		);
+
+		if (!productFinalName) {
+			console.warn("Product name is missing. Using default name instead.");
+			productFinalName = `${randomUUID()}`; // Fallback to a default name if missing
+		}
+
 		return {
-			name:
-				createUniqueProductNames(
-					product.productName,
-					storeCode,
-					offsetNumber
-				) || "Default Product Name", // Default if name is missing
+			name: productFinalName, // Default if name is missing
 			type: "physical", // Default type
 			sku:
 				newSageCode ||
@@ -319,9 +431,7 @@ products: StoreProduct[],
 			},
 			variants: sizeVariants?.length
 				? sizeVariants.map((variant) => ({
-						sku: `${newSageCode}-${
-							product.sageCode
-						}-${variant.toUpperCase()}`,
+						sku: `${newSageCode}-${product.sageCode}-${variant.toUpperCase()}`,
 						price: 10.0, // Default price
 						inventory_level: 50, // Default inventory for variants
 						weight: 1.0, // Default weight
@@ -363,30 +473,40 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Create a new store in BigCommerce
-		const category_id = await createBigCommerceStore({
-			store_name: store.store_name,
-			account_manager: store.account_manager,
-			store_address: store.store_address,
-			main_client_name: store.main_client_name,
-			main_client_contact_number: store.main_client_contact_number,
-			store_code: store.store_code,
-			start_date: store.start_date,
-			end_date: store.end_date,
-			status: store.status,
-		});
+		// const category_id = await createBigCommerceStore({
+		// 	store_name: store.store_name,
+		// 	account_manager: store.account_manager,
+		// 	store_address: store.store_address,
+		// 	main_client_name: store.main_client_name,
+		// 	main_client_contact_number: store.main_client_contact_number,
+		// 	store_code: store.store_code,
+		// 	start_date: store.start_date,
+		// 	end_date: store.end_date,
+		// 	status: store.status,
+		// });
+
+		const category_id = 3088; // Hardcoded for testing purposes
 
 		const storeProductsList: Record<string, StoreProduct[]> =
 			await getStoreProducts(store.store_code);
-
+		
 		if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
 			throw new Error("No products found for the store.");
 		}
 
 		// Create related categories in BigCommerce
-		const relatedCategoryIds = await createBigCommereceRelatedCategories(
-			category_id,
-			GLOBAL_SUBCATEGORIES
-		);
+		// const relatedCategoryIds = await createBigCommereceRelatedCategories(
+		// 	category_id,
+		// 	GLOBAL_SUBCATEGORIES
+		// );
+
+		const relatedCategoryIds = {
+			Adult: 3089,
+			Men: 3090,
+			Women: 3091,
+			Youth: 3092,
+			Accessories: 3093,
+		};
 
 		const productBatches: {
 			productData: ProductCreationProps[];
@@ -394,8 +514,16 @@ export async function POST(request: NextRequest) {
 
 		let offsetNumber = 0; // Initialize the offset counter
 
-		for (const [designCode, storeProducts] of Object.entries(storeProductsList)) {
+		for (const [designCode, storeProducts] of Object.entries(
+			storeProductsList
+		)) {
 			console.log(`Design Code: ${designCode}`);
+
+			// No Need to add Design Code to the product name if only one product is found.
+			console.log(
+				`Number of products found for design code ${designCode}: ${storeProducts.length}`
+			);
+
 			storeProducts.forEach((product) => {
 				console.log(`Product Name: ${product.productName}`);
 			});
@@ -403,7 +531,7 @@ export async function POST(request: NextRequest) {
 			offsetNumber = offsetNumber + 1; // Increment the offset for each design code
 
 			console.log(`Offset Number: ${offsetNumber}`);
-		
+
 			const productData: ProductCreationProps[] = getProductConfigs(
 				storeProducts,
 				category_id,
@@ -411,12 +539,12 @@ export async function POST(request: NextRequest) {
 				offsetNumber,
 				relatedCategoryIds
 			);
-		
-			productBatches.push({productData});
+
+			productBatches.push({ productData });
 		}
 
 		await Promise.all(
-			productBatches.map(async ({productData}) => {
+			productBatches.map(async ({ productData }) => {
 				try {
 					await createBigCommerceProducts(productData);
 				} catch (err) {

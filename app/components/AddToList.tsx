@@ -9,12 +9,17 @@ const AddToList = ({
 	design_id,
 	size_variations,
 	added_to_list,
+	method,
+	naming_fields
+
 }: {
 	store_code: string;
 	product_id: string;
 	design_id: string;
 	size_variations: { [key: string]: boolean };
 	added_to_list: boolean;
+	method: string;
+	naming_fields: { [key: string]: string };
 }) => {
 	const [addedToList, setAddedToList] = useState(added_to_list);
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
@@ -28,7 +33,18 @@ const AddToList = ({
 	}, [size_variations]);
 
 	const handleClick = async () => {
-		console.log(store_code, product_id, design_id, selected_sizes);
+
+		// Logging the parameters to be sent
+		console.log(
+			"Adding to list with parameters: ",
+			store_code,
+			product_id,
+			design_id,
+			selected_sizes,
+			method,
+			naming_fields
+		);
+
 		try {
 			const response = await fetch("/api/add_to_list", {
 				method: "POST",
@@ -40,6 +56,8 @@ const AddToList = ({
 					product_id,
 					design_code: design_id,
 					size_variations: selected_sizes,
+					method: method,
+					naming_fields: naming_fields,
 				}),
 			});
 
@@ -55,7 +73,8 @@ const AddToList = ({
 	};
 
 	const handleClickEdit = async () => {
-		console.log(store_code, product_id, design_id, selected_sizes);
+		console.log("Editing Parameters: ",store_code, product_id, design_id, selected_sizes, method, naming_fields);
+		// Logging the parameters to be sent for editing
 		try {
 			const response = await fetch("/api/edit_list", {
 				method: "POST",
@@ -67,6 +86,8 @@ const AddToList = ({
 					product_id,
 					design_code: design_id,
 					size_variations: selected_sizes,
+					method: method,
+					naming_fields: naming_fields,
 				}),
 			});
 

@@ -213,6 +213,8 @@ export interface StoreProduct {
 	designId?: string;
 	sizeVariations: string | null;
 	isAdded?: boolean;
+	naming_method?: string;
+	naming_fields?: { [key: string]: string };
 	SM?: boolean;
 	MD?: boolean;
 	LG?: boolean;
@@ -232,5 +234,7 @@ export interface SupabaseProduct {
 	"Category": string;
 	"Product Code/SKU": string;
 	"size_variations": string;
+	naming_method?: string;
+	naming_fields?: { [key: string]: string };
 }
 

@@ -33,7 +33,7 @@ export const getStoreProducts = async (
 			console.log("Fetching products for design:", designCode.Design_ID);
 
 			// Fetch products for the current design code
-			const { data: products } = await supabase.rpc("get_products_to_create", {
+			const { data: products } = await supabase.rpc("get_products_to_create_v2", {
 				in_store_code: storeCode,
 				in_design_code: designCode.Design_ID,
 			});
@@ -50,6 +50,8 @@ export const getStoreProducts = async (
 					category: product["Category"],
 					parentSageCode: product["Product Code/SKU"],
 					sizeVariations: product["size_variations"],
+					naming_method: product["naming_method"],
+					naming_fields: product["naming_fields"],
 				})
 			);
 

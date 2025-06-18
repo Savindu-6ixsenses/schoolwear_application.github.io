@@ -113,6 +113,8 @@ export async function fetchFilteredProductsFromSupabase(
 		designId: product["Design_Id"],
 		sizeVariations: product["size_variations"],
 		isAdded: product["is_added"],
+		naming_method: product["naming_method"],
+		naming_fields: product["naming_fields"],
 		SM: product["SM"],
 		MD: product["MD"],
 		LG: product["LG"],
