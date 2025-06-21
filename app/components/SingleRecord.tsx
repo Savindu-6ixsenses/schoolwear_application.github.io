@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import AddToList from "./AddToList";
 import { StoreProduct } from "@/types/products";
+import { GLOBAL_NAMING_METHODS, GLOBAL_SIZES } from "@/constants/products";
 
 interface SingleRecordProps {
 	item: StoreProduct;
@@ -11,16 +12,7 @@ interface SingleRecordProps {
 }
 
 // Define the methods and what fields they need
-const namingMethods = {
-	"1": ["brandName"],
-	"2": [],
-	"3": ["brandName", "subCategory"],
-	"4": ["brandName", "subCategory", "designName"],
-	"5": ["specialName"],
-	"6": ["specialName", "printingMethod"],
-	"7": ["specialName"],
-	"8": ["gradLabel"],
-} as const;
+const namingMethods = GLOBAL_NAMING_METHODS;
 
 const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
 	// State to track selected sizes
@@ -62,7 +54,7 @@ const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
 		}));
 	};
 
-	const sizes = ["SM", "MD", "LG", "XL", "X2", "X3"];
+	const sizes = GLOBAL_SIZES;
 
 	return (
 		<div className="border border-gray-300 rounded-lg shadow-md bg-white mb-2">

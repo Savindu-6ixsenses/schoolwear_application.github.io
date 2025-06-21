@@ -1,10 +1,19 @@
-"use client";
-
 import React, { useState } from "react";
-import Calender from "./Calender/Calender3";
-import { StoreCreationProps } from "@/types/store";
-import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import DateRangePicker from "./Calender/DateRangePicker";
+import { toast } from "react-hot-toast";
+import { z } from "zod";
+
+interface StoreCreationProps {
+	store_name: string;
+	account_manager: string;
+	main_client_name: string;
+	main_client_contact_number: string;
+	store_address: string;
+	store_code: string;
+	start_date: string;
+	end_date: string;
+	status: string;
+}
 
 const NEXT_MONTH = new Date();
 NEXT_MONTH.setMonth(NEXT_MONTH.getMonth() + 1);
@@ -19,14 +28,23 @@ const SchoolForm = () => {
 		storeCode: "",
 	});
 
-	const router = useRouter();
-
-	const [dateRange, setDateRange] = useState<{
-		startDate: Date;
-		endDate: Date;
-	}>({
+	const [dateRange, setDateRange] = useState({
 		startDate: new Date(),
 		endDate: NEXT_MONTH,
+	});
+
+	const schema = z.object({
+		schoolName: z.string().min(1, "School name is required"),
+		accountManager: z.string().email("Invalid email address"),
+		address: z.string().min(1, "Address is required"),
+		mainClientContact: z.string().min(1, "Contact name is required"),
+		mainClientContactNo: z
+			.string()
+			.regex(/^[0-9]{10}$/, "Phone number must be 10 digits"),
+		storeCode: z
+			.string()
+			.min(2, "Store code is required")
+			.regex(/^[A-Z0-9\-]+$/, "Store code must be alphanumeric or hyphen"),
 	});
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,19 +60,22 @@ const SchoolForm = () => {
 	};
 
 	const handleSubmit = async () => {
-		const storeCreationBody: StoreCreationProps = {
-			store_name: formData.schoolName,
-			account_manager: formData.accountManager,
-			main_client_name: formData.mainClientContact,
-			main_client_contact_number: formData.mainClientContactNo,
-			store_address: formData.address,
-			store_code: formData.storeCode,
-			start_date: dateRange.startDate.toISOString(),
-			end_date: dateRange.endDate.toISOString(),
-			status: "Draft",
-		};
-
 		try {
+			// Validate with zod
+			const validated = schema.parse(formData);
+
+			const storeCreationBody: StoreCreationProps = {
+				store_name: validated.schoolName,
+				account_manager: validated.accountManager,
+				main_client_name: validated.mainClientContact,
+				main_client_contact_number: validated.mainClientContactNo,
+				store_address: validated.address,
+				store_code: validated.storeCode,
+				start_date: dateRange.startDate.toISOString(),
+				end_date: dateRange.endDate.toISOString(),
+				status: "Draft",
+			};
+
 			const response = await fetch("/api/store_creation", {
 				method: "POST",
 				headers: {
@@ -65,117 +86,147 @@ const SchoolForm = () => {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				toast.error(
-					`Error creating the store.\n ${JSON.parse(errorText).error}`
-				);
-				return;
+
+				// Handle known constraint error
+				if (
+					errorText.includes("duplicate key value violates unique constraint")
+				) {
+					toast.error("Store code already exists. Please choose another.");
+				} else {
+					toast.error("Error creating store: " + errorText);
+				}
+
+				throw new Error(errorText);
 			}
 
-			router.push(`/${storeCreationBody.store_code}`);
-
-			toast.success(`Store created successfully`);
+			toast.success("Store Created Successfully!");
+			console.log(`Would redirect to: /${storeCreationBody.store_code}`);
 		} catch (error: unknown) {
-			if (error instanceof Error) {
-				toast.error(`Error creating the store: ${error.message}`);
+			if (error instanceof z.ZodError) {
+				toast.error(`Error: ${error.errors[0].message}`);
+			} else if (error instanceof Error) {
+				console.error(error.message || "Unknown error occurred");
 			} else {
-				toast.error(`An unknown error occurred`);
+				toast.error("Unexpected error");
 			}
 		}
 	};
 
 	return (
-		<div className="grid grid-cols-2 w-[1495px] h-[595px] text-black border-2 border-red-600 bg-[#F6F6F6] px-[85px] pt-3">
-			<div className="space-y-5">
-				<div>
-					<label className="block text-sm font-medium mb-1">
-						Name of School/Team
-					</label>
-					<input
-						type="text"
-						name="schoolName"
-						value={formData.schoolName}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="Blair Ridge P.S"
-					/>
+		<div>
+			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
+				<h1 className="text-2xl font-semibold text-gray-800 mb-8">
+					Create a Web Store
+				</h1>
+
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+					{/* Left Column - Form Fields */}
+					<div className="space-y-6">
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Name of School/Team
+							</label>
+							<input
+								type="text"
+								name="schoolName"
+								value={formData.schoolName}
+								onChange={handleChange}
+								placeholder="Blair Ridge P.S"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Account Manager (email)
+							</label>
+							<input
+								type="email"
+								name="accountManager"
+								value={formData.accountManager}
+								onChange={handleChange}
+								placeholder="jeff@marchants.com"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								School/Organization Address
+							</label>
+							<input
+								type="text"
+								name="address"
+								value={formData.address}
+								onChange={handleChange}
+								placeholder="100 Blackfriar Ave, Whitby"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Main Client Contact
+							</label>
+							<input
+								type="text"
+								name="mainClientContact"
+								value={formData.mainClientContact}
+								onChange={handleChange}
+								placeholder="Brent Wragg (Principal)"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Client Contact No
+							</label>
+							<input
+								type="text"
+								name="mainClientContactNo"
+								value={formData.mainClientContactNo}
+								onChange={handleChange}
+								placeholder="9056201221"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Store Code
+							</label>
+							<input
+								type="text"
+								name="storeCode"
+								value={formData.storeCode}
+								onChange={handleChange}
+								placeholder="BRS"
+								className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+							/>
+						</div>
+					</div>
+
+					{/* Right Column - Date Range Picker */}
+					<div className="space-y-6">
+						<div>
+							<label className="block text-sm font-medium text-blue-600 mb-2">
+								Select Store Active Date Range
+							</label>
+							<DateRangePicker onDateChange={handleDateChange} />
+						</div>
+					</div>
 				</div>
 
-				<div>
-					<label className="block text-sm font-medium mb-1">
-						Account Manager
-					</label>
-					<input
-						type="email"
-						name="accountManager"
-						value={formData.accountManager}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="jeff@marchants.com"
-					/>
+				{/* Submit Button */}
+				<div className="mt-8 flex justify-center">
+					<button
+						onClick={handleSubmit}
+						className="px-8 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+					>
+						Create the WebStore
+					</button>
 				</div>
-
-				<div>
-					<label className="block text-sm font-medium mb-1">
-						Address of school/team/Organization
-					</label>
-					<input
-						type="text"
-						name="address"
-						value={formData.address}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="100 Blackfriar Ave, Whitby....."
-					/>
-				</div>
-
-				<div>
-					<label className="block text-sm font-medium mb-1">
-						Main Client Contact
-					</label>
-					<input
-						type="text"
-						name="mainClientContact"
-						value={formData.mainClientContact}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="Brent Wragg (Principal)"
-					/>
-				</div>
-
-				<div>
-					<label className="block text-sm font-medium mb-1">
-						Main Client Contact No
-					</label>
-					<input
-						type="text"
-						name="mainClientContactNo"
-						value={formData.mainClientContactNo}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="9056201221"
-					/>
-				</div>
-
-				<div>
-					<label className="block text-sm font-medium mb-1">Store Code</label>
-					<input
-						type="text"
-						name="storeCode"
-						value={formData.storeCode}
-						onChange={handleChange}
-						className="w-full border border-gray-300 p-2 rounded-md"
-						placeholder="BRS"
-					/>
-				</div>
-			</div>
-			<Calender onDateChange={handleDateChange} />
-			<div>
-				<button
-					className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
-					onClick={handleSubmit}
-				>
-					Create the WebStore
-				</button>
 			</div>
 		</div>
 	);

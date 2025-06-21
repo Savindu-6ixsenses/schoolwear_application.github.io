@@ -7,7 +7,7 @@ export default function Home() {
 	const router = useRouter();
 
 	return (
-		<div className="grid grid-row-3 gap-7 w-[1500px] mx-auto">
+		<div className="grid grid-row-2 gap-7 w-auto mx-auto">
 			<div className="flex flex-row justify-end">
 				{/* TODO: Fix loading status for this button */}
 				<button type="button" onClick={() => {router.push("/list")}}>

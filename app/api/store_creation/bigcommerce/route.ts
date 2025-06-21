@@ -3,7 +3,7 @@ import { ProductCreationProps, StoreProduct } from "@/types/products";
 import { NextRequest, NextResponse } from "next/server";
 import { updateStoreStatus } from "@/services/stores";
 import { getStoreProducts } from "@/services/products";
-import { GLOBAL_SUBCATEGORIES } from "@/constants/categories";
+import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 import { randomUUID } from "crypto";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH;

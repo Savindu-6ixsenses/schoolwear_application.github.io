@@ -16,6 +16,8 @@ const Header = ({ user }: HeaderProps) => {
 	const pathName = usePathname();
 
 	const handleLogoClick = () => {
+		console.log("Current User: ", currentUser);
+		// Redirect to the home page when the logo is clicked
 		router.push("/");
 	};
 
@@ -39,6 +41,7 @@ const Header = ({ user }: HeaderProps) => {
 					priority
 				/>
 			</div>
+			<div>{currentUser && (<div>{`Welcome ${currentUser.email}`}</div>)}</div>
 			{validPath && (
 				<div>{currentUser ? <LogoutButton /> : <LoginButton />}</div>
 			)}
