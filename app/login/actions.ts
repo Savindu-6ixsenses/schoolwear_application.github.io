@@ -14,7 +14,7 @@ export async function login(formData: FormData) {
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const {data:signInData, error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
     console.error("An Error occured: ",error)
@@ -24,6 +24,9 @@ export async function login(formData: FormData) {
       code: error.code || 'unknown_error',
     };
   }
+
+  console.log("Sign In Data: ", signInData)
+  // ✅ Successful login
 
   revalidatePath('/', 'layout')
   redirect('/')

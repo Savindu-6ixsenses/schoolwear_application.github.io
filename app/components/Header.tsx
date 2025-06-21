@@ -1,55 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import LogoutButton from "./LogoutButton";
-import { createClient } from "@/utils/supabase/ssr_client/client";
-import { useRouter } from "next/navigation";
+import LogoutButton from "./Buttons/LogoutButton";
+import LoginButton from "./Buttons/LoginButton";
+import { redirect, usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { SessionData } from "@/types/authSession";
-import { Session } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 
-const Header = () => {
-	const [session, setSession] = useState<Session | null>(null);
+type HeaderProps = {
+	user: User | null;
+};
+
+const Header = ({ user }: HeaderProps) => {
+	const currentUser = user || null;
 	const router = useRouter();
-
-	useEffect(() => {
-		const supabase = createClient();
-
-		// ✅ Check for active session
-		const fetchSession = async () => {
-			const { data, error }: SessionData = await supabase.auth.getSession();
-
-			if (error) {
-				console.error("Session retrieval failed:", error.message);
-			} else if (data.session) {
-				console.log("Session found:", data.session);
-			} else {
-				console.log("No session detected.");
-			}
-		};
-
-		fetchSession();
-
-		// ✅ Listen to changes in the session (login/logout)
-		const { data: authListener } = supabase.auth.onAuthStateChange(
-			(event, session) => {
-				if (session) {
-					setSession(session);
-				} else {
-					setSession(null);
-				}
-			}
-		);
-
-		// Cleanup the listener
-		return () => {
-			authListener?.subscription.unsubscribe();
-		};
-	}, []);
+	const pathName = usePathname();
 
 	const handleLogoClick = () => {
-		router.push("/"); // ✅ Redirect to homepage when the logo is clicked
+		router.push("/");
 	};
+
+	const validPath = !(pathName === "/login" || pathName === "/signup");
+
+	if (!user && validPath) {
+		redirect("/login");
+	}
 
 	return (
 		<div className="w-full border-2 h-[78px] bg-[#FFFFFF] place-items-start items-center max-lg:pl-3 lg:pl-6 flex">
@@ -58,19 +32,15 @@ const Header = () => {
 				onClick={handleLogoClick}
 			>
 				<Image
-					src="/logo.png" // ✅ Path to your logo file in the public directory
+					src="/logo.png"
 					alt="Logo"
 					width={50}
 					height={47}
-					priority // ✅ Improve loading performance for critical images
+					priority
 				/>
 			</div>
-
-			{/* ✅ Show Logout button only if session exists */}
-			{session && (
-				<div>
-					<LogoutButton />
-				</div>
+			{validPath && (
+				<div>{currentUser ? <LogoutButton /> : <LoginButton />}</div>
 			)}
 		</div>
 	);
