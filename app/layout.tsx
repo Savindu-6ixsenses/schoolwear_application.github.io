@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import './styles/globals.css';
 import Header from "./components/Header";
 import { Toaster } from "react-hot-toast";
 import { createClient } from "@/utils/supabase/ssr_client/server";

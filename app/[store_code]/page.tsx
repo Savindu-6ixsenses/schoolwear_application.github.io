@@ -1,9 +1,10 @@
 import React from "react";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import ProductDisplay from "@/app/components/ProductDisplay";
+import { notFound } from "next/navigation"; // ✅ Import this
 
 interface ProductPageProps {
-	params: { store_code: string};
+	params: { store_code: string };
 }
 
 const ProductPage = async ({ params }: ProductPageProps) => {
@@ -16,29 +17,34 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 		.eq("store_code", params.store_code);
 
 	if (storeError) {
-		console.error(storeError);
+		console.error("❌ Store fetch error:", storeError.message);
 	}
 
-	const {data: design_data, error: designError} = await supabase
+	const store = store_data ? store_data[0] : null;
+
+	// ✅ If no store, trigger Next.js 404
+	if (!store) {
+		notFound(); // Will render your app/not-found.tsx page
+	}
+
+	// Fetch design data
+	const { data: design_data, error: designError } = await supabase
 		.from("stores_products_designs_2")
 		.select("*")
 		.eq("Store_Code", params.store_code);
 
 	if (designError) {
-		console.error(designError);
+		console.error("❌ Design fetch error:", designError.message);
 	}
 
-	const store = store_data ? store_data[0] : null;
-	const designs = design_data ? design_data : null;
-
 	const designList: string[] = Array.from(
-		new Set((designs || []).map((design) => design?.["Design_ID"]).filter(Boolean))
-	);	
+		new Set((design_data || []).map((d) => d?.["Design_ID"]).filter(Boolean))
+	);
 
-	console.log("Store data:", store);
-	console.log("Design data:", designList);	
+	console.log("✅ Store:", store);
+	console.log("✅ Design IDs:", designList);
 
-	return <ProductDisplay store={store} designIdList={designList}/>;
+	return <ProductDisplay store={store} designIdList={designList} />;
 };
 
 export default ProductPage;

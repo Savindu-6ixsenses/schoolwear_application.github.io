@@ -51,4 +51,19 @@ export interface CreateStoreResponse {
 	};
 }
 
+export type FormData = {
+	schoolName: string;
+	streetAddress: string;
+	addressLine2: string;
+	city: string;
+	provinceState: string;
+	postalCode: string;
+	country: string;
+	firstName: string;
+	lastName: string;
+	email: string;
+	contactNumber: string;
+	storeCode: string;
+};
+
 

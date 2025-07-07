@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -7,106 +9,116 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import toast from "react-hot-toast";
-
-interface DateRange {
-	startDate: Date;
-	endDate: Date;
-}
+import { Label } from "@/components/ui/label";
 
 interface DateRangePickerProps {
-	onDateChange: (newDateRange: DateRange) => void;
+	onDateChange: (range: { startDate: Date; endDate: Date }) => void;
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({ onDateChange }) => {
-	const [isOpen, setIsOpen] = useState(false);
-	const [tempStartDate, setTempStartDate] = useState<Date | undefined>(
-		new Date()
-	);
-	const [tempEndDate, setTempEndDate] = useState<Date | undefined>(() => {
+	const [startDate, setStartDate] = useState<Date>(new Date());
+	const [endDate, setEndDate] = useState<Date>(() => {
 		const nextMonth = new Date();
 		nextMonth.setMonth(nextMonth.getMonth() + 1);
 		return nextMonth;
 	});
+	const [error, setError] = useState<string>("");
 
-	const handleApply = () => {
-		if (tempStartDate && tempEndDate) {
-			// Ensure start date is before end date
-			if (tempStartDate > tempEndDate) {
-				toast.error("Start date cannot be after end date.");
+	const handleStartDateChange = (date: Date | undefined) => {
+		if (date) {
+			if (endDate && date > endDate) {
+				setError("Start date cannot be after end date");
 				return;
 			}
-			onDateChange({
-				startDate: tempStartDate,
-				endDate: tempEndDate,
-			});
-			setIsOpen(false);
-		} else {
-			toast.error("Please select both start and end dates.");
+			setError("");
+			setStartDate(date);
+			onDateChange({ startDate: date, endDate });
 		}
 	};
 
+	const handleEndDateChange = (date: Date | undefined) => {
+		if (date) {
+			if (date < startDate) {
+				setError("End date cannot be before start date");
+				return;
+			}
+			setError("");
+			setEndDate(date);
+			onDateChange({ startDate, endDate: date });
+		}
+	};
 	return (
-		<Popover
-			open={isOpen}
-			onOpenChange={setIsOpen}
-		>
-			<PopoverTrigger asChild>
-				<Button
-					variant="outline"
-					className={
-						"w-full justify-start text-left font-normal h-12 px-4 border-gray-300 bg-gray-50 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500"
-					}
-				>
-					<CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
-					<span className="text-gray-500">
-						{isOpen
-							? "Select date range"
-							: `${tempStartDate?.toDateString()} - ${tempEndDate?.toDateString()}`}
-					</span>
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent
-				className="w-auto p-4"
-				align="start"
-			>
-				<div className="space-y-4  flex flex-col gap-4">
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Start Date
-							</label>
-							<Calendar
-								mode="single"
-								selected={tempStartDate}
-								onSelect={setTempStartDate}
-								className={"p-3 pointer-events-auto"}
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								End Date
-							</label>
-							<Calendar
-								mode="single"
-								selected={tempEndDate}
-								onSelect={setTempEndDate}
-								className={"p-3 pointer-events-auto"}
-							/>
-						</div>
-					</div>
-					<Button
-						onClick={handleApply}
-						className="w-full"
+		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div>
+				<Label className="text-sm font-medium text-gray-700 mb-2 block">
+					Start Date
+				</Label>
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							className={cn(
+								"w-full justify-start text-left font-normal",
+								!startDate && "text-muted-foreground"
+							)}
+						>
+							<CalendarIcon className="mr-2 h-4 w-4" />
+							{startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						className="w-auto p-0"
+						align="start"
 					>
-						Apply
-					</Button>
+						<Calendar
+							mode="single"
+							selected={startDate}
+							onSelect={handleStartDateChange}
+							initialFocus
+							className="p-3 pointer-events-auto"
+						/>
+					</PopoverContent>
+				</Popover>
+			</div>
+
+			<div>
+				<Label className="text-sm font-medium text-gray-700 mb-2 block">
+					End Date
+				</Label>
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							className={cn(
+								"w-full justify-start text-left font-normal",
+								!endDate && "text-muted-foreground"
+							)}
+						>
+							<CalendarIcon className="mr-2 h-4 w-4" />
+							{endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						className="w-auto p-0"
+						align="start"
+					>
+						<Calendar
+							mode="single"
+							selected={endDate}
+							onSelect={handleEndDateChange}
+							initialFocus
+							className="p-3 pointer-events-auto"
+						/>
+					</PopoverContent>
+				</Popover>
+			</div>
+			{error && (
+				<div className="md:col-span-2 text-sm text-red-600 font-medium mt-2">
+					⚠ {error}
 				</div>
-			</PopoverContent>
-		</Popover>
+			)}
+		</div>
 	);
 };
 
 export default DateRangePicker;
-
-// Error creating store: {"message":"Internal server error","error":"Failed to create store: duplicate key value violates unique constraint \"Stores_pkey\""}

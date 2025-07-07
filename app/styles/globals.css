@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles using @apply */
+.input {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50;
+}
+
+.btn-primary {
+  @apply px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition;
+}
+
+.btn-secondary {
+  @apply px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition;
+}

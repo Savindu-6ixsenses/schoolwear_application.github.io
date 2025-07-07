@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import DateRangePicker from "./Calender/DateRangePicker";
 import { toast } from "react-hot-toast";
 import { z } from "zod";
+import { redirect } from "next/navigation";
 
 interface StoreCreationProps {
 	store_name: string;
@@ -100,7 +101,8 @@ const SchoolForm = () => {
 			}
 
 			toast.success("Store Created Successfully!");
-			console.log(`Would redirect to: /${storeCreationBody.store_code}`);
+			// Redirect to the new store page
+			redirect(`/${storeCreationBody.store_code}`);
 		} catch (error: unknown) {
 			if (error instanceof z.ZodError) {
 				toast.error(`Error: ${error.errors[0].message}`);
@@ -115,7 +117,7 @@ const SchoolForm = () => {
 	return (
 		<div>
 			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
-				<h1 className="text-2xl font-semibold text-gray-800 mb-8">
+				<h1 className="text-2xl font-semibold text-gray-800 mb-8 flex justify-center">
 					Create a Web Store
 				</h1>
 
