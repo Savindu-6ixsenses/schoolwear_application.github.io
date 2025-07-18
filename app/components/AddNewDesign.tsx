@@ -38,6 +38,8 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 	const supabase = createClient();
 
+	console.log("Design Items:", designItems, "and Design List:", designList);
+
 	// Prioritize selected designs and mark them as "Added"
 	const sortedDesignItems = !designList
 		? designItems

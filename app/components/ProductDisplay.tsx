@@ -16,11 +16,14 @@ import PageSize from "./PageSize";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
-	designIdList?: string[]
+	designIdList?: string[];
 }
-const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) => {
+const ProductDisplay: React.FC<ProductDisplayProps> = ({
+	store,
+	designIdList,
+}) => {
 	// TODO: Temporary total pages
-	const [totalPages,setTotalPages] = useState<number>(10);
+	const [totalPages, setTotalPages] = useState<number>(10);
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
@@ -35,8 +38,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 	const [designId, setDesignId] = useState<string>(
 		searchParams.get("designId") || "0"
 	);
-	const page_size = searchParams.get("page_size") ? parseInt(searchParams.get("page_size") as string, 10) : 20;
-	const page = searchParams.get("page") ? parseInt(searchParams.get("page") as string, 10) : 1;
+	const page_size = searchParams.get("page_size")
+		? parseInt(searchParams.get("page_size") as string, 10)
+		: 20;
+	const page = searchParams.get("page")
+		? parseInt(searchParams.get("page") as string, 10)
+		: 1;
 	const [currentPage, setCurrentPage] = useState<number>(page);
 	const [currentPageSize, setCurrentPageSize] = useState<number>(page_size);
 	const categories = searchParams.getAll("category");
@@ -49,6 +56,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 				"Content-Type": "application/json",
 			},
 		});
+		console.log("Response from get_design_items API:", response);
+		if (!response.ok) {
+			throw new Error("Failed to fetch design items");
+		}
 		const design_items = await response.json();
 		return design_items.designItems;
 	};
@@ -64,7 +75,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
 
 			const response = await fetch(url);
-			const response_data:{products: StoreProduct[],totalPages: number} = await response.json();
+			const response_data: { products: StoreProduct[]; totalPages: number } =
+				await response.json();
 			const products: StoreProduct[] = response_data.products;
 			const totalPages: number = response_data.totalPages;
 			setTotalPages(totalPages);
@@ -89,7 +101,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
 
 			const response = await fetch(url);
-			const response_data:{products: StoreProduct[],totalPages: number} = await response.json();
+			const response_data: { products: StoreProduct[]; totalPages: number } =
+				await response.json();
 			const products: StoreProduct[] = response_data.products;
 			const totalPages: number = response_data.totalPages;
 			setTotalPages(totalPages);
@@ -105,25 +118,24 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 
 	const handlePageSizeChange = (page_size: number) => {
 		setCurrentPageSize(page_size);
-		
+
 		const params = new URLSearchParams(searchParams);
 		params.delete("page_size");
 		params.set("page_size", page_size.toString());
-		
+
 		router.push(`?${params.toString()}`);
 	};
 
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
-		
+
 		const params = new URLSearchParams(searchParams);
 		params.delete("page");
 		params.set("page", page.toString());
-		
+
 		router.push(`?${params.toString()}`);
 	};
 
-	
 	const changeDesign = () => {
 		setDesignGuideline("");
 		setDesignId("0");
@@ -132,16 +144,21 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 		params.delete("designId");
 		params.delete("page");
 		params.delete("page_size");
-		
+
 		router.push(`?${params.toString()}`);
 	};
-	
+
 	const get_products_list_by_design = async (
 		design_id: string,
 		store_code: string
 	) => {
-		const data: [StoreProduct[],number] = await get_products_list(store_code, design_id,currentPageSize,currentPage);
-		setTotalPages(data[1])
+		const data: [StoreProduct[], number] = await get_products_list(
+			store_code,
+			design_id,
+			currentPageSize,
+			currentPage
+		);
+		setTotalPages(data[1]);
 		setProductData(data[0] || []);
 		productData.map((item) => console.log(`Product: ${item.productName}`));
 	};
@@ -174,7 +191,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 			fetchFilteredProducts();
 		}
 	}, [currentPageSize, currentPage]); // Fetch products on page change
-	
+
 	useEffect(() => {
 		fetchDesignItems()
 			.then((data) => {
@@ -267,7 +284,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
-					<FilterComponent preSelectedCategories={categories}/>
+					<FilterComponent preSelectedCategories={categories} />
 
 					<button
 						onClick={fetchFilteredProducts}
@@ -297,15 +314,19 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 
 			{/* Product Section */}
 			<div className="mt-4 bg-gray-200 w-full h-[800px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
-				{designId != "0" && ( productData.length > 0 ?
-					productData.map((item) => (
-						<SingleRecord
-							key={item.productId}
-							item={item}
-							store_code={`${store?.store_code}`}
-							design_id={designId ? designId : ""}
-						/>
-					)): <div className="text-center text-gray-500">No products found</div>)}
+				{designId != "0" &&
+					(productData.length > 0 ? (
+						productData.map((item) => (
+							<SingleRecord
+								key={item.productId}
+								item={item}
+								store_code={`${store?.store_code}`}
+								design_id={designId ? designId : ""}
+							/>
+						))
+					) : (
+						<div className="text-center text-gray-500">No products found</div>
+					))}
 				{designId == "0" && (
 					<div className="flex items-center justify-center">
 						<AddNewDesign
@@ -318,12 +339,16 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({ store , designIdList}) 
 				)}
 			</div>
 			<div className="mt-4 flex justify-between">
-				<PageSize pageSize={currentPageSize} setPageSize={handlePageSizeChange}/>
+				<PageSize
+					pageSize={currentPageSize}
+					setPageSize={handlePageSizeChange}
+				/>
 				<Pagination
 					currentPage={currentPage}
 					totalPages={totalPages}
 					onPageChange={handlePageChange}
 				/>
+
 				<CreateStore
 					store={store}
 					design_item={designId}

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StoreCreationProps } from "@/types/store";
 import { useRouter } from "next/navigation";
 import { FormData } from "@/types/store";
-import { updateStoreCodeAutomatically } from "@/services/stores/generateStoreCode";
+import { updateStoreCodeAutomatically } from "@/services/stores";
 
 const NEXT_MONTH = new Date();
 NEXT_MONTH.setMonth(NEXT_MONTH.getMonth() + 1);

@@ -5,7 +5,7 @@ import { fetchFilteredProductsFromSupabase } from "@/services/products/";
 
 // GET: /api/search_products
 export async function GET(request: Request) {
-	const supabase = createClient();
+	const supabase = await createClient();
 	console.log("URL :", request.url);
 	try {
 		// Parse the query parameters

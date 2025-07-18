@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/ssr_client/server";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const formData = await request.formData(); // Extract FormData from the request

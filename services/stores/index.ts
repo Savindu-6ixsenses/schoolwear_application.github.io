@@ -1,1 +1,1 @@
-export { createStore,updateStore,updateStoreStatus } from './createStore';
+export { createStore,updateStore,updateStoreStatus,updateStoreCodeAutomatically } from './storeServices';

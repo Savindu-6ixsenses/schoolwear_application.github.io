@@ -1,2 +1,7 @@
-export { getStoreProducts } from './getStoreProducts';
-export { fetchProductsFromSupabase, fetchFilteredProductsFromSupabase } from './productFetcher';
+export {
+	fetchProductsFromSupabase,
+	fetchFilteredProductsFromSupabase,
+	getStoreProducts,
+	addToList,
+	updateItem,
+} from "./productServices";

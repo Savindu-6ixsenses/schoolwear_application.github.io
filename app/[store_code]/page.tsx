@@ -8,7 +8,7 @@ interface ProductPageProps {
 }
 
 const ProductPage = async ({ params }: ProductPageProps) => {
-	const supabase = createClient();
+	const supabase = await createClient();
 
 	// Fetch store data
 	const { data: store_data, error: storeError } = await supabase

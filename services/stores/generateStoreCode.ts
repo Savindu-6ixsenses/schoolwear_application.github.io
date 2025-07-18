@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/ssr_client/client";
-import { FormData } from "@/types/store";
 
-function generateBaseStoreCode(schoolName: string) {
+export function generateBaseStoreCode(schoolName: string) {
   return schoolName
     .split(" ")
     .filter(Boolean)
@@ -11,7 +10,7 @@ function generateBaseStoreCode(schoolName: string) {
 }
 
 
-async function fetchExistingStoreCodes(baseCode: string): Promise<string[]> {
+export async function fetchExistingStoreCodes(baseCode: string): Promise<string[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -29,7 +28,7 @@ async function fetchExistingStoreCodes(baseCode: string): Promise<string[]> {
 
 
 
-function getUniqueStoreCode(baseCode: string, existingCodes: string[]): string {
+export function getUniqueStoreCode(baseCode: string, existingCodes: string[]): string {
   if (!existingCodes.includes(baseCode)) return baseCode;
 
   let suffix = 1;
@@ -44,15 +43,6 @@ function getUniqueStoreCode(baseCode: string, existingCodes: string[]): string {
 }
 
 
-export async function updateStoreCodeAutomatically(schoolName: string, setFormData: React.Dispatch<React.SetStateAction<FormData>>) {
-  const baseCode = generateBaseStoreCode(schoolName);
-  const existingCodes = await fetchExistingStoreCodes(baseCode);
-  const uniqueCode = getUniqueStoreCode(baseCode, existingCodes);
 
-  setFormData(prev => ({
-    ...prev,
-    storeCode: uniqueCode,
-  }));
-}
 
 

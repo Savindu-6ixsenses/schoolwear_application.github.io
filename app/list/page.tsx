@@ -4,7 +4,7 @@ import ListItem from './ListItem';
 
 const ListPage = async () => {
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.from('stores').select('*');
 

@@ -1,5 +1,6 @@
-import { StoreCreationProps } from '@/types/store';
+import { StoreCreationProps, FormData } from '@/types/store';
 import { createClient } from '../../utils/supabase/ssr_client/client';
+import { generateBaseStoreCode, fetchExistingStoreCodes, getUniqueStoreCode } from './generateStoreCode';
 
 export async function createStore(storeData: StoreCreationProps) {
   const supabase = createClient();
@@ -15,6 +16,7 @@ export async function createStore(storeData: StoreCreationProps) {
   return {data, status, statusText};
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateStore(storeData: any) {
   const supabase = createClient();
   const { data, status, statusText, error } = await supabase
@@ -43,4 +45,15 @@ export async function updateStoreStatus(storeCode: string, status: string) {
   }
 
   return {data};
+}
+
+export async function updateStoreCodeAutomatically(schoolName: string, setFormData: React.Dispatch<React.SetStateAction<FormData>>) {
+  const baseCode = generateBaseStoreCode(schoolName);
+  const existingCodes = await fetchExistingStoreCodes(baseCode);
+  const uniqueCode = getUniqueStoreCode(baseCode, existingCodes);
+
+  setFormData(prev => ({
+    ...prev,
+    storeCode: uniqueCode,
+  }));
 }

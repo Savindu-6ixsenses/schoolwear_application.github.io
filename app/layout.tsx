@@ -29,7 +29,7 @@ export default async function RootLayout({
 }>) {
 	// This is the root layout for your Next.js application.
 
-	const supabase = createClient();
+	const supabase = await createClient();
 	const {
 		data: { user },
 		error,

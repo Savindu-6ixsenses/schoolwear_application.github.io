@@ -238,3 +238,12 @@ export interface SupabaseProduct {
 	naming_fields?: { [key: string]: string };
 }
 
+export interface ListPropsProducts {
+	store_code: string;
+	product_id: string;
+	design_code: string;
+	size_variations: string[];
+	method?: string;
+	naming_fields?: { [key: string]: string };
+}
+

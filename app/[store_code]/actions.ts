@@ -13,7 +13,7 @@ export async function get_products_list(
 	in_page_size: number = 20,
 	in_page: number = 1
 ): Promise<[StoreProduct[],number]> {
-	const supabase = createClient();
+	const supabase = await createClient();
 
 	const { data: user, error: auth_error } = await supabase.auth.getUser();
 	if (auth_error || !user?.user) {

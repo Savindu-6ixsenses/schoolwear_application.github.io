@@ -1,8 +1,12 @@
 import { StoreCreationProps } from "@/types/store";
 import React from "react";
 
-const CreateStore = (props: { store: StoreCreationProps | null ,design_item:string}) => {
+const CreateStore = (props: {
+	store: StoreCreationProps | null;
+	design_item: string;
+}) => {
 	const [loading, setLoading] = React.useState(false);
+	const storeStatus = props.store?.status || "Draft"; // Default to "Draft" if status is not available;
 
 	console.log("Props in CreateStore", props);
 
@@ -15,8 +19,8 @@ const CreateStore = (props: { store: StoreCreationProps | null ,design_item:stri
 
 		const storeCreationItems = {
 			store: props.store,
-			designId: props.design_item
-		}
+			designId: props.design_item,
+		};
 
 		setLoading(true);
 		console.log("Creating store on BigCommerce...");
@@ -44,16 +48,22 @@ const CreateStore = (props: { store: StoreCreationProps | null ,design_item:stri
 
 	return (
 		<div className="flex justify-end">
-			{!loading ? <div
-				className="flex justify-center items-center mt-3 mr-3 bg-blue-500 shadow-md hover:shadow-xl hover:bg-blue-700 text-white w-24 h-12 rounded-md cursor-pointer"
-				onClick={() => createStore()}
-			>
-				CreateStore
-			</div> : <div
-				className="flex justify-center items-center mt-3 mr-3 bg-blue-700 shadow-md hover:shadow-xl text-white w-24 h-12 rounded-md cursor-pointer"
-			>
-				Creating Store...
-			</div>}
+			{loading ? (
+				<div className="flex justify-center items-center mt-3 mr-3 bg-blue-700 shadow-md text-white w-32 h-12 rounded-md cursor-not-allowed opacity-70">
+					Creating Store...
+				</div>
+			) : storeStatus === "Approved" ? (
+				<div className="flex justify-center items-center mt-3 mr-3 bg-gray-400 shadow-md text-white w-32 h-12 rounded-md cursor-not-allowed opacity-60">
+					Store Approved
+				</div>
+			) : (
+				<div
+					className="flex justify-center items-center mt-3 mr-3 bg-blue-500 shadow-md hover:shadow-xl hover:bg-blue-700 text-white w-32 h-12 rounded-md cursor-pointer"
+					onClick={() => createStore()}
+				>
+					Create Store
+				</div>
+			)}
 		</div>
 	);
 };
