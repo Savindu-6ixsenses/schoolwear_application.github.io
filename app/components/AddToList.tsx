@@ -95,6 +95,12 @@ const AddToList = ({
 				naming_fields
 			);
 
+			if (product_category !== "Accessories" && !selected_sizes) {
+				throw new Error(
+					"Please select at least one size variation for the product."
+				);
+			}
+
 			const response = await fetch("/api/add_to_list", {
 				method: "POST",
 				headers: {

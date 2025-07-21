@@ -13,6 +13,9 @@ import Search from "./Search";
 import SingleRecord from "./SingleRecord";
 import Pagination from "./Pagination";
 import PageSize from "./PageSize";
+import { useDesignItems } from "../hooks/useDesignItems";
+import { useStoreCategories } from "../hooks/useStoreCategories";
+import { fetchProducts } from "@/lib/products/fetchProducts";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -31,7 +34,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const [productData, setProductData] = useState<StoreProduct[]>([]);
 	const [designGuideline, setDesignGuideline] = useState<string>("");
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const [designItems, setDesignItems] = useState<any[]>([]);
+	const {designItems, setDesignItems} = useDesignItems()
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const query = searchParams.get("q") || "";
@@ -46,88 +49,50 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		: 1;
 	const [currentPage, setCurrentPage] = useState<number>(page);
 	const [currentPageSize, setCurrentPageSize] = useState<number>(page_size);
-	const [added_category_list, setAddedCategoryList] = useState<string[]>([]);
+	const {added_category_list, setAddedCategoryList} = useStoreCategories(store?.store_code || "");
 	const categories = searchParams.getAll("category");
 
-	// Fetch design items from Supabase
-	const fetchDesignItems = async () => {
-		const response = await fetch("/api/initial_fetch/get_design_items", {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-		console.log("Response from get_design_items API:", response);
-		if (!response.ok) {
-			throw new Error("Failed to fetch design items");
-		}
-		const design_items = await response.json();
-		return design_items.designItems;
-	};
-
-	const fetchStoreCategories = async () => {
-		const response = await fetch("/api/initial_fetch/get_store_categories", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				store_code: store?.store_code,
-			}),
-		});
-		if (!response.ok) {
-			throw new Error("Failed to fetch store categories");
-		}
-		const categories = await response.json();
-		console.log("Fetched Categories from API: ", categories);
-		return categories;
-	};
-
-	// TODO: Same as the handleSearch function. Check with it.
-	const fetchFilteredProducts = async () => {
-		try {
-			// Construct base URL
-			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}&page=${currentPage}&page_size=${currentPageSize}`;
-
-			// Add query and categories if they exist
-			if (query) url += `&q=${query}`;
-			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
-
-			const response = await fetch(url);
-			const response_data: { products: StoreProduct[]; totalPages: number } =
-				await response.json();
-			const products: StoreProduct[] = response_data.products;
-			const totalPages: number = response_data.totalPages;
-			setTotalPages(totalPages);
-			setProductData(products || []);
-		} catch (error) {
-			console.error("Error fetching products:", error);
-		} finally {
-			// TODO: Add something
-		}
-	};
 
 	// Function to handle search queries
 	// TODO: Add Debounce Effect for this.
 	const handleSearch = (query: string) => {
 		console.log("Handle search invoked");
 		startTransition(async () => {
-			// Construct base URL
-			let url = `/api/search_products?store_code=${store?.store_code}&design_id=${designId}&page=${currentPage}&page_size=${currentPageSize}`;
-
-			// Add query and categories if they exist
-			if (query) url += `&q=${query}`;
-			if (categories.length > 0) url += `&categories=${categories.join(",")}`;
-
-			const response = await fetch(url);
-			const response_data: { products: StoreProduct[]; totalPages: number } =
-				await response.json();
-			const products: StoreProduct[] = response_data.products;
-			const totalPages: number = response_data.totalPages;
-			setTotalPages(totalPages);
-			setProductData(products || []);
+			fetchProducts({
+			store_code: store ? store.store_code : "",
+			designId: designId,
+			currentPage: currentPage,
+			currentPageSize: currentPageSize,
+			query: query,
+			categories: categories,
+		})
+			.then((data) => {
+				setProductData(data.products);
+				setTotalPages(data.totalPages);
+			})
+			.catch((error) => {
+				console.error("Error fetching products:", error);
+			});
 		});
 	};
+
+	const fetchFilteredProducts = async () => {
+		fetchProducts({
+			store_code: store ? store.store_code : "",
+			designId: designId,
+			currentPage: currentPage,
+			currentPageSize: currentPageSize,
+			query: query,
+			categories: categories,
+		})
+			.then((data) => {
+				setProductData(data.products);
+				setTotalPages(data.totalPages);
+			})
+			.catch((error) => {
+				console.error("Error fetching products:", error);
+			});
+	}
 
 	const handleGeneratePL = async () => {
 		const data = await generate_pl(store ? store.store_code : "");
@@ -210,23 +175,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 			fetchFilteredProducts();
 		}
 	}, [currentPageSize, currentPage]); // Fetch products on page change
-
-	useEffect(() => {
-		fetchDesignItems()
-			.then((data) => {
-				setDesignItems(data);
-			})
-			.catch((error) => {
-				console.error("Error fetching design items:", error);
-			});
-		fetchStoreCategories()
-			.then((data) => {
-				setAddedCategoryList(data.relatedCategories);
-			})
-			.catch((error) => {
-				console.error("Error fetching store categories:", error);
-			});
-	}, []); // Fetch design items on mount
 
 	useEffect(() => {
 		if (designId !== "0" && designItems.length > 0) {
