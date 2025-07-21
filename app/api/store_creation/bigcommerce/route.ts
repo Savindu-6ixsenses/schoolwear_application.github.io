@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { store, designId } = await req.json();
-    await handleCreateStore(store, designId);
+    const { store, designId, category_list } = await req.json();
+    await handleCreateStore(store, designId, category_list);
 
     return NextResponse.json({ message: "Store and products created successfully." }, { status: 201 });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

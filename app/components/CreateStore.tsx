@@ -1,12 +1,13 @@
 import { StoreCreationProps } from "@/types/store";
-import React from "react";
+import React, { useState } from "react";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
 	design_item: string;
+	category_list: string[];
 }) => {
-	const [loading, setLoading] = React.useState(false);
-	const storeStatus = props.store?.status || "Draft"; // Default to "Draft" if status is not available;
+	const [loading, setLoading] = useState<boolean>(false);
+	const [storeStatus, setStoreStatus] = useState<string>(props.store?.status || "Draft"); // Default to "Draft" if status is not available;
 
 	console.log("Props in CreateStore", props);
 
@@ -20,6 +21,7 @@ const CreateStore = (props: {
 		const storeCreationItems = {
 			store: props.store,
 			designId: props.design_item,
+			category_list: props.category_list,
 		};
 
 		setLoading(true);
@@ -40,6 +42,7 @@ const CreateStore = (props: {
 			}
 			console.log("Store created successfully on BigCommerce.");
 			setLoading(false);
+			setStoreStatus("Approved"); // Update the store status to "Approved" after successful creation
 		} catch (e) {
 			console.error("Error creating the store:", e);
 			throw e;

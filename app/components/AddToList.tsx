@@ -1,7 +1,7 @@
 "use client";
 
 import { GLOBAL_NAMING_METHODS } from "@/constants/products";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 type NamingFieldSet = {
@@ -17,6 +17,9 @@ const AddToList = ({
 	added_to_list,
 	method,
 	naming_fields,
+	product_category,
+	categoryList,
+	setCategoryList,
 }: {
 	store_code: string;
 	product_id: string;
@@ -25,6 +28,9 @@ const AddToList = ({
 	added_to_list: boolean;
 	method: string;
 	naming_fields: { [key: string]: string };
+	categoryList: string[];
+	setCategoryList: React.Dispatch<React.SetStateAction<string[]>>;
+	product_category: string;
 }) => {
 	const [addedToList, setAddedToList] = useState(added_to_list);
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
@@ -37,6 +43,12 @@ const AddToList = ({
 				.join(",") // Create a comma-separated string
 		);
 	}, [size_variations]);
+
+	useEffect(() => {
+		if (addedToList && !categoryList.includes(product_category)) {
+			setCategoryList((prev) => [...prev, product_category]); // ✅ reactive update
+		}
+	}, [addedToList]);
 
 	const validateNamingFields = (
 		methodKey: keyof typeof GLOBAL_NAMING_METHODS,
@@ -76,13 +88,12 @@ const AddToList = ({
 
 		try {
 			setIsLoading(true);
-			
+
 			// Validate naming fields before making the request
 			validateNamingFields(
 				method as keyof typeof GLOBAL_NAMING_METHODS,
 				naming_fields
 			);
-
 
 			const response = await fetch("/api/add_to_list", {
 				method: "POST",
@@ -129,7 +140,6 @@ const AddToList = ({
 			naming_fields
 		);
 
-		
 		// Logging the parameters to be sent for editing
 		try {
 			setIsLoading(true);
@@ -179,39 +189,43 @@ const AddToList = ({
 
 	return (
 		<div>
-			{!isLoading? <div>
-				{!addedToList ? (
-					<button
-						className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
-						onClick={handleClick}
-					>
-						Add to List
-					</button>
-				) : (
-					<button
-						className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
-						onClick={handleClickEdit}
-					>
-						Edit
-					</button>
-				)}
-			</div> : <div>
-				{!addedToList ? (
-					<button
-						className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
-						disabled
-					>
-						Adding to List
-					</button>
-				) : (
-					<button
-						className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
-						disabled
-					>
-						Editing
-					</button>
-				)}
-			</div>}
+			{!isLoading ? (
+				<div>
+					{!addedToList ? (
+						<button
+							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
+							onClick={handleClick}
+						>
+							Add to List
+						</button>
+					) : (
+						<button
+							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
+							onClick={handleClickEdit}
+						>
+							Edit
+						</button>
+					)}
+				</div>
+			) : (
+				<div>
+					{!addedToList ? (
+						<button
+							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
+							disabled
+						>
+							Adding to List
+						</button>
+					) : (
+						<button
+							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
+							disabled
+						>
+							Editing
+						</button>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

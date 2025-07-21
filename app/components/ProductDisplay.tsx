@@ -46,11 +46,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		: 1;
 	const [currentPage, setCurrentPage] = useState<number>(page);
 	const [currentPageSize, setCurrentPageSize] = useState<number>(page_size);
+	const [added_category_list, setAddedCategoryList] = useState<string[]>([]);
 	const categories = searchParams.getAll("category");
 
 	// Fetch design items from Supabase
 	const fetchDesignItems = async () => {
-		const response = await fetch("/api/get_design_items", {
+		const response = await fetch("/api/initial_fetch/get_design_items", {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
@@ -62,6 +63,24 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		}
 		const design_items = await response.json();
 		return design_items.designItems;
+	};
+
+	const fetchStoreCategories = async () => {
+		const response = await fetch("/api/initial_fetch/get_store_categories", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				store_code: store?.store_code,
+			}),
+		});
+		if (!response.ok) {
+			throw new Error("Failed to fetch store categories");
+		}
+		const categories = await response.json();
+		console.log("Fetched Categories from API: ", categories);
+		return categories;
 	};
 
 	// TODO: Same as the handleSearch function. Check with it.
@@ -200,6 +219,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 			.catch((error) => {
 				console.error("Error fetching design items:", error);
 			});
+		fetchStoreCategories()
+			.then((data) => {
+				setAddedCategoryList(data.relatedCategories);
+			})
+			.catch((error) => {
+				console.error("Error fetching store categories:", error);
+			});
 	}, []); // Fetch design items on mount
 
 	useEffect(() => {
@@ -322,6 +348,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								item={item}
 								store_code={`${store?.store_code}`}
 								design_id={designId ? designId : ""}
+								category_list={added_category_list}
+								setCategoryList={setAddedCategoryList}
 							/>
 						))
 					) : (
@@ -352,6 +380,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 				<CreateStore
 					store={store}
 					design_item={designId}
+					category_list={added_category_list}
 				/>
 			</div>
 		</div>

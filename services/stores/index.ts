@@ -1,1 +1,7 @@
-export { createStore,updateStore,updateStoreStatus,updateStoreCodeAutomatically } from './storeServices';
+export {
+	createStore,
+	updateStore,
+	updateStoreStatus,
+	updateStoreCodeAutomatically,
+	fetchStoreRelatedSubCategories,
+} from "./storeServices";

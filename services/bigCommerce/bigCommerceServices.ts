@@ -41,6 +41,7 @@ export const createRelatedCategories = async (
     const response = await addToBigCommerce(url, "POST", {
       name: subCat,
       parent_id: parentId,
+      is_visible: false,
     });
     result[subCat] = response.data.id;
   }
@@ -61,9 +62,18 @@ export const createBigCommerceProducts = async (products: ProductCreationProps[]
       try {
         await addToBigCommerce(productUrl, "POST", product);
         success = true;
-      } catch {
+      } catch (error) {
         attempt++;
-        if (attempt >= 3) throw new Error(`Failed after 3 attempts: ${product.name}`);
+        console.error(
+          `Attempt ${attempt} failed for product: ${product.name}`,
+          error instanceof Error ? error.message : error
+        );
+
+        if (attempt >= 3) {
+          console.error("Final failed payload:", product); // Log entire payload for debugging
+          throw new Error(`Failed after 3 attempts: ${product.name}`);
+        }
+
         await new Promise((res) => setTimeout(res, 2500));
       }
     }

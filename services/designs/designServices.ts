@@ -32,8 +32,6 @@ export async function getAllDesignItems() {
 
 	const { data, error } = await supabase.from("designs").select("*");
 
-	console.log("Design Data:", data);
-
 	if (error) {
 		throw new Error(`Failed to fetch design items: ${error.message}`);
 	}

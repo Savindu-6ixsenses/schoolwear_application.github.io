@@ -9,12 +9,20 @@ interface SingleRecordProps {
 	item: StoreProduct;
 	store_code: string;
 	design_id: string;
+	category_list: string[];
+	setCategoryList: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 // Define the methods and what fields they need
 const namingMethods = GLOBAL_NAMING_METHODS;
 
-const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
+const SingleRecord = ({
+	item,
+	store_code,
+	design_id,
+	category_list,
+	setCategoryList,
+}: SingleRecordProps) => {
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
 		[key: string]: boolean;
@@ -22,7 +30,9 @@ const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
 
 	type MethodKey = keyof typeof namingMethods;
 
-	const [selectedMethod, setSelectedMethod] = useState<MethodKey>(item.naming_method as MethodKey || "1");
+	const [selectedMethod, setSelectedMethod] = useState<MethodKey>(
+		(item.naming_method as MethodKey) || "1"
+	);
 	const [methodFields, setMethodFields] = useState<{ [key: string]: string }>(
 		item.naming_fields || {}
 	);
@@ -82,7 +92,6 @@ const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
 					<select
 						className="mt-1 p-2 border rounded w-full text-black"
 						value={selectedMethod}
-
 						onChange={(e) => setSelectedMethod(e.target.value as MethodKey)}
 					>
 						{Object.keys(namingMethods).map((key) => (
@@ -143,8 +152,11 @@ const SingleRecord = ({ item, store_code, design_id }: SingleRecordProps) => {
 						design_id={design_id}
 						size_variations={selectedSizes}
 						added_to_list={item.isAdded || false}
-            method = {selectedMethod}
-            naming_fields={methodFields}
+						method={selectedMethod}
+						naming_fields={methodFields}
+						product_category={item.category || ""}
+						categoryList={category_list}
+						setCategoryList={setCategoryList}
 					/>
 				</div>
 			</div>

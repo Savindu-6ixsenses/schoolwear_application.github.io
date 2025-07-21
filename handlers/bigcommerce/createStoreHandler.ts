@@ -1,4 +1,3 @@
-import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 import {
 	createBigCommerceStore,
 	createRelatedCategories,
@@ -12,36 +11,43 @@ import { getProductConfigs } from "@/utils/bigcommerce/productMappings"; // Crea
 export const handleCreateStore = async (
 	store: StoreCreationProps,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	designId: string
+	designId: string,
+	category_list: string[]
 ) => {
-	const category_id = await createBigCommerceStore(store);
-	const storeProductsList = await getStoreProducts(store.store_code);
-
-	const createdSageCodes: string[] = [];
-
-	if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
-		throw new Error("No products found for this store.");
-	}
-
-	const relatedCategories = await createRelatedCategories(
-		category_id,
-		GLOBAL_SUBCATEGORIES
-	);
-
-	const batches = Object.values(storeProductsList).map((products, i) =>
-		getProductConfigs(
-			products,
+	try {
+		const category_id = await createBigCommerceStore(store);
+		const storeProductsList = await getStoreProducts(store.store_code);
+	
+		const createdSageCodes: string[] = [];
+	
+		if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
+			throw new Error("No products found for this store.");
+		}
+	
+		const relatedCategories = await createRelatedCategories(
 			category_id,
-			store.store_code,
-			i + 1,
-			relatedCategories,
-			createdSageCodes
-		)
-	);
-
-	for (const batch of batches) {
-		await createBigCommerceProducts(batch);
+			category_list
+		);
+	
+		const batches = Object.values(storeProductsList).map((products, i) =>
+			getProductConfigs(
+				products,
+				category_id,
+				store.store_code,
+				i + 1,
+				relatedCategories,
+				createdSageCodes
+			)
+		);
+	
+		for (const batch of batches) {
+			await createBigCommerceProducts(batch);
+		}
+	
+		await updateStoreStatus(store.store_code, "Approved");
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	} catch (error: any) {
+		console.error("Error in handleCreateStore:", error);
+		throw new Error(`Failed to create store: ${error.message}`);
 	}
-
-	await updateStoreStatus(store.store_code, "Approved");
 };
