@@ -3,6 +3,8 @@ import { createClient } from "@/utils/supabase/ssr_client/server";
 import { StoreProduct } from "@/types/products";
 import { fetchFilteredProductsFromSupabase } from "@/services/products/";
 
+
+
 // GET: /api/search_products
 export async function GET(request: Request) {
 	const supabase = await createClient();

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAllDesignItems } from "@/services/designs";
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const  data = await getAllDesignItems()
