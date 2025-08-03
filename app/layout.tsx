@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import './styles/globals.css';
+import "./styles/globals.css";
 import Header from "./components/Header";
 import { Toaster } from "react-hot-toast";
 import { createClient } from "@/utils/supabase/ssr_client/server";
+import { QueryProvider } from "./providers/QueryProvider";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -47,9 +49,14 @@ export default async function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<Toaster />
-				<Header user = {user}/>
-				<div className="min-h-screen bg-[#f0f8ff] pl-[37px]">{children}</div>
+				<QueryProvider>
+					<Toaster />
+					<Header user={user} />
+					<div className="min-h-screen bg-[#f0f8ff] pl-[37px]">{children}</div>
+					{process.env.NODE_ENV === "development" && (
+						<ReactQueryDevtools initialIsOpen={false} />
+					)}
+				</QueryProvider>
 			</body>
 		</html>
 	);

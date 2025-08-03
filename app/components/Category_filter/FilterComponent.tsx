@@ -1,9 +1,14 @@
-import { useRouter, useSearchParams } from "next/navigation";
+import { ProductsQuery } from "@/types/products";
 import { useState } from "react";
 import { MultiSelect, Option } from "react-multi-select-component";
 
-const FilterComponent = ({preSelectedCategories}:{preSelectedCategories:string[]}) => {
-    const router = useRouter() 
+const FilterComponent = ({
+	query,
+	setQuery,
+}: {
+	query: ProductsQuery;
+	setQuery: (next: Partial<ProductsQuery>) => void;
+}) => {
 	const categories = [
 		{ label: "Adult", value: "Adult" },
 		{ label: "Men", value: "Men" },
@@ -13,32 +18,24 @@ const FilterComponent = ({preSelectedCategories}:{preSelectedCategories:string[]
 	];
 
 	// ✅ Convert preSelectedCategories to Option[] format
-	const initialSelectedCategories: Option[] = preSelectedCategories
-    .map((cat) => categories.find((option) => option.value === cat))
-    .filter((option): option is Option => option !== undefined); // Filter out undefined values
+	const initialSelectedCategories: Option[] = query.categories
+		.map((cat) => categories.find((option) => option.value === cat))
+		.filter((option): option is Option => option !== undefined); // Filter out undefined values
 
+	const [selectedCategories, setSelectedCategories] = useState<Option[]>(
+		initialSelectedCategories
+	);
 
-	const [selectedCategories, setSelectedCategories] = useState<Option[]>(initialSelectedCategories);
-	
-	const searchParams = useSearchParams();
+	const handleCategorySelect = (selectedCategories: Option[]) => {
+		setSelectedCategories(selectedCategories);
 
-    const handleCategorySelect = (selectedCategories: Option[]) => {
-        setSelectedCategories(selectedCategories);
-    
-        // Create a new URLSearchParams object from the current searchParams
-        const params = new URLSearchParams(searchParams.toString());
-    
-        // Remove existing "category" params
-        params.delete("category");
-    
-        // Append the new selected categories
-        selectedCategories.forEach((category) => {
-          params.append("category", category.value);
-        });
-    
-        // Update the URL with the new query parameters
-        router.push(`?${params.toString()}`);
-      };
+		const selectedValues = selectedCategories.map((cat) => cat.value);
+
+		setQuery({
+			categories: selectedValues,
+			page: 1, // Reset to first page on category change
+		})
+	};
 
 	return (
 		<div className="flex flex-row gap-4">
@@ -52,36 +49,6 @@ const FilterComponent = ({preSelectedCategories}:{preSelectedCategories:string[]
 					labelledBy="Select"
 				/>
 			</div>
-			{/* <div>
-				<h3>Category</h3>
-				<select className="mt-1 w-36 h-10">
-					<option value="All">All</option>
-					{categories &&
-						categories.map((category) => (
-							<option
-								key={category}
-								value={category}
-							>
-								{category}
-							</option>
-						))}
-				</select>
-			</div>
-			<div>
-				<h3>Category</h3>
-				<select className="mt-1 w-36 h-10">
-					<option value="All">All</option>
-					{categories &&
-						categories.map((category) => (
-							<option
-								key={category}
-								value={category}
-							>
-								{category}
-							</option>
-						))}
-				</select>
-			</div> */}
 		</div>
 	);
 };

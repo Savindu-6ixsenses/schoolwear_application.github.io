@@ -20,6 +20,7 @@ const SearchComponent = ({ onSearch }: { onSearch: (query: string) => void }) =>
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  
 
   const currentQuery = searchParams?.get("q") || "";
 

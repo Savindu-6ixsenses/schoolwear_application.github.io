@@ -20,6 +20,7 @@ const AddToList = ({
 	product_category,
 	categoryList,
 	setCategoryList,
+	setAddedToList
 }: {
 	store_code: string;
 	product_id: string;
@@ -29,10 +30,10 @@ const AddToList = ({
 	method: string;
 	naming_fields: { [key: string]: string };
 	categoryList: string[];
-	setCategoryList: React.Dispatch<React.SetStateAction<string[]>>;
 	product_category: string;
+	setCategoryList: (categories: string[]) => void;
+	setAddedToList: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-	const [addedToList, setAddedToList] = useState(added_to_list);
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -45,10 +46,10 @@ const AddToList = ({
 	}, [size_variations]);
 
 	useEffect(() => {
-		if (addedToList && !categoryList.includes(product_category)) {
-			setCategoryList((prev) => [...prev, product_category]); // ✅ reactive update
+		if (added_to_list && !categoryList.includes(product_category)) {
+			setCategoryList([...categoryList,product_category]); // Update the state to trigger re-render
 		}
-	}, [addedToList]);
+	}, [added_to_list]);
 
 	const validateNamingFields = (
 		methodKey: keyof typeof GLOBAL_NAMING_METHODS,
@@ -101,7 +102,7 @@ const AddToList = ({
 				);
 			}
 
-			const response = await fetch("/api/add_to_list", {
+			const response = await fetch("/api/products/add_to_list", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -197,7 +198,7 @@ const AddToList = ({
 		<div>
 			{!isLoading ? (
 				<div>
-					{!addedToList ? (
+					{!added_to_list ? (
 						<button
 							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
 							onClick={handleClick}
@@ -215,7 +216,7 @@ const AddToList = ({
 				</div>
 			) : (
 				<div>
-					{!addedToList ? (
+					{!added_to_list ? (
 						<button
 							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
 							disabled

@@ -12,7 +12,7 @@ export async function get_products_list(
 	in_design_id: string,
 	in_page_size: number = 20,
 	in_page: number = 1
-): Promise<[StoreProduct[],number]> {
+): Promise<[StoreProduct[], number]> {
 	const supabase = await createClient();
 
 	const { data: user, error: auth_error } = await supabase.auth.getUser();
@@ -20,7 +20,6 @@ export async function get_products_list(
 		console.error("AN error is happening", auth_error);
 		redirect("/login");
 	}
-
 
 	const data: [StoreProduct[], number] =
 		await fetchFilteredProductsFromSupabase(
@@ -36,6 +35,13 @@ export async function get_products_list(
 	const normalizedProducts: StoreProduct[] = data[0];
 	const totalFilteredProducts: number = data[1];
 
+	if (normalizedProducts == undefined || normalizedProducts.length === 0) {
+		console.log("No products found for the given store code and design ID.");
+		throw new Error(
+			"No products found for the given store code and design ID."
+		);
+	}
+
 	console.log(
 		"Products in the list are",
 		// normalizedProducts,
@@ -46,8 +52,7 @@ export async function get_products_list(
 		totalFilteredProducts / (in_page_size ? in_page_size : 10)
 	);
 
-
-	return [normalizedProducts,totalPages];
+	return [normalizedProducts, totalPages];
 }
 
 export async function generate_pl(store_code: string) {

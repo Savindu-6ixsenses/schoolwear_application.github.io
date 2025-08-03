@@ -247,3 +247,20 @@ export interface ListPropsProducts {
 	naming_fields?: { [key: string]: string };
 }
 
+export interface StoreProductReport {
+  productId: number;
+  productName: string;
+  sizeVariations: string;
+  category: string;
+  designGuideline: string;
+};
+
+export type ProductsQuery = {
+  store_code: string;
+  designId: string | null;
+  page: number;
+  pageSize: number;
+  q: string;
+  categories: string[];
+};
+

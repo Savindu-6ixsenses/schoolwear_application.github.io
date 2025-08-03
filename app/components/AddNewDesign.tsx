@@ -9,7 +9,7 @@ import { FaSpinner } from "react-icons/fa";
 interface AddNewDesignProps {
 	designItems: DesignItemProps[];
 	designList?: string[]; // Contains the list of design IDs added to the store
-	setDesignItems: React.Dispatch<React.SetStateAction<DesignItemProps[]>>;
+	setDesignItems: (designItems: DesignItemProps[]) => void;
 	setCurrentDesign: ({
 		image,
 		designId,
@@ -135,7 +135,9 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			};
 
 			// Update the list of design items
-			setDesignItems((prevItems) => [...prevItems, newDesignItem]);
+
+			const updatedDesignItems = [...designItems, newDesignItem];
+			setDesignItems(updatedDesignItems);
 
 			setCurrentDesign({
 				image: newDesignItem.Image_URL,
@@ -153,9 +155,9 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	};
 
 	// Handle selecting an existing design
-	const handleSelectExistingDesign = (designId: string) => {
+	const handleSelectExistingDesign = (design_ID: string) => {
 		const selectedDesign = designItems.find(
-			(item) => item.Design_Id === designId
+			(item) => item.Design_Id === design_ID
 		);
 		if (selectedDesign) {
 			setSelectedDesignId(selectedDesign.Design_Id);

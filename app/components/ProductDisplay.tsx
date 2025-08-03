@@ -1,11 +1,10 @@
 "use client";
 
-import { StoreProduct } from "@/types/products";
 import { StoreCreationProps } from "@/types/store";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { startTransition, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
-import { generate_pl, get_products_list } from "../[store_code]/actions";
+import { generate_pl } from "../[store_code]/actions";
 import AddNewDesign from "./AddNewDesign";
 import FilterComponent from "./Category_filter/FilterComponent";
 import CreateStore from "./CreateStore";
@@ -13,9 +12,9 @@ import Search from "./Search";
 import SingleRecord from "./SingleRecord";
 import Pagination from "./Pagination";
 import PageSize from "./PageSize";
-import { useDesignItems } from "../hooks/useDesignItems";
-import { useStoreCategories } from "../hooks/useStoreCategories";
-import { fetchProducts } from "@/lib/products/fetchProducts";
+import { useStoreState } from "../store/useStoreState";
+import { useProductsQueryState } from "../hooks/useProductsQueryState";
+import { useProducts } from "../hooks/useProducts";
 
 interface ProductDisplayProps {
 	store: StoreCreationProps | null;
@@ -25,131 +24,72 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	store,
 	designIdList,
 }) => {
+	const searchParams = useSearchParams();
+	const { query, setQuery } = useProductsQueryState({
+		store_code: store?.store_code,
+	});
+	const { data, isLoading, isError } = useProducts(query);
+
+	const productData = data?.products ?? [];
+	const totalPages = data?.totalPages ?? 0;
+
 	// TODO: Temporary total pages
-	const [totalPages, setTotalPages] = useState<number>(10);
 	const [imageUrl, setImageUrl] = useState<string>(
 		"https://via.placeholder.com/150"
 	);
 
-	const [productData, setProductData] = useState<StoreProduct[]>([]);
-	const [designGuideline, setDesignGuideline] = useState<string>("");
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const {designItems, setDesignItems} = useDesignItems()
-	const searchParams = useSearchParams();
+	const [designGuideline, setDesignGuideline] = useState<string>(""); //Contains the design guideline for the selected design
+	const [designId, setDesignId] = useState<string>("0");
 	const router = useRouter();
-	const query = searchParams.get("q") || "";
-	const [designId, setDesignId] = useState<string>(
-		searchParams.get("designId") || "0"
+	const [currentPage, setCurrentPage] = useState<number>(query.page);
+	const [currentPageSize, setCurrentPageSize] = useState<number>(
+		query.pageSize
 	);
-	const page_size = searchParams.get("page_size")
-		? parseInt(searchParams.get("page_size") as string, 10)
-		: 20;
-	const page = searchParams.get("page")
-		? parseInt(searchParams.get("page") as string, 10)
-		: 1;
-	const [currentPage, setCurrentPage] = useState<number>(page);
-	const [currentPageSize, setCurrentPageSize] = useState<number>(page_size);
-	const {added_category_list, setAddedCategoryList} = useStoreCategories(store?.store_code || "");
-	const categories = searchParams.getAll("category");
+	// setting Query hook
 
+	const {
+		store_code,
+		designItems,
+		category_list,
+		setStoreCode,
+		setDesignItems,
+		setCategoryList,
+		loadInitialCategoryList,
+	} = useStoreState();
 
-	// Function to handle search queries
-	// TODO: Add Debounce Effect for this.
-	const handleSearch = (query: string) => {
-		console.log("Handle search invoked");
-		startTransition(async () => {
-			fetchProducts({
-			store_code: store ? store.store_code : "",
-			designId: designId,
-			currentPage: currentPage,
-			currentPageSize: currentPageSize,
-			query: query,
-			categories: categories,
-		})
-			.then((data) => {
-				setProductData(data.products);
-				setTotalPages(data.totalPages);
-			})
-			.catch((error) => {
-				console.error("Error fetching products:", error);
-			});
-		});
+	const handleSearch = (q: string) => {
+		setQuery({ q, page: 1 });
 	};
 
-	const fetchFilteredProducts = async () => {
-		fetchProducts({
-			store_code: store ? store.store_code : "",
-			designId: designId,
-			currentPage: currentPage,
-			currentPageSize: currentPageSize,
-			query: query,
-			categories: categories,
-		})
-			.then((data) => {
-				setProductData(data.products);
-				setTotalPages(data.totalPages);
-			})
-			.catch((error) => {
-				console.error("Error fetching products:", error);
-			});
-	}
-
 	const handleGeneratePL = async () => {
-		const data = await generate_pl(store ? store.store_code : "");
+		const data = await generate_pl(store ? store_code : "");
 		console.log(data);
 		router.push("/list");
 	};
 
 	const handlePageSizeChange = (page_size: number) => {
 		setCurrentPageSize(page_size);
-
-		const params = new URLSearchParams(searchParams);
-		params.delete("page_size");
-		params.set("page_size", page_size.toString());
-
-		router.push(`?${params.toString()}`);
+		setQuery({ pageSize: page_size });
 	};
 
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
-
-		const params = new URLSearchParams(searchParams);
-		params.delete("page");
-		params.set("page", page.toString());
-
-		router.push(`?${params.toString()}`);
+		setQuery({ page });
 	};
 
 	const changeDesign = () => {
 		setDesignGuideline("");
 		setDesignId("0");
-		// Update the URL params
-		const params = new URLSearchParams(searchParams);
-		params.delete("designId");
-		params.delete("page");
-		params.delete("page_size");
-
-		router.push(`?${params.toString()}`);
+		setQuery({ designId: null, page: 1, pageSize: 20 });
 	};
 
-	const get_products_list_by_design = async (
-		design_id: string,
-		store_code: string
-	) => {
-		const data: [StoreProduct[], number] = await get_products_list(
-			store_code,
-			design_id,
-			currentPageSize,
-			currentPage
-		);
-		setTotalPages(data[1]);
-		setProductData(data[0] || []);
-		productData.map((item) => console.log(`Product: ${item.productName}`));
+	const get_products_list_by_design = (design_id: string) => {
+		setQuery({ designId: design_id, page: 1 });
 	};
 
 	const setCurrentDesign = ({
 		image,
-		designId,
+		designId: design_Id,
 		Design_Guideline,
 	}: {
 		image: string;
@@ -157,24 +97,45 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		Design_Guideline: string;
 	}) => {
 		setImageUrl(`${image}`);
-		setDesignId(`${designId}`);
+		setDesignId(`${design_Id}`);
 		setDesignGuideline(`${Design_Guideline}`);
-		get_products_list_by_design(designId, store ? store.store_code : "");
+		console.log(
+			"Current Design ID:",
+			design_Id,
+			" \nDesign Guideline:",
+			Design_Guideline
+		);
+		get_products_list_by_design(design_Id);
 
-		// Update the URL params
-		const params = new URLSearchParams(searchParams);
-		params.set("designId", designId);
-		params.set("page", currentPage.toString());
-		params.set("page_size", currentPageSize.toString());
-		router.push(`?${params.toString()}`);
+		setQuery({
+			designId: design_Id,
+			page: currentPage,
+			pageSize: currentPageSize,
+		});
 	};
 
-	// Make sure state is updated before making the API call
+	const handleReportGenerationClick = () => {
+		router.push(`${store_code}/report`);
+	};
+
+	// Reset store state when the component mounts
 	useEffect(() => {
-		if (currentPageSize && currentPage) {
-			fetchFilteredProducts();
+		async function syncStoreState() {
+			if (store?.store_code) {
+				setStoreCode(store.store_code); // this will internally reset if needed
+				await loadInitialCategoryList(store.store_code);
+
+				const designFromQuery = searchParams.get("designId") || "0";
+				console.log("Design from query:", designFromQuery);
+				setDesignId(designFromQuery);
+
+				console.log("[Sync] Zustand state updated:");
+				console.log("→ store_code:", store.store_code);
+				console.log("→ designId:", designFromQuery);
+			}
 		}
-	}, [currentPageSize, currentPage]); // Fetch products on page change
+		syncStoreState();
+	}, [store?.store_code]);
 
 	useEffect(() => {
 		if (designId !== "0" && designItems.length > 0) {
@@ -186,15 +147,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 			if (selectedDesign) {
 				setDesignGuideline(selectedDesign.Design_Guideline);
 			}
-
-			if (query !== "" && categories.length > 0) {
-				console.log("Query and Categories", query, categories);
-				fetchFilteredProducts();
-			} else {
-				get_products_list_by_design(designId, store ? store.store_code : "");
-			}
 		}
-	}, [designItems]); // Run after designItems are updated
+	}, [designId, designItems]); // Run after designItems are updated
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
@@ -258,10 +212,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
-					<FilterComponent preSelectedCategories={categories} />
+					<FilterComponent
+						query={query}
+						setQuery={setQuery}
+					/>
 
 					<button
-						onClick={fetchFilteredProducts}
+						onClick={() => setQuery({})}
 						className="py-2 px-4 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center"
 					>
 						<FaFilter className="mr-2" />
@@ -288,16 +245,23 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
 			{/* Product Section */}
 			<div className="mt-4 bg-gray-200 w-full h-[800px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
-				{designId != "0" &&
-					(productData.length > 0 ? (
+				{designId !== "0" &&
+					designId !== "" &&
+					(isLoading ? (
+						<div className="text-center text-gray-500">Loading products...</div>
+					) : isError ? (
+						<div className="text-center text-red-500">
+							Error loading products
+						</div>
+					) : productData.length > 0 ? (
 						productData.map((item) => (
 							<SingleRecord
 								key={item.productId}
 								item={item}
 								store_code={`${store?.store_code}`}
 								design_id={designId ? designId : ""}
-								category_list={added_category_list}
-								setCategoryList={setAddedCategoryList}
+								category_list={category_list}
+								setCategoryList={setCategoryList}
 							/>
 						))
 					) : (
@@ -328,8 +292,15 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 				<CreateStore
 					store={store}
 					design_item={designId}
-					category_list={added_category_list}
+					category_list={category_list}
 				/>
+
+				<button
+					className="mt-4 py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+					onClick={handleReportGenerationClick}
+				>
+					Go to Report
+				</button>
 			</div>
 		</div>
 	);

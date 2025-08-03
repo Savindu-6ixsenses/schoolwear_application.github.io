@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SupabaseClient } from "@supabase/supabase-js";
-import { ListPropsProducts, StoreProduct, SupabaseProduct } from "@/types/products";
+import {
+	ListPropsProducts,
+	StoreProduct,
+	SupabaseProduct,
+} from "@/types/products";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 
 // utils/productFetcher.ts
@@ -88,8 +92,8 @@ export async function fetchFilteredProductsFromSupabase(
 		{
 			in_store_code,
 			in_design_id,
-			search_query: in_search_query?.toUpperCase(), 
-        	category_list: in_category,  
+			search_query: in_search_query?.toUpperCase(),
+			category_list: in_category,
 			in_page_size,
 			in_page,
 		}
@@ -128,16 +132,13 @@ export async function fetchFilteredProductsFromSupabase(
 }
 
 export const getStoreProducts = async (
-	storeCode: string,
+	storeCode: string
 ): Promise<Record<string, StoreProduct[]>> => {
 	const supabase = await createClient();
 
-	const normalizedProductsList: Record<string, StoreProduct[]> = {};	
+	const normalizedProductsList: Record<string, StoreProduct[]> = {};
 
-	console.log(
-		"Fetching products for store:",
-		storeCode + " and design:",
-	);
+	console.log("Fetching products for store:", storeCode + " and design:");
 
 	try {
 		// Get the Design IDs from the Store
@@ -159,10 +160,13 @@ export const getStoreProducts = async (
 			console.log("Fetching products for design:", designCode.Design_ID);
 
 			// Fetch products for the current design code
-			const { data: products } = await supabase.rpc("get_products_to_create_v2", {
-				in_store_code: storeCode,
-				in_design_code: designCode.Design_ID,
-			});
+			const { data: products } = await supabase.rpc(
+				"get_products_to_create_v2",
+				{
+					in_store_code: storeCode,
+					in_design_code: designCode.Design_ID,
+				}
+			);
 
 			// Normalize the data into the StoreProduct format
 			const normalizedProducts: StoreProduct[] = products.map(
@@ -255,7 +259,7 @@ export const updateItem = async ({
 				Store_Code: store_code,
 				Product_ID: product_id,
 				Design_ID: design_code,
-				size_variations: size_variations, 
+				size_variations: size_variations,
 				naming_method: method || 1, // Default to 1 if not provided
 				naming_fields: naming_fields || {}, // Default to empty object if not provided
 			})
@@ -272,3 +276,49 @@ export const updateItem = async ({
 	}
 };
 
+export const removeFromList = async ({
+	store_code,
+	product_id,
+	design_code,
+}: {
+	store_code: string;
+	product_id: string;
+	design_code: string;
+}) => {
+	try {
+		console.log(
+			"Removing from the list: ",
+			store_code,
+			product_id,
+			design_code
+		);
+		const supabase = await createClient();
+		const { data, error } = await supabase
+			.from("stores_products_designs_2")
+			.delete()
+			.eq("Store_Code", `${store_code}`)
+			.eq("Product_ID", `${product_id}`)
+			.eq("Design_ID", `${design_code}`)
+			.select();
+		console.log(data, error);
+		return data;
+	} catch (e) {
+		console.error("Unexpected error:", e);
+		throw e;
+	}
+};
+
+export const initialize_added_products = async (store_code: string) => {
+	const supabase = await createClient();
+
+	const { data, error } = await supabase.rpc("get_added_products_json", {
+		store_code_input: store_code,
+	});
+
+	if (error) {
+		console.error("[Supabase RPC Error]", error.message);
+		throw new Error("Failed to initialize added products.");
+	}
+
+	return data;
+}

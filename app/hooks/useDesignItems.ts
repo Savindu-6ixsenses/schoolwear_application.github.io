@@ -27,6 +27,7 @@ export const useDesignItems = () :{
 
 	useEffect(() => {
 		fetchDesignItems().then((data) => {
+			console.log("Fetched design items:", data);
             setDesignItems(data)
         }).catch((error) => {
             console.error("Error fetching design items:", error);

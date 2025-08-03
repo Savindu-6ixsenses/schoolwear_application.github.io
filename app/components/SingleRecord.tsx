@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import AddToList from "./AddToList";
 import { StoreProduct } from "@/types/products";
 import { GLOBAL_NAMING_METHODS, GLOBAL_SIZES } from "@/constants/products";
+import RemoveFromList from "./RemoveFromList";
 
 interface SingleRecordProps {
 	item: StoreProduct;
 	store_code: string;
 	design_id: string;
 	category_list: string[];
-	setCategoryList: React.Dispatch<React.SetStateAction<string[]>>;
+	setCategoryList: (categories:string[]) => void;
 }
 
 // Define the methods and what fields they need
@@ -37,6 +38,8 @@ const SingleRecord = ({
 		item.naming_fields || {}
 	);
 
+	const [added_to_list, setAddedToList] = useState(item.isAdded || false);
+
 	// Initialize size state from size variations
 	useEffect(() => {
 		const sizesArray = item.sizeVariations?.split(",") || [];
@@ -47,6 +50,9 @@ const SingleRecord = ({
 		});
 
 		setSelectedSizes(initialSizes);
+		setMethodFields(item.naming_fields || {});
+		setSelectedMethod(item.naming_method as MethodKey || "1");
+		setAddedToList(item.isAdded || false);
 	}, [item]);
 
 	const handleFieldChange = (field: string, value: string) => {
@@ -145,19 +151,24 @@ const SingleRecord = ({
 				</div>
 
 				{/* Action Button */}
-				<div className="flex justify-end">
+				<div className="flex justify-end gap-2 items-center">
+					
 					<AddToList
 						store_code={store_code}
 						product_id={item.productId}
 						design_id={design_id}
 						size_variations={selectedSizes}
-						added_to_list={item.isAdded || false}
+						added_to_list={added_to_list || false}
 						method={selectedMethod}
 						naming_fields={methodFields}
 						product_category={item.category || ""}
 						categoryList={category_list}
 						setCategoryList={setCategoryList}
+						setAddedToList={setAddedToList}
 					/>
+					<div>
+						<RemoveFromList store_code={store_code} design_id={design_id} product_id={item.productId} added_to_list={added_to_list || false} setAddedToList={setAddedToList} setMethodFields={setMethodFields} setSelectedMethod={setSelectedMethod} setSelectedSizes={setSelectedSizes} />
+					</div>
 				</div>
 			</div>
 		</div>

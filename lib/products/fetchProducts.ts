@@ -5,7 +5,7 @@ export const fetchProducts = async ({store_code,designId, currentPage, currentPa
     designId: string;
     currentPage: number;
     currentPageSize: number;
-    query?: string;
+    query?: string | null;
     categories?: string[];
 }) : Promise<{products : StoreProduct[]; totalPages: number}> => {
 	try {
