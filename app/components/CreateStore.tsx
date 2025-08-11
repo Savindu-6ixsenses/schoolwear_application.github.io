@@ -3,8 +3,9 @@ import React, { useState } from "react";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
-	design_item: string;
 	category_list: string[];
+	setLogUrl: React.Dispatch<React.SetStateAction<string | null>>;
+	setReportUrl: React.Dispatch<React.SetStateAction<string | null>>;
 }) => {
 	const [loading, setLoading] = useState<boolean>(false);
 	const [storeStatus, setStoreStatus] = useState<string>(props.store?.status || "Draft"); // Default to "Draft" if status is not available;
@@ -20,14 +21,13 @@ const CreateStore = (props: {
 
 		const storeCreationItems = {
 			store: props.store,
-			designId: props.design_item,
 			category_list: props.category_list,
 		};
 
 		setLoading(true);
 		console.log("Creating store on BigCommerce...");
 		try {
-			const response = await fetch("api/store_creation/bigcommerce/", {
+			const response = await fetch("/api/store_creation/bigcommerce/", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -37,14 +37,17 @@ const CreateStore = (props: {
 
 			if (!response.ok) {
 				throw new Error(
-					`Failed to create store on BigCommerce. Status: ${response.status}, Message: ${response.statusText}`
+					`Failed to create store on BigCommerce. Status: ${response.status}, Message: ${response.statusText}, Error`
 				);
 			}
+
 			console.log("Store created successfully on BigCommerce.");
+			props.setLogUrl(response.headers.get("logUrl"));
+			props.setReportUrl(response.headers.get("reportUrl"));
 			setLoading(false);
 			setStoreStatus("Approved"); // Update the store status to "Approved" after successful creation
 		} catch (e) {
-			console.error("Error creating the store:", e);
+			console.error("Error creating the store [Client Side]:", e);
 			throw e;
 		}
 	};

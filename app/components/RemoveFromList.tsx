@@ -3,6 +3,7 @@
 import { GLOBAL_NAMING_METHODS } from "@/constants/products";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { useStoreState } from "../store/useStoreState";
 
 type MethodKey = keyof typeof GLOBAL_NAMING_METHODS;
 
@@ -29,6 +30,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 }) => {
 	const [isRemoving, setIsRemoving] = useState(false);
 
+	const {removeProduct} = useStoreState();
 	const handleRemove = async () => {
 		try {
 			setIsRemoving(true);
@@ -51,6 +53,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 
 			toast.success("Item removed successfully");
 			// Optionally: trigger parent state update via props or context
+			removeProduct(design_id, product_id);
 			setAddedToList(false);
 			setMethodFields({}); // Reset method fields
             setSelectedMethod("1" as MethodKey); // Reset to default method

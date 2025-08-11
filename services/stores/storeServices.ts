@@ -22,6 +22,20 @@ export async function createStore(storeData: StoreCreationProps) {
 	return { data, status, statusText };
 }
 
+export async function fetchStore(storeCode: string) {
+	const supabase = createClient();
+	const { data, error } = await supabase
+		.from("stores")
+		.select("*")
+		.eq("store_code", storeCode)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to fetch store: ${error.message}`);
+	}
+	return data;
+}	
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function updateStore(storeData: any) {
 	const supabase = createClient();

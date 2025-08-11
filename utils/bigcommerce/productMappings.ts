@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
-import { ProductCreationProps, StoreProduct } from "@/types/products";
+import { productConfig, ProductCreationProps, StoreProduct } from "@/types/products";
 import { createUniqueProductNames, createUniqueSageCode } from "./naming";
+import { StoreCreationLogger } from "../logging/storeCreationLogger";
 
 export const getProductConfigs = (
     products: StoreProduct[],
@@ -8,7 +9,8 @@ export const getProductConfigs = (
     storeCode: string,
     offsetNumber: number = 1,
     relatedCategoryIds: Record<string, number>,
-    createdSageCodes: string[] = []
+    createdSageCodes: string[] = [],
+    logger: StoreCreationLogger
 ) => {
     // Map the store products to BigCommerce product configurations
 
@@ -26,8 +28,11 @@ export const getProductConfigs = (
         );
     });
 
-    const productList: ProductCreationProps[] = products.map((product) => {
+    
+    const productList: productConfig[] = products.map((product) => {
         const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
+        
+        logger.addEntry("INFO", `Updating product configurations: ${product.productName}`)
 
         // get the new sage code
         const newSageCode = createUniqueSageCode(
@@ -37,6 +42,10 @@ export const getProductConfigs = (
             offsetNumber,
             createdSageCodes
         );
+
+        logger.logProductSageCodeProcessing(
+            product.productName,
+            { old: product.sageCode, new: newSageCode },)
 
         const categories: number[] = [
             category_id,
@@ -53,6 +62,12 @@ export const getProductConfigs = (
             product.naming_fields || {}
         );
 
+        logger.logProductNameProcessing(
+            productFinalName,
+            product.naming_method || "2",
+            product.naming_fields || {}
+        );
+
         console.log(
             `Final Product Name: ${productFinalName}, Sage Code: ${newSageCode}`
         );
@@ -62,7 +77,7 @@ export const getProductConfigs = (
             productFinalName = `${randomUUID()}`; // Fallback to a default name if missing
         }
 
-        return {
+        const productConfig: ProductCreationProps = {
             name: productFinalName, // Default if name is missing
             type: "physical", // Default type
             sku:
@@ -97,6 +112,8 @@ export const getProductConfigs = (
                   }))
                 : [], // No variants if no sizes are selected
         };
+
+        return {productConfigs: productConfig, category: product.category}
     });
 
     return productList;

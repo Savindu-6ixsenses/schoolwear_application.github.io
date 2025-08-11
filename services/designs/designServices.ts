@@ -38,3 +38,23 @@ export async function getAllDesignItems() {
 
 	return data;
 }
+
+export async function getAddedDesignList(store_code: string) : Promise<string[]> {
+	const supabase = await createClient();
+
+	// Fetch design data
+	const { data: design_data, error: designError } = await supabase
+		.from("stores_products_designs_2")
+		.select("*")
+		.eq("Store_Code", store_code);
+
+	if (designError) {
+		throw new Error(`Failed to fetch added design list: ${designError.message}`);
+	}
+
+	const designList: string[] = Array.from(
+		new Set((design_data || []).map((d) => d?.["Design_ID"]).filter(Boolean))
+	);
+
+	return designList;
+}

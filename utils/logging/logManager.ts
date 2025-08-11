@@ -1,5 +1,6 @@
 import { StoreCreationLogger, StoreCreationLog } from './storeCreationLogger';
 import { StoreReportGenerator, StoreReportData } from '../reports/storeReportGenerator';
+import { uploadLogTextToStorage, uploadReportCsvToStorage } from '@/services/logging/logsStorage';
 
 export class LogManager {
   private static logs: Map<string, StoreCreationLog> = new Map();
@@ -36,6 +37,8 @@ export class LogManager {
   static getAllReports(): StoreReportData[] {
     return Array.from(this.reports.values());
   }
+  
+
 
   // Generate downloadable content
   static generateLogFile(storeCode: string): string | null {
@@ -89,5 +92,33 @@ export class LogManager {
     const filename = `store-report-${storeCode}-${new Date().toISOString().split('T')[0]}.csv`;
     this.downloadFile(csvContent, filename, 'text/csv');
     return true;
+  }
+
+  static async uploadArtifactsToSupabaseStorage(storeCode: string) {
+    const log = this.getLog(storeCode);
+    const report = this.getReport(storeCode);
+
+    const file_paths = [];
+
+    if (!log && !report) return;
+
+    // Rehydrate to render
+    if (log) {
+      const logger = new StoreCreationLogger(log.storeCode, log.storeName);
+      logger["log"] = log;
+      const logText = logger.generateHumanReadableLog();
+      const log_file_path = await uploadLogTextToStorage(storeCode, logText);
+      file_paths.push(log_file_path.path? log_file_path.path : '');
+    }
+
+    if (report) {
+      const gen = new StoreReportGenerator(report.storeCode, report.storeName);
+      gen["reportData"] = report;
+      const csv = gen.generateCSV();
+      const report_file_path = await uploadReportCsvToStorage(storeCode, csv);
+      file_paths.push(report_file_path.path? report_file_path.path : '');
+    }
+
+    return file_paths;
   }
 }

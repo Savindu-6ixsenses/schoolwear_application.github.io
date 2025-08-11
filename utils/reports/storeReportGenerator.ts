@@ -1,3 +1,5 @@
+import { productConfig, ProductCreationProps} from "@/types/products";
+
 export interface StoreReportProduct {
   sageCode: string;
   productName: string;
@@ -13,7 +15,7 @@ export interface StoreReportData {
   storeCode: string;
   storeName: string;
   generatedDate: string;
-  products: StoreReportProduct[];
+  productsByDesign: Record<string, StoreReportProduct[]>;
 }
 
 export class StoreReportGenerator {
@@ -24,11 +26,12 @@ export class StoreReportGenerator {
       storeCode,
       storeName,
       generatedDate: new Date().toISOString(),
-      products: []
+      productsByDesign: {}
     };
   }
 
   addProduct(
+    designId: string,
     sageCode: string,
     productName: string,
     category: string,
@@ -36,15 +39,18 @@ export class StoreReportGenerator {
     sizes: string,
     price: number = 10.0
   ) {
-    this.reportData.products.push({
+    if (!this.reportData.productsByDesign[designId]) {
+      this.reportData.productsByDesign[designId] = [];
+    }
+    this.reportData.productsByDesign[designId].push({
       sageCode,
       productName,
       category,
       colour,
       sizes,
       price: `$${price.toFixed(2)}`,
-      upcharge: '$0.00', // Default upcharge
-      updatePrice: `$${price.toFixed(2)}` // Same as price initially
+      upcharge: '$0.00',
+      updatePrice: `$${price.toFixed(2)}`
     });
   }
 
@@ -54,6 +60,7 @@ export class StoreReportGenerator {
 
   generateCSV(): string {
     const headers = [
+      'Design ID',
       'Sage Code',
       'Product Name/Description/URL',
       'Category',
@@ -65,90 +72,107 @@ export class StoreReportGenerator {
     ];
 
     let csv = headers.join(',') + '\n';
-    
-    this.reportData.products.forEach(product => {
-      const row = [
-        product.sageCode,
-        `"${product.productName}"`, // Wrap in quotes for CSV safety
-        product.category,
-        product.colour,
-        product.sizes,
-        product.price,
-        product.upcharge,
-        product.updatePrice
-      ];
-      csv += row.join(',') + '\n';
+
+    Object.entries(this.reportData.productsByDesign).forEach(([designId, products]) => {
+      products.forEach(product => {
+        const row = [
+          designId,
+          product.sageCode,
+          `"${product.productName}"`,
+          product.category,
+          product.colour,
+          product.sizes,
+          product.price,
+          product.upcharge,
+          product.updatePrice
+        ];
+        csv += row.join(',') + '\n';
+      });
     });
 
     return csv;
   }
 
   generateTableHTML(): string {
-    const tableHTML = `
+    let html = `
     <div class="store-report-table">
       <div class="report-header">
         <h2>Store Report: ${this.reportData.storeName}</h2>
         <p>Store Code: ${this.reportData.storeCode}</p>
         <p>Generated: ${new Date(this.reportData.generatedDate).toLocaleString()}</p>
       </div>
-      
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th>Sage Code</th>
-            <th>Product Name/Description/URL</th>
-            <th>Category</th>
-            <th>Colour</th>
-            <th>Sizes</th>
-            <th>Price</th>
-            <th>Upcharge/Discount</th>
-            <th>Update Price/Recommendations</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${this.reportData.products.map(product => `
-            <tr>
-              <td>${product.sageCode}</td>
-              <td>${product.productName}</td>
-              <td>${product.category}</td>
-              <td>${product.colour}</td>
-              <td>${product.sizes}</td>
-              <td>${product.price}</td>
-              <td>${product.upcharge}</td>
-              <td>${product.updatePrice}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
     `;
-    
-    return tableHTML;
+
+    Object.entries(this.reportData.productsByDesign).forEach(([designId, products]) => {
+      html += `
+      <div class="design-section">
+        <h3>Design ID: ${designId}</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Sage Code</th>
+              <th>Product Name/Description/URL</th>
+              <th>Category</th>
+              <th>Colour</th>
+              <th>Sizes</th>
+              <th>Price</th>
+              <th>Upcharge/Discount</th>
+              <th>Update Price/Recommendations</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map(product => `
+              <tr>
+                <td>${product.sageCode}</td>
+                <td>${product.productName}</td>
+                <td>${product.category}</td>
+                <td>${product.colour}</td>
+                <td>${product.sizes}</td>
+                <td>${product.price}</td>
+                <td>${product.upcharge}</td>
+                <td>${product.updatePrice}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      `;
+    });
+
+    html += `</div>`;
+    return html;
   }
 
-  // Extract color from product name (basic implementation)
   private extractColorFromName(productName: string): string {
-    const colors = ['Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Gray', 'Grey'];
-    const foundColor = colors.find(color => 
-      productName.toLowerCase().includes(color.toLowerCase())
-    );
-    return foundColor || 'N/A';
+    const color = productName.split('-')[1]?.trim();
+    
+    if (productName.split('-').length != 2 || !color) {
+      return 'N/A';
+    }
+    
+    return color;
   }
 
-  // Process product data from your existing structure
-  processProductData(products: any[], storeCode: string) {
-    products.forEach(product => {
-      const color = this.extractColorFromName(product.productName || '');
-      const sizes = product.sizeVariations || 'N/A';
-      
-      this.addProduct(
-        product.newSageCode || product.sageCode || 'N/A',
-        product.finalProductName || product.productName || 'N/A',
-        product.category || 'N/A',
-        color,
-        sizes,
-        product.price || 10.0
-      );
+  // Accepts products grouped by designId
+  processProductData(productsByDesign: Record<string, productConfig[]>) {
+    Object.entries(productsByDesign).forEach(([designId, products]) => {
+      products.forEach(_product => {
+        const product: ProductCreationProps = _product.productConfigs;
+        const category = _product.category || 'Uncategorized';
+        const color = this.extractColorFromName(product.name || '');
+        const sizes = product.variants?.map((variant) => variant.option_values?.[0].label || 'N/A') || null;
+
+        this.addProduct(
+          designId,
+          product.sku || 'N/A',
+          product.name || 'N/A',
+          category || 'N/A',
+          color,
+          sizes? sizes.join(', ') : 'N/A',
+          product.price || 10.0
+        );
+      });
     });
   }
 }
+

@@ -1,13 +1,11 @@
 "use client";
 
-import { StoreCreationProps } from "@/types/store";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter} from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
 import { generate_pl } from "../[store_code]/actions";
 import AddNewDesign from "./AddNewDesign";
 import FilterComponent from "./Category_filter/FilterComponent";
-import CreateStore from "./CreateStore";
 import Search from "./Search";
 import SingleRecord from "./SingleRecord";
 import Pagination from "./Pagination";
@@ -15,18 +13,18 @@ import PageSize from "./PageSize";
 import { useStoreState } from "../store/useStoreState";
 import { useProductsQueryState } from "../hooks/useProductsQueryState";
 import { useProducts } from "../hooks/useProducts";
+import Image from "next/image";
 
 interface ProductDisplayProps {
-	store: StoreCreationProps | null;
+	storeCode: string;
 	designIdList?: string[];
 }
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
-	store,
+	storeCode,
 	designIdList,
 }) => {
-	const searchParams = useSearchParams();
 	const { query, setQuery } = useProductsQueryState({
-		store_code: store?.store_code,
+		store_code: storeCode,
 	});
 	const { data, isLoading, isError } = useProducts(query);
 
@@ -34,9 +32,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const totalPages = data?.totalPages ?? 0;
 
 	// TODO: Temporary total pages
-	const [imageUrl, setImageUrl] = useState<string>(
-		"https://via.placeholder.com/150"
-	);
+	const [imageUrl, setImageUrl] = useState<string>("");
 
 	const [designGuideline, setDesignGuideline] = useState<string>(""); //Contains the design guideline for the selected design
 	const [designId, setDesignId] = useState<string>("0");
@@ -48,13 +44,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	// setting Query hook
 
 	const {
-		store_code,
+		store,
 		designItems,
 		category_list,
-		setStoreCode,
+		setStore,
 		setDesignItems,
 		setCategoryList,
-		loadInitialCategoryList,
 	} = useStoreState();
 
 	const handleSearch = (q: string) => {
@@ -62,7 +57,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	};
 
 	const handleGeneratePL = async () => {
-		const data = await generate_pl(store ? store_code : "");
+		const data = await generate_pl(storeCode ? storeCode : "");
 		console.log(data);
 		router.push("/list");
 	};
@@ -115,27 +110,20 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	};
 
 	const handleReportGenerationClick = () => {
-		router.push(`${store_code}/report`);
+		router.push(`${storeCode}/report`);
 	};
 
 	// Reset store state when the component mounts
 	useEffect(() => {
 		async function syncStoreState() {
-			if (store?.store_code) {
-				setStoreCode(store.store_code); // this will internally reset if needed
-				await loadInitialCategoryList(store.store_code);
-
-				const designFromQuery = searchParams.get("designId") || "0";
-				console.log("Design from query:", designFromQuery);
-				setDesignId(designFromQuery);
-
+			if (storeCode) {
+				setStore(storeCode);
 				console.log("[Sync] Zustand state updated:");
 				console.log("→ store_code:", store.store_code);
-				console.log("→ designId:", designFromQuery);
 			}
 		}
 		syncStoreState();
-	}, [store?.store_code]);
+	}, [storeCode]);
 
 	useEffect(() => {
 		if (designId !== "0" && designItems.length > 0) {
@@ -181,11 +169,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 				<div className="flex items-center space-x-2">
 					<div className="p-2 border border-gray-300 rounded-md flex items-center space-x-2">
 						<span className="text-black">Design</span>
-						<div className="bg-gray-200 rounded-full w-10 h-10 overflow-hidden flex items-center justify-center">
-							<img
+						<div className="bg-gray-200 rounded-full w-10 h-10 overflow-hidden flex items-center justify-center object-contain">
+							<Image
 								src={`${imageUrl}`}
 								alt="Profile"
-								className="object-cover w-full h-full"
+								width={40}
+								height={40}
 							/>
 						</div>
 					</div>
@@ -260,6 +249,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								item={item}
 								store_code={`${store?.store_code}`}
 								design_id={designId ? designId : ""}
+								designGuideline={designGuideline}
 								category_list={category_list}
 								setCategoryList={setCategoryList}
 							/>
@@ -288,13 +278,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 					totalPages={totalPages}
 					onPageChange={handlePageChange}
 				/>
-
-				<CreateStore
-					store={store}
-					design_item={designId}
-					category_list={category_list}
-				/>
-
 				<button
 					className="mt-4 py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
 					onClick={handleReportGenerationClick}

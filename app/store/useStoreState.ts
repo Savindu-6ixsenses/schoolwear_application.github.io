@@ -1,29 +1,22 @@
 // store/useStoreState.ts
+import { fetchStore } from "@/services/stores";
 import { StoreProductReport } from "@/types/products";
-import { DesignItemProps } from "@/types/store";
+import { DesignItemProps, StoreCreationProps } from "@/types/store";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type StoreProduct = {
-	productId: string;
-	productName: string;
-	sizeVariations?: string;
-	category: string;
-	designGuideline: string;
-};
-
 interface StoreState {
-	store_code: string;
+	store: StoreCreationProps;
 	designItems: DesignItemProps[];
 	category_list: string[];
-	added_products: Record<string, StoreProduct[]>;
+	added_products: Record<string, StoreProductReport[]>;
 	isInitialized: boolean;
 
 	setInitialized: (flag: boolean) => void;
-	setStoreCode: (store_code: string) => void;
+	setStore: (store_code: string) => void;
 	setDesignItems: (designItems: DesignItemProps[]) => void;
 	setCategoryList: (categories: string[]) => void;
-	addProduct: (designId: string, product: StoreProduct) => void;
+	addProduct: (designId: string, product: StoreProductReport) => void;
 	removeProduct: (designId: string, productId: string) => void;
 	resetStoreState: () => void;
 	loadInitialCategoryList: (store_code: string) => Promise<void>;
@@ -34,12 +27,22 @@ interface StoreState {
 export const useStoreState = create<StoreState>()(
 	persist(
 		(set, get) => ({
-			store_code: "",
+			store: {
+				store_name: "",
+				account_manager: "",
+				store_address: "",
+				main_client_name: "",
+				main_client_contact_number: "",
+				store_code: "",
+				start_date: "",
+				end_date: "",
+				status: "",
+			},
 			designItems: [],
 			category_list: [],
 			added_products: {},
 			isInitialized: false,
-			
+
 			// Actions
 			setDesignItems: (designItems) => set({ designItems }),
 
@@ -75,18 +78,28 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
-			setStoreCode: async (newStoreCode) => {
-				const current = get().store_code;
+			setStore: async (store_code: string) => {
+				const currentStoreCode = get().store.store_code;
+				const newStoreCode = store_code;
 
-				if (current && current !== newStoreCode) {
+				let store = get().store;
+
+				if (currentStoreCode && currentStoreCode !== newStoreCode) {
 					console.log(
-						`[Zustand] Store code changed: ${current} → ${newStoreCode}. Resetting...`
+						`[Zustand] Store code changed: ${currentStoreCode} → ${newStoreCode}. Resetting...`
 					);
 					get().resetStoreState(); // wipes previous data
+
+					store = await fetchStore(newStoreCode);
+					if (!store) {
+						console.error(`[Zustand] Failed to fetch store: ${newStoreCode}`);
+						return;
+					}
 				}
-
-				set({ store_code: newStoreCode, isInitialized: false });
-
+				set({
+					store: store,
+					isInitialized: false,
+				});
 				try {
 					await Promise.all([
 						get().initializeProductsFromServer(newStoreCode),
@@ -103,7 +116,7 @@ export const useStoreState = create<StoreState>()(
 			removeProduct: (designId, productId) => {
 				const currentProducts = get().added_products[designId] || [];
 				const updatedProducts = currentProducts.filter(
-					(p) => p.productId !== productId
+					(p) => `${p.productId}` !== productId
 				);
 
 				if (updatedProducts.length < currentProducts.length) {
@@ -121,7 +134,17 @@ export const useStoreState = create<StoreState>()(
 
 			resetStoreState: () => {
 				set({
-					store_code: "",
+					store: {
+						store_name: "",
+						account_manager: "",
+						store_address: "",
+						main_client_name: "",
+						main_client_contact_number: "",
+						store_code: "",
+						start_date: "",
+						end_date: "",
+						status: "",
+					},
 					designItems: [],
 					category_list: [],
 					added_products: {},

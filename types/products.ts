@@ -231,9 +231,9 @@ export interface SupabaseProduct {
 	"Brand Name": string;
 	"Product Description": string;
 	"Product Weight": number;
-	"Category": string;
+	Category: string;
 	"Product Code/SKU": string;
-	"size_variations": string;
+	size_variations: string;
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
 }
@@ -248,19 +248,25 @@ export interface ListPropsProducts {
 }
 
 export interface StoreProductReport {
-  productId: number;
-  productName: string;
-  sizeVariations: string;
-  category: string;
-  designGuideline: string;
-};
+	productId: number;
+	productName: string;
+	sizeVariations: string;
+	category: string;
+	designGuideline: string;
+	naming_method?: string | null;
+	naming_fields?: { [key: string]: string } | null;
+}
 
 export type ProductsQuery = {
-  store_code: string;
-  designId: string | null;
-  page: number;
-  pageSize: number;
-  q: string;
-  categories: string[];
+	store_code: string;
+	designId: string | null;
+	page: number;
+	pageSize: number;
+	q: string;
+	categories: string[];
 };
 
+export type productConfig = {
+    productConfigs: ProductCreationProps;
+    category: string;
+}

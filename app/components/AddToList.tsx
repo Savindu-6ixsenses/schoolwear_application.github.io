@@ -3,6 +3,7 @@
 import { GLOBAL_NAMING_METHODS } from "@/constants/products";
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { useStoreState } from "../store/useStoreState";
 
 type NamingFieldSet = {
 	[key: string]: string; // e.g. brandName, subCategory, specialName, etc.
@@ -12,10 +13,12 @@ type NamingFieldSet = {
 const AddToList = ({
 	store_code,
 	product_id,
+	product_name,
 	design_id,
+	designGuideline,
 	size_variations,
 	added_to_list,
-	method,
+	method: naming_method,
 	naming_fields,
 	product_category,
 	categoryList,
@@ -24,7 +27,9 @@ const AddToList = ({
 }: {
 	store_code: string;
 	product_id: string;
+	product_name: string;
 	design_id: string;
+	designGuideline: string;
 	size_variations: { [key: string]: boolean };
 	added_to_list: boolean;
 	method: string;
@@ -36,6 +41,8 @@ const AddToList = ({
 }) => {
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
+	const {addProduct} = useStoreState();
+
 
 	useEffect(() => {
 		setSelectedSizes(
@@ -83,7 +90,7 @@ const AddToList = ({
 			product_id,
 			design_id,
 			selected_sizes,
-			method,
+			naming_method,
 			naming_fields
 		);
 
@@ -92,7 +99,7 @@ const AddToList = ({
 
 			// Validate naming fields before making the request
 			validateNamingFields(
-				method as keyof typeof GLOBAL_NAMING_METHODS,
+				naming_method as keyof typeof GLOBAL_NAMING_METHODS,
 				naming_fields
 			);
 
@@ -112,13 +119,15 @@ const AddToList = ({
 					product_id,
 					design_code: design_id,
 					size_variations: selected_sizes,
-					method: method,
+					method: naming_method,
 					naming_fields: naming_fields,
 				}),
 			});
 
 			if (response.ok) {
 				console.log("Added to list");
+				addProduct(design_id, {productId: Number(product_id),productName: product_name, sizeVariations: selected_sizes, category: product_category, designGuideline: designGuideline, naming_method: naming_method, naming_fields: naming_fields});
+				toast.success("Item added to list successfully");
 				setAddedToList(true);
 			} else {
 				console.log("Error adding to list: Response not Okay ", response);
@@ -143,7 +152,7 @@ const AddToList = ({
 			product_id,
 			design_id,
 			selected_sizes,
-			method,
+			naming_method,
 			naming_fields
 		);
 
@@ -153,7 +162,7 @@ const AddToList = ({
 
 			// Validate naming fields before making the request
 			validateNamingFields(
-				method as keyof typeof GLOBAL_NAMING_METHODS,
+				naming_method as keyof typeof GLOBAL_NAMING_METHODS,
 				naming_fields
 			);
 
@@ -167,7 +176,7 @@ const AddToList = ({
 					product_id,
 					design_code: design_id,
 					size_variations: selected_sizes,
-					method: method,
+					method: naming_method,
 					naming_fields: naming_fields,
 				}),
 			});

@@ -10,6 +10,7 @@ interface SingleRecordProps {
 	item: StoreProduct;
 	store_code: string;
 	design_id: string;
+	designGuideline?: string;
 	category_list: string[];
 	setCategoryList: (categories:string[]) => void;
 }
@@ -21,6 +22,7 @@ const SingleRecord = ({
 	item,
 	store_code,
 	design_id,
+	designGuideline,
 	category_list,
 	setCategoryList,
 }: SingleRecordProps) => {
@@ -156,7 +158,9 @@ const SingleRecord = ({
 					<AddToList
 						store_code={store_code}
 						product_id={item.productId}
+						product_name={item.productName}
 						design_id={design_id}
+						designGuideline={designGuideline || ""}
 						size_variations={selectedSizes}
 						added_to_list={added_to_list || false}
 						method={selectedMethod}

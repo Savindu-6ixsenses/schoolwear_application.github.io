@@ -5,6 +5,7 @@ import LoginButton from "./Buttons/LoginButton";
 import { redirect, usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { User } from "@supabase/supabase-js";
+import StoresListButton from "./Buttons/StoresListButton";
 
 type HeaderProps = {
 	user: User | null;
@@ -41,9 +42,17 @@ const Header = ({ user }: HeaderProps) => {
 					priority
 				/>
 			</div>
-			<div>{currentUser && (<div>{`Welcome ${currentUser.email}`}</div>)}</div>
+			<div>{currentUser && <div>{`Welcome ${currentUser.email}`}</div>}</div>
+			<div className="flex-auto"></div>
+			{/* Show login/logout button based on user state */}
+			{/* Only show if the path is valid */}
 			{validPath && (
-				<div>{currentUser ? <LogoutButton /> : <LoginButton />}</div>
+				<div className="flex">
+					{/* Only display the storelist button when there's a current user */}
+					<div>{currentUser ? <StoresListButton /> : null}</div>
+					{/* Show logout button if user is logged in, otherwise show login button */}
+					<div>{currentUser ? <LogoutButton /> : <LoginButton />}</div>
+				</div>
 			)}
 		</div>
 	);
