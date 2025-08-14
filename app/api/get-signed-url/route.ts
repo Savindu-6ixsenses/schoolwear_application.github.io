@@ -11,11 +11,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Build the file path as you do in your route.ts
-  const date = new Date().toISOString().split("T")[0];
   const filePath =
     type === "log"
-      ? `${storeCode}/store-creation-log-${storeCode}-${date}.txt`
-      : `${storeCode}/store-report-${storeCode}-${date}.csv`;
+      ? `${storeCode}/store-creation-log-${storeCode}.txt`
+      : `${storeCode}/store-report-${storeCode}.csv`;
 
   try {
     const signedUrl = await createSignedDownloadUrl(filePath);

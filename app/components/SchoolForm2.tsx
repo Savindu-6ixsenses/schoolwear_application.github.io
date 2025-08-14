@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import toast from "react-hot-toast";

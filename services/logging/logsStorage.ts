@@ -6,10 +6,9 @@ import { createClient } from "@/utils/supabase/ssr_client/server"; // adjust to 
 type ArtifactKind = "log" | "report";
 
 function objectPath(storeCode: string, kind: ArtifactKind) {
-	const date = new Date().toISOString().split("T")[0];
 	return kind === "log"
-		? `${storeCode}/store-creation-log-${storeCode}-${date}.txt`
-		: `${storeCode}/store-report-${storeCode}-${date}.csv`;
+		? `${storeCode}/store-creation-log-${storeCode}.txt`
+		: `${storeCode}/store-report-${storeCode}.csv`;
 }
 
 /**
