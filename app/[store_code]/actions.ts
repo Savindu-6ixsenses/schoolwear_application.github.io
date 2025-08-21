@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "../../utils/supabase/ssr_client/server";
 import { StoreProduct } from "@/types/products";
 import { fetchFilteredProductsFromSupabase } from "@/services/products/";
-import { updateStoreStatus } from "@/services/stores";
+import { updateStoreStatus } from "@/services/stores/storeServices-Server";
 
 //TODO: Fix this action
 export async function get_products_list(

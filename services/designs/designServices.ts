@@ -7,11 +7,19 @@ export async function createDesignItem(
 	Image_URL: string
 ) {
 	const supabase = await createClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+
+	if (!user) {
+		throw new Error("User not authenticated to create a design item.");
+	}
 
 	const { data, error } = await supabase
 		.from("designs")
 		.insert([
 			{
+				user_id: user.id,
 				Design_Id: DesignId,
 				Design_Guideline: Design_Guideline,
 				Design_Description: Design_Description,

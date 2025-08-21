@@ -1,8 +1,6 @@
 export {
-	createStore,
 	fetchStore,
-	updateStore,
-	updateStoreStatus,
-	updateStoreCodeAutomatically,
+	// updateStore,
+	// updateStoreStatus,
 	fetchStoreRelatedSubCategories,
-} from "./storeServices";
+} from "./storeServices-Client";

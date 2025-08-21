@@ -1,26 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StoreCreationProps } from "@/types/store";
-import { createStore } from "@/services/stores";
+import { createClient } from "@/utils/supabase/ssr_client/server";
 
-const createDbStore = async (StoreCreationProps: StoreCreationProps) => {
+async function createDbStore(storeData: StoreCreationProps) {
 	try {
-		const response = await createStore(StoreCreationProps);
-		console.log("Store Creation Response: ", response);
-		return response;
+		const supabase = await createClient();
+		// Use getUser() on the server as recommended to validate the session.
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		const { data, status, statusText, error } = await supabase
+			.from("stores")
+			.insert([
+				{
+					...storeData,
+					user_id: user?.id,
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
+				},
+			])
+			.select();
+
+		if (error) throw error;
+		return { data, status, statusText };
 	} catch (e) {
 		console.error("Unexpected error:", e);
 		throw e;
 	}
-};
+}
 
 export async function POST(request: NextRequest) {
 	try {
-		const body : StoreCreationProps = await request.json();
-		
+		const body: StoreCreationProps = await request.json();
+
 		// Create a store
-		const response : Awaited<ReturnType<typeof createDbStore>>= await createDbStore({
-			...body
-		});
+		const response: Awaited<ReturnType<typeof createDbStore>> =
+			await createDbStore({
+				...body,
+			});
 
 		// Check if the response is successful
 		if (response && ![200, 201].includes(response.status)) {
@@ -43,16 +61,19 @@ export async function POST(request: NextRequest) {
 			},
 			{ status: 201 }
 		);
-	} catch (e: unknown) {
-		if (e instanceof Error) {
-            console.error("Error in POST handler:", e.message);
-            return NextResponse.json(
-                {
-                    message: "Internal server error",
-                    error: e.message,
-                },
-                { status: 500 }
-            );
-        }
+	} catch (error: unknown) {
+		// Log the full error to the console for debugging
+		console.error("Error in POST handler:", error);
+
+		// Ensure a response is always returned
+		const errorMessage =
+			error instanceof Error ? error.message : "An unknown error occurred.";
+		return NextResponse.json(
+			{
+				message: "Internal Server Error",
+				error: errorMessage,
+			},
+			{ status: 500 }
+		);
 	}
 }

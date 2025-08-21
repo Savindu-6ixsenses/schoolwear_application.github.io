@@ -6,6 +6,7 @@ import {
 	SupabaseProduct,
 } from "@/types/products";
 import { createClient } from "@/utils/supabase/ssr_client/server";
+import { createClientbyRole } from "@/utils/adminHelper";
 
 // utils/productFetcher.ts
 export async function fetchProductsFromSupabase(
@@ -212,10 +213,17 @@ export const addToList = async ({
 			size_variations
 		);
 		const supabase = await createClient();
+		const { data: {user},} = await supabase.auth.getUser();
+		
+		if (!user) {
+			throw new Error("User not authenticated to add a product to the list.");
+		}
+		
 		const { data, error } = await supabase
 			.from("stores_products_designs_2")
 			.insert([
 				{
+					user_id: user.id,
 					Store_Code: `${store_code}`,
 					Product_ID: `${product_id}`,
 					Design_ID: `${design_code}`,
@@ -251,22 +259,24 @@ export const updateItem = async ({
 			method,
 			naming_fields
 		);
-		const supabase = await createClient();
-
-		const { data, error } = await supabase
+		const {supabase, isAdmin, user_id} = await createClientbyRole();
+		
+		let query = supabase
 			.from("stores_products_designs_2")
-			.upsert({
-				Store_Code: store_code,
-				Product_ID: product_id,
-				Design_ID: design_code,
+			.update({
 				size_variations: size_variations,
 				naming_method: method || 1, // Default to 1 if not provided
 				naming_fields: naming_fields || {}, // Default to empty object if not provided
 			})
 			.eq("Store_Code", store_code)
 			.eq("Product_ID", product_id)
-			.eq("Design_ID", design_code)
-			.select();
+			.eq("Design_ID", design_code);
+
+		if (!isAdmin) {
+			query = query.eq("user_id", user_id);
+		}
+
+		const {data, error} = await query.select();
 
 		console.log("Updated data:", data, "Error:", error);
 		return data;
@@ -292,15 +302,33 @@ export const removeFromList = async ({
 			product_id,
 			design_code
 		);
-		const supabase = await createClient();
-		const { data, error } = await supabase
+		const {supabase, isAdmin, user_id} = await createClientbyRole();
+		// const { data, error } = await supabase
+		// 	.from("stores_products_designs_2")
+		// 	.delete()
+		// 	.eq("Store_Code", `${store_code}`)
+		// 	.eq("Product_ID", `${product_id}`)
+		// 	.eq("Design_ID", `${design_code}`)
+		// 	.select();
+		// console.log(data, error);
+
+		let query = supabase
 			.from("stores_products_designs_2")
 			.delete()
 			.eq("Store_Code", `${store_code}`)
 			.eq("Product_ID", `${product_id}`)
-			.eq("Design_ID", `${design_code}`)
-			.select();
-		console.log(data, error);
+			.eq("Design_ID", `${design_code}`);
+
+		if (!isAdmin) {
+			query = query.eq("user_id", user_id);
+		}
+
+		const {data, error} = await query.select();
+
+		if (error) {
+			console.error("Error removing from list:", error);
+			throw error;
+		}
 		return data;
 	} catch (e) {
 		console.error("Unexpected error:", e);

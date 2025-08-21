@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { DesignItemProps } from "@/types/store";
 import { createClient } from "@/utils/supabase/ssr_client/client";
 import { FaSpinner } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 interface AddNewDesignProps {
 	designItems: DesignItemProps[];
@@ -112,9 +113,11 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				console.log("Added the design");
 			} else {
 				console.log("Error adding the design: Response not Okay ", response);
+				throw new Error(`Failed to add design: ${response.statusText}`);
 			}
 		} catch (error) {
 			console.error("Error adding the design", error);
+			throw new Error(`Failed to add design: ${error instanceof Error ? error.message : "Unknown error"}`);
 		}
 	};
 
@@ -139,13 +142,21 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			const updatedDesignItems = [...designItems, newDesignItem];
 			setDesignItems(updatedDesignItems);
 
+			
+			try {
+				addNewDesign(newDesignItem);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			} catch (error : any) {
+				console.error("Error adding new design:", error);
+				toast.error(`Failed to add new design: ${error.message}`);
+				return;
+			}
+			
 			setCurrentDesign({
 				image: newDesignItem.Image_URL,
 				designId: newDesignItem.Design_Id,
 				Design_Guideline: newDesignItem.Design_Guideline,
 			});
-
-			addNewDesign(newDesignItem);
 			// Clear input fields
 			setNewDesign("");
 			setNewDescription("");

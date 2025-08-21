@@ -12,13 +12,11 @@ type HeaderProps = {
 };
 
 const Header = ({ user }: HeaderProps) => {
-	const currentUser = user || null;
 	const router = useRouter();
 	const pathName = usePathname();
 
 	const handleLogoClick = () => {
-		console.log("Current User: ", currentUser);
-		// Redirect to the home page when the logo is clicked
+		console.log("Current User: ", user);
 		router.push("/");
 	};
 
@@ -42,16 +40,16 @@ const Header = ({ user }: HeaderProps) => {
 					priority
 				/>
 			</div>
-			<div>{currentUser && <div>{`Welcome ${currentUser.email}`}</div>}</div>
+			{user && <div className="text-black">Welcome {user.email}</div>}
 			<div className="flex-auto"></div>
 			{/* Show login/logout button based on user state */}
 			{/* Only show if the path is valid */}
 			{validPath && (
 				<div className="flex">
 					{/* Only display the storelist button when there's a current user */}
-					<div>{currentUser ? <StoresListButton /> : null}</div>
+					<div>{user ? <StoresListButton /> : null}</div>
 					{/* Show logout button if user is logged in, otherwise show login button */}
-					<div>{currentUser ? <LogoutButton /> : <LoginButton />}</div>
+					<div>{user ? <LogoutButton /> : <LoginButton />}</div>
 				</div>
 			)}
 		</div>

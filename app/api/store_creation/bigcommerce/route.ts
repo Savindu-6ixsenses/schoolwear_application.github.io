@@ -12,9 +12,8 @@ export async function POST(req: NextRequest) {
 	const logger = LogManager.createLogger(store.store_code, store.store_name);
 	const reportGenerator = LogManager.createReportGenerator(store.store_code, store.store_name);
 
-	const date = new Date().toISOString().split("T")[0];
-	const logPath = `${store.store_code}/store-creation-log-${store.store_code}-${date}.txt`;
-	const reportPath = `${store.store_code}/store-report-${store.store_code}-${date}.csv`;
+	const logPath = `${store.store_code}/store-creation-log-${store.store_code}.txt`;
+	const reportPath = `${store.store_code}/store-report-${store.store_code}.csv`;
 
 	let finalLogger: StoreCreationLogger = logger;
 	let finalReportGenerator: StoreReportGenerator = reportGenerator;

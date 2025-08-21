@@ -5,7 +5,7 @@ import {
 	createBigCommerceProducts,
 } from "@/services/bigCommerce";
 import { getStoreProducts } from "@/services/products";
-import { updateStoreStatus } from "@/services/stores";
+import { updateStoreStatus } from "@/services/stores/storeServices-Server";
 import { StoreCreationProps } from "@/types/store";
 import { getProductConfigs } from "@/utils/bigcommerce/productMappings"; // Create this from existing logic
 import { StoreCreationLogger } from "@/utils/logging/storeCreationLogger";

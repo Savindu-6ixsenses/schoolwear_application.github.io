@@ -26,31 +26,23 @@ const LogoutButton: React.FC = () => {
 			setIsLoading(false);
 			return;
 		}
-		router.push("/login");
+		// This is crucial. router.refresh() clears the client-side router cache
+		// and re-fetches data from the server, including the user session in the layout.
+		// The redirect in the Header component will then handle navigation to /login.
+		router.refresh();
 	};
 
-
-
 	return (
-		<>
-			{!isLoading ? (
-				<button
-					onClick={handleLogout}
-					className="bg-red-500 text-white mx-3 px-4 py-2 rounded"
-				>
-					Logout
-				</button>
-			) : (
-				<button
-					onClick={handleLogout}
-					className="flex flex-row bg-red-500 text-white mx-3 px-4 py-2 rounded w-auto space-x-2 items-center"
-					disabled
-				>
-					<div>Logout</div>
-					<div><FaSpinner /></div>
-				</button>
-			)}
-		</>
+		<button
+			onClick={handleLogout}
+			// A single button with conditional classes and content is cleaner
+			className="flex flex-row justify-center items-center bg-red-500 text-white mx-3 px-4 py-2 rounded min-w-[95px] space-x-2 disabled:opacity-75"
+			disabled={isLoading}
+		>
+			<span>Logout</span>
+			{/* The spinner will only be rendered when isLoading is true */}
+			{isLoading && <FaSpinner className="animate-spin" />}
+		</button>
 	);
 };
 

@@ -80,7 +80,7 @@ export class LogManager {
     const logContent = this.generateLogFile(storeCode);
     if (!logContent) return false;
 
-    const filename = `store-creation-log-${storeCode}-${new Date().toISOString().split('T')[0]}.txt`;
+    const filename = `store-creation-log-${storeCode}.txt`;
     this.downloadFile(logContent, filename);
     return true;
   }
@@ -89,7 +89,7 @@ export class LogManager {
     const csvContent = this.generateReportCSV(storeCode);
     if (!csvContent) return false;
 
-    const filename = `store-report-${storeCode}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `store-report-${storeCode}.csv`;
     this.downloadFile(csvContent, filename, 'text/csv');
     return true;
   }

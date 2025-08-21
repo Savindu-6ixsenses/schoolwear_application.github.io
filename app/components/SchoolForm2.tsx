@@ -11,12 +11,33 @@ import { Button } from "@/components/ui/button";
 import { StoreCreationProps } from "@/types/store";
 import { useRouter } from "next/navigation";
 import { FormData } from "@/types/store";
-import { updateStoreCodeAutomatically } from "@/services/stores";
 
 const NEXT_MONTH = new Date();
 NEXT_MONTH.setMonth(NEXT_MONTH.getMonth() + 1);
 
 const steps = ["School Details", "Personal Details", "Store Details"];
+
+/**
+ * Fetches a unique store code from the server.
+ * This function is safe to use in Client Components.
+ * @param schoolName The name of the school to generate a code for.
+ * @returns A promise that resolves to the unique store code.
+ */
+export async function getUniqueStoreCodeFromServer(
+	schoolName: string
+): Promise<string> {
+	const response = await fetch("/api/generate-store-code", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ schoolName }),
+	});
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.message || "Failed to generate store code");
+	}
+	const data = await response.json();
+	return data.storeCode;
+}
 
 const schema = z.object({
 	schoolName: z.string().min(1, "School name is required"),
@@ -73,8 +94,17 @@ const SchoolFormTabs = () => {
 
 		// Set a new one
 		debounceTimeout.current = setTimeout(() => {
-			updateStoreCodeAutomatically(formData.schoolName, setFormData);
-		}, 600); // 600ms debounce delay
+			const generateCode = async () => {
+				try {
+					const uniqueCode = await getUniqueStoreCodeFromServer(formData.schoolName);
+					setFormData((prev) => ({ ...prev, storeCode: uniqueCode }));
+				} catch (error) {
+					console.error("Failed to get unique store code:", error);
+					toast.error("Could not automatically generate a store code.");
+				}
+			};
+			generateCode();
+		}, 600);
 
 		// Cleanup on unmount
 		return () => {

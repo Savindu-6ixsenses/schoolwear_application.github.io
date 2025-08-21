@@ -14,6 +14,7 @@ import { useStoreState } from "../store/useStoreState";
 import { useProductsQueryState } from "../hooks/useProductsQueryState";
 import { useProducts } from "../hooks/useProducts";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
 interface ProductDisplayProps {
 	storeCode: string;
@@ -57,9 +58,15 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	};
 
 	const handleGeneratePL = async () => {
-		const data = await generate_pl(storeCode ? storeCode : "");
-		console.log(data);
-		router.push("/list");
+		try {
+			const data = await generate_pl(storeCode ? storeCode : "");
+			console.log("Generate PL Data :", data);
+			toast.success("Product list generation has started!");
+			router.push("/list");
+		} catch (error) {
+			console.error("Failed to generate PL:", error);
+			toast.error(error instanceof Error ? error.message : "An unknown error occurred.");
+		}
 	};
 
 	const handlePageSizeChange = (page_size: number) => {
