@@ -9,16 +9,18 @@ export type DesignGuideline = {
 };
 
 export type Design = {
-	Design_Id: string;
+	design_id: string;
 	Design_Guideline: string;
 	Image_URL: string | null;
 	user_id: string;
 	height: number | null;
 	width: number | null;
 	store_code: string;
+	Design_Name: string;
 };
 
 export type CreateDesignParams = {
+	designId: string;
 	designGuideline: string;
     designName: string;
 	imageUrl: string;

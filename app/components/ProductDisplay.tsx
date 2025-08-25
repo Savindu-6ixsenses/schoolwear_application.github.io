@@ -33,18 +33,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const productData = data?.products ?? [];
 	const totalPages = data?.totalPages ?? 0;
 
-	// TODO: Temporary total pages
-	// const [imageUrl, setImageUrl] = useState<string>("");
-
-	// const [designGuideline, setDesignGuideline] = useState<string>(""); //Contains the design guideline for the selected design
-	// const [designId, setDesignId] = useState<string>("0");
 	const [design, setDesign] = useState<DesignView | null>(null);
 	const router = useRouter();
-	const [currentPage, setCurrentPage] = useState<number>(query.page);
-	const [currentPageSize, setCurrentPageSize] = useState<number>(
-		query.pageSize
-	);
-	// setting Query hook
 
 	const { store, category_list, setStore, setCategoryList } = useStoreState();
 
@@ -67,12 +57,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	};
 
 	const handlePageSizeChange = (page_size: number) => {
-		setCurrentPageSize(page_size);
 		setQuery({ pageSize: page_size });
 	};
 
 	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
 		setQuery({ page });
 	};
 
@@ -81,23 +69,23 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		setQuery({ designId: null, page: 1, pageSize: 20 });
 	};
 
-	const setCurrentDesign = (currentDesign: DesignView) => {
-		setDesign(currentDesign);
-		const { design_id: design_Id, design_guideline: Design_Guideline } =
-			currentDesign;
+	// const setCurrentDesign = (currentDesign: DesignView) => {
+	// 	setDesign(currentDesign);
+	// 	const { design_id: design_Id, design_guideline: Design_Guideline } =
+	// 		currentDesign;
 
-		console.log(
-			"Current Design ID:",
-			design_Id,
-			" \nDesign Guideline:",
-			Design_Guideline
-		);
+	// 	console.log(
+	// 		"Current Design ID:",
+	// 		design_Id,
+	// 		" \nDesign Guideline:",
+	// 		Design_Guideline
+	// 	);
 
-		setQuery({
-			designId: design_Id,
-			page: currentPage,
-		});
-	};
+		// setQuery({
+		// 	designId: design_Id,
+		// 	page: query.page,
+		// });
+	// };
 
 	const handleReportGenerationClick = () => {
 		router.push(`${storeCode}/report`);
@@ -211,7 +199,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
 			{/* Product Section */}
 			<div className="mt-4 bg-gray-200 w-full h-[800px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
-				{design !== null &&
+				{query.designId !== null &&
 					(isLoading ? (
 						<div className="text-center text-gray-500">Loading products...</div>
 					) : isError ? (
@@ -233,24 +221,24 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 					) : (
 						<div className="text-center text-gray-500">No products found</div>
 					))}
-				{design == null && (
-					<div className="flex items-center justify-center">
-						<AddNewDesign
-							designGuidelinesList={designGuideLinesList}
-							setCurrentDesign={setCurrentDesign}
-							design={design}
-							storeCode={storeCode}	
-						/>
-					</div>
-				)}
+				{query.designId == null && (
+				<div className="flex items-center justify-center">
+					<AddNewDesign
+						designGuidelinesList={designGuideLinesList}
+						setDesign={setDesign}
+						design={design}
+						storeCode={storeCode}
+					/>
+				</div>
+				 )} 
 			</div>
 			<div className="mt-4 flex justify-between">
 				<PageSize
-					pageSize={currentPageSize}
+					pageSize={query.pageSize}
 					setPageSize={handlePageSizeChange}
 				/>
 				<Pagination
-					currentPage={currentPage}
+					currentPage={query.page}
 					totalPages={totalPages}
 					onPageChange={handlePageChange}
 				/>
