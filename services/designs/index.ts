@@ -1,5 +1,5 @@
 export {
-	getAllDesignItems,
-	createDesignItem,
-	getAddedDesignList
+	getDesignGuidelines,
+	createDesign,
+	getExistingDesigns,
 } from "@/services/designs/designServices";

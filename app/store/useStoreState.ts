@@ -1,20 +1,21 @@
 // store/useStoreState.ts
 import { fetchStore } from "@/services/stores";
+import { DesignView } from "@/types/designs";
 import { StoreProductReport } from "@/types/products";
-import { DesignItemProps, StoreCreationProps } from "@/types/store";
+import { StoreCreationProps } from "@/types/store";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface StoreState {
 	store: StoreCreationProps;
-	designItems: DesignItemProps[];
+	designList: DesignView[];
 	category_list: string[];
 	added_products: Record<string, StoreProductReport[]>;
 	isInitialized: boolean;
 
 	setInitialized: (flag: boolean) => void;
 	setStore: (store_code: string) => void;
-	setDesignItems: (designItems: DesignItemProps[]) => void;
+	setDesignList: (designList: DesignView[]) => void;
 	setCategoryList: (categories: string[]) => void;
 	addProduct: (designId: string, product: StoreProductReport) => void;
 	removeProduct: (designId: string, productId: string) => void;
@@ -38,13 +39,14 @@ export const useStoreState = create<StoreState>()(
 				end_date: "",
 				status: "",
 			},
-			designItems: [],
+			designList: [],
 			category_list: [],
 			added_products: {},
 			isInitialized: false,
 
 			// Actions
-			setDesignItems: (designItems) => set({ designItems }),
+			setDesignList: (designItems) =>
+				set({ designList: designItems }),
 
 			setCategoryList: (categories) => set({ category_list: categories }),
 
@@ -145,9 +147,10 @@ export const useStoreState = create<StoreState>()(
 						end_date: "",
 						status: "",
 					},
-					designItems: [],
+					designList: [],
 					category_list: [],
 					added_products: {},
+					isInitialized: false,
 				});
 			},
 
@@ -232,6 +235,9 @@ export const useStoreState = create<StoreState>()(
 						headers: {
 							"Content-Type": "application/json",
 						},
+						body: JSON.stringify({
+							store_code: get().store.store_code,
+						})
 					});
 					console.log("Response from get_design_items API:", response);
 					if (!response.ok) {
@@ -244,7 +250,7 @@ export const useStoreState = create<StoreState>()(
 				try {
 					const designItems = await fetchDesignItems();
 					console.log("Fetched design items:", designItems);
-					set({ designItems });
+					get().setDesignList(designItems);
 				} catch (error) {
 					console.error("Error fetching design items:", error);
 				}

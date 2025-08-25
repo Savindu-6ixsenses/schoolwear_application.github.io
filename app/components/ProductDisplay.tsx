@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { FaFilter } from "react-icons/fa";
 import { generate_pl } from "../[store_code]/actions";
@@ -15,14 +15,15 @@ import { useProductsQueryState } from "../hooks/useProductsQueryState";
 import { useProducts } from "../hooks/useProducts";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { DesignGuideline, DesignView } from "@/types/designs";
 
 interface ProductDisplayProps {
 	storeCode: string;
-	designIdList?: string[];
+	designGuideLinesList?: DesignGuideline[];
 }
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	storeCode,
-	designIdList,
+	designGuideLinesList,
 }) => {
 	const { query, setQuery } = useProductsQueryState({
 		store_code: storeCode,
@@ -33,10 +34,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const totalPages = data?.totalPages ?? 0;
 
 	// TODO: Temporary total pages
-	const [imageUrl, setImageUrl] = useState<string>("");
+	// const [imageUrl, setImageUrl] = useState<string>("");
 
-	const [designGuideline, setDesignGuideline] = useState<string>(""); //Contains the design guideline for the selected design
-	const [designId, setDesignId] = useState<string>("0");
+	// const [designGuideline, setDesignGuideline] = useState<string>(""); //Contains the design guideline for the selected design
+	// const [designId, setDesignId] = useState<string>("0");
+	const [design, setDesign] = useState<DesignView | null>(null);
 	const router = useRouter();
 	const [currentPage, setCurrentPage] = useState<number>(query.page);
 	const [currentPageSize, setCurrentPageSize] = useState<number>(
@@ -44,14 +46,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	);
 	// setting Query hook
 
-	const {
-		store,
-		designItems,
-		category_list,
-		setStore,
-		setDesignItems,
-		setCategoryList,
-	} = useStoreState();
+	const { store, category_list, setStore, setCategoryList } = useStoreState();
 
 	const handleSearch = (q: string) => {
 		setQuery({ q, page: 1 });
@@ -65,7 +60,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 			router.push("/list");
 		} catch (error) {
 			console.error("Failed to generate PL:", error);
-			toast.error(error instanceof Error ? error.message : "An unknown error occurred.");
+			toast.error(
+				error instanceof Error ? error.message : "An unknown error occurred."
+			);
 		}
 	};
 
@@ -80,39 +77,25 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	};
 
 	const changeDesign = () => {
-		setDesignGuideline("");
-		setDesignId("0");
+		setDesign(null);
 		setQuery({ designId: null, page: 1, pageSize: 20 });
 	};
 
-	const get_products_list_by_design = (design_id: string) => {
-		setQuery({ designId: design_id, page: 1 });
-	};
+	const setCurrentDesign = (currentDesign: DesignView) => {
+		setDesign(currentDesign);
+		const { design_id: design_Id, design_guideline: Design_Guideline } =
+			currentDesign;
 
-	const setCurrentDesign = ({
-		image,
-		designId: design_Id,
-		Design_Guideline,
-	}: {
-		image: string;
-		designId: string;
-		Design_Guideline: string;
-	}) => {
-		setImageUrl(`${image}`);
-		setDesignId(`${design_Id}`);
-		setDesignGuideline(`${Design_Guideline}`);
 		console.log(
 			"Current Design ID:",
 			design_Id,
 			" \nDesign Guideline:",
 			Design_Guideline
 		);
-		get_products_list_by_design(design_Id);
 
 		setQuery({
 			designId: design_Id,
 			page: currentPage,
-			pageSize: currentPageSize,
 		});
 	};
 
@@ -131,19 +114,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		}
 		syncStoreState();
 	}, [storeCode]);
-
-	useEffect(() => {
-		if (designId !== "0" && designItems.length > 0) {
-			const selectedDesign = designItems.find(
-				(item) => item.Design_Id === designId
-			);
-			console.log("Selected Design", selectedDesign);
-
-			if (selectedDesign) {
-				setDesignGuideline(selectedDesign.Design_Guideline);
-			}
-		}
-	}, [designId, designItems]); // Run after designItems are updated
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
@@ -178,17 +148,17 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 						<span className="text-black">Design</span>
 						<div className="bg-gray-200 rounded-full w-10 h-10 overflow-hidden flex items-center justify-center object-contain">
 							<Image
-								src={`${imageUrl}`}
+								src={`${design ? design.image_url : ""}`}
 								alt="Profile"
 								width={40}
 								height={40}
 							/>
 						</div>
 					</div>
-					{designGuideline != "" && (
+					{design?.design_guideline != "" && (
 						<div className="flex flex-row gap-2">
 							<div className="border border-gray-300 px-4 py-2 w-20 h-10 flex items-center justify-center rounded ">
-								{designGuideline}
+								{design?.design_guideline}
 							</div>
 							<div
 								className="px-4 py-2 bg-blue-500 rounded-md text-white hover:bg-blue-400  active:bg-blue-500
@@ -241,8 +211,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
 			{/* Product Section */}
 			<div className="mt-4 bg-gray-200 w-full h-[800px] grid grid-cols-1 gap-3 overflow-y-auto items-center justify-center">
-				{designId !== "0" &&
-					designId !== "" &&
+				{design !== null &&
 					(isLoading ? (
 						<div className="text-center text-gray-500">Loading products...</div>
 					) : isError ? (
@@ -255,8 +224,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								key={item.productId}
 								item={item}
 								store_code={`${store?.store_code}`}
-								design_id={designId ? designId : ""}
-								designGuideline={designGuideline}
+								design_id={design ? design.design_id : ""}
+								designGuideline={design ? design.design_guideline : ""}
 								category_list={category_list}
 								setCategoryList={setCategoryList}
 							/>
@@ -264,13 +233,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 					) : (
 						<div className="text-center text-gray-500">No products found</div>
 					))}
-				{designId == "0" && (
+				{design == null && (
 					<div className="flex items-center justify-center">
 						<AddNewDesign
-							designItems={designItems}
-							designList={designIdList}
-							setDesignItems={setDesignItems}
+							designGuidelinesList={designGuideLinesList}
 							setCurrentDesign={setCurrentDesign}
+							design={design}
+							storeCode={storeCode}	
 						/>
 					</div>
 				)}

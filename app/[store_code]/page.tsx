@@ -2,7 +2,8 @@ import React from "react";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import ProductDisplay from "@/app/components/ProductDisplay";
 import { notFound } from "next/navigation"; // ✅ Import this
-import { getAddedDesignList } from "@/services/designs/";
+import { getDesignGuidelines } from "@/services/designs/";
+import { DesignGuideline } from "@/types/designs";
 
 interface ProductPageProps {
 	params: { store_code: string };
@@ -28,15 +29,16 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 		notFound(); // Will render your app/not-found.tsx page
 	}
 
-	const designList: string[] = await getAddedDesignList(params.store_code);
+	const designList: DesignGuideline[] = await getDesignGuidelines();
+	// const designList: string[] = [];
 
 	console.log("✅ Store:", store);
 	console.log("✅ Design IDs:", designList);
 
 	return (
 		<ProductDisplay
-		storeCode = {params.store_code}
-			designIdList={designList}
+			storeCode={params.store_code}
+			designGuideLinesList={designList}
 		/>
 	);
 };

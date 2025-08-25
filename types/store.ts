@@ -11,15 +11,6 @@ export interface StoreCreationProps {
 	status: string;
 }
 
-// Props for Design Items in the Database
-// These design items are used to identify the design of a product
-export interface DesignItemProps {
-	Design_Id: string;
-	Design_Guideline: string;
-	Image_URL: string;
-	Design_Description: string;
-}
-
 // Props for response return after creating a store
 export interface CreateStoreResponse {
 	data: {
