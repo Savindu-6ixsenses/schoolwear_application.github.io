@@ -2,7 +2,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+// import { Checkbox } from "@/components/ui/checkbox";
 import DateRangePicker from "../Calender/DateRangePicker";
 import { FormData } from "@/types/store";
 
@@ -21,8 +21,8 @@ const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   dateRange, 
   setDateRange, 
-  agreedToTerms, 
-  setAgreedToTerms 
+  // agreedToTerms, 
+  // setAgreedToTerms 
 }) => {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -56,7 +56,7 @@ const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({
           <DateRangePicker onDateChange={setDateRange} />
         </div>
 
-        <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+        {/* <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
           <Checkbox
             id="terms"
             checked={agreedToTerms}
@@ -74,7 +74,7 @@ const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({
               By checking this box, you agree to our terms of service and privacy policy.
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
