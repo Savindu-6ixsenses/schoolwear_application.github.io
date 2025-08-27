@@ -11,8 +11,8 @@ interface StoreDetailsStepProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   dateRange: { startDate: Date; endDate: Date };
   setDateRange: (range: { startDate: Date; endDate: Date }) => void;
-  agreedToTerms: boolean;
-  setAgreedToTerms: (agreed: boolean) => void;
+  // agreedToTerms: boolean;
+  // setAgreedToTerms: (agreed: boolean) => void;
 }
 
 const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ 

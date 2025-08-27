@@ -79,7 +79,7 @@ const SchoolFormTabs = () => {
 		startDate: new Date(),
 		endDate: NEXT_MONTH,
 	});
-	const [agreedToTerms, setAgreedToTerms] = useState(false);
+	// const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
     const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
@@ -122,10 +122,10 @@ const SchoolFormTabs = () => {
 	};
 
 	const handleSubmit = async () => {
-		if (!agreedToTerms) {
-			toast.error("Please agree to terms and conditions");
-			return;
-		}
+		// if (!agreedToTerms) {
+		// 	toast.error("Please agree to terms and conditions");
+		// 	return;
+		// }
 
 		setIsSubmitting(true);
 		try {
@@ -220,8 +220,7 @@ const SchoolFormTabs = () => {
 						handleChange={handleChange}
 						dateRange={dateRange}
 						setDateRange={setDateRange}
-						agreedToTerms={agreedToTerms}
-						setAgreedToTerms={setAgreedToTerms}
+						// setAgreedToTerms={setAgreedToTerms}
 					/>
 				);
 			default:
