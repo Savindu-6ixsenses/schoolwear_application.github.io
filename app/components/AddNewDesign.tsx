@@ -429,7 +429,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 							);
 						})}
 					</select>
-					{design !== null ? (
+					{selectedDesignGuideline !== null ? (
 						<button
 							type="button"
 							onClick={() => setIsDesignGuidelineModalOpen(true)}
