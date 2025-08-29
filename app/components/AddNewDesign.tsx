@@ -19,8 +19,8 @@ interface AddNewDesignProps {
 
 const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	designGuidelinesList,
-	setDesign,
 	design,
+	setDesign,
 	storeCode,
 }) => {
 	const { query, setQuery } = useProductsQueryState({
