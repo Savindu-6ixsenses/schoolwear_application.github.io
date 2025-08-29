@@ -125,6 +125,8 @@ export async function getExistingDesigns(storeCode: string): Promise<DesignView[
 		throw new Error("User not authenticated to fetch designs.");
 	}
 
+	console.log(`Fetching Existing Designs in Store ${storeCode} for User ${session}`);
+
 	const { data, error } = await supabase
 		.from("v_designs")
 		.select("*")

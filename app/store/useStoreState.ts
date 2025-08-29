@@ -22,7 +22,7 @@ interface StoreState {
 	resetStoreState: () => void;
 	loadInitialCategoryList: (store_code: string) => Promise<void>;
 	initializeProductsFromServer: (store_code: string) => Promise<void>;
-	initializeDesignItems: () => Promise<void>;
+	initializeDesignItems: (store_code: string) => Promise<void>;
 }
 
 export const useStoreState = create<StoreState>()(
@@ -84,32 +84,37 @@ export const useStoreState = create<StoreState>()(
 				const currentStoreCode = get().store.store_code;
 				const newStoreCode = store_code;
 
-				let store = get().store;
-
-				if (currentStoreCode && currentStoreCode !== newStoreCode) {
+				if (currentStoreCode !== newStoreCode) {
 					console.log(
-						`[Zustand] Store code changed: ${currentStoreCode} → ${newStoreCode}. Resetting...`
+						`[Zustand] Store code changed or initializing: ${
+							currentStoreCode || '""'
+						} → ${newStoreCode}.`
 					);
 					get().resetStoreState(); // wipes previous data
 
-					store = await fetchStore(newStoreCode);
+					const store = await fetchStore(newStoreCode);
 					if (!store) {
 						console.error(`[Zustand] Failed to fetch store: ${newStoreCode}`);
 						return;
 					}
+					set({ store: store });
 				}
-				set({
-					store: store,
-					isInitialized: false,
-				});
+
+				set({ isInitialized: false });
 				try {
 					await Promise.all([
 						get().initializeProductsFromServer(newStoreCode),
 						get().loadInitialCategoryList(newStoreCode),
-						get().initializeDesignItems(),
+						get().initializeDesignItems(newStoreCode),
 					]);
+
 					set({ isInitialized: true });
 					console.log(`[Zustand] Store fully initialized for: ${newStoreCode}`);
+					// Print the Initialized Results
+					console.log("[Zustand] Current Store State:", get().store);
+					console.log("[Zustand] Current Design List:", get().designList);
+					console.log("[Zustand] Current Categories:", get().category_list);
+					console.log("[Zustand] Current Added Products:", get().added_products);
 				} catch (error) {
 					console.error(`[Zustand] Store initialization failed:`, error);
 				}
@@ -228,16 +233,14 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
-			initializeDesignItems: async () => {
+			initializeDesignItems: async (store_code: string) => {
 				const fetchDesignItems = async () => {
 					const response = await fetch("/api/initial_fetch/get_design_items", {
-						method: "GET",
+						method: "POST",
 						headers: {
 							"Content-Type": "application/json",
 						},
-						body: JSON.stringify({
-							store_code: get().store.store_code,
-						})
+						body: JSON.stringify({ store_code }),
 					});
 					console.log("Response from get_design_items API:", response);
 					if (!response.ok) {
@@ -249,7 +252,7 @@ export const useStoreState = create<StoreState>()(
 
 				try {
 					const designItems = await fetchDesignItems();
-					console.log("Fetched design items:", designItems);
+					console.log("Fetched design items on initial fetch:", designItems);
 					get().setDesignList(designItems);
 				} catch (error) {
 					console.error("Error fetching design items:", error);

@@ -95,9 +95,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	useEffect(() => {
 		async function syncStoreState() {
 			if (storeCode) {
+				console.log("→ store_code:", storeCode);
 				setStore(storeCode);
 				console.log("[Sync] Zustand state updated:");
-				console.log("→ store_code:", store.store_code);
 			}
 		}
 		syncStoreState();

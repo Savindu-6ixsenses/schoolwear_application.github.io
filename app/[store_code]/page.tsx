@@ -37,7 +37,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 
 	return (
 		<ProductDisplay
-			storeCode={params.store_code}
+			storeCode={store.store_code}
 			designGuideLinesList={designList}
 		/>
 	);
