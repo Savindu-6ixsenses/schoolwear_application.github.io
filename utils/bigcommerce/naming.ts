@@ -35,7 +35,7 @@ export const createUniqueSageCode = (
 	}
 
 	// ✅ Create new sage code using template literals
-	let newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+	let newSageCode = `${originalStoreCode}.${designCode}-${colorCode}`;
 
 	// Check if the newSageCode is unique
 	while (createdSageCodes.includes(newSageCode)) {

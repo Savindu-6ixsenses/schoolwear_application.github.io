@@ -191,6 +191,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				height: designHeight,
 				width: designWidth,
 				store_code: storeCode,
+				notes: null
 			};
 
 			// Update the list of design items
@@ -258,6 +259,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				height: designHeight,
 				width: designWidth,
 				store_code: storeCode,
+				notes: design.notes
 			};
 
 			await updateDesign(updatedDesignItem);

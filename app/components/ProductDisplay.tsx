@@ -16,6 +16,7 @@ import { useProducts } from "../hooks/useProducts";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { DesignGuideline, DesignView } from "@/types/designs";
+import NotesComponent from "./NotesComponent";
 
 interface ProductDisplayProps {
 	storeCode: string;
@@ -34,6 +35,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const totalPages = data?.totalPages ?? 0;
 
 	const [design, setDesign] = useState<DesignView | null>(null);
+	const [note, setNote] = useState<string | null>(null);
 	const router = useRouter();
 
 	const { store, category_list, setStore, setCategoryList } = useStoreState();
@@ -81,10 +83,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	// 		Design_Guideline
 	// 	);
 
-		// setQuery({
-		// 	designId: design_Id,
-		// 	page: query.page,
-		// });
+	// setQuery({
+	// 	designId: design_Id,
+	// 	page: query.page,
+	// });
 	// };
 
 	const handleReportGenerationClick = () => {
@@ -102,6 +104,12 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		}
 		syncStoreState();
 	}, [storeCode]);
+
+	useEffect(() => {
+		if (design) {
+			setNote(design.notes);
+		}
+	}, [design]);
 
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
@@ -153,7 +161,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								hover:cursor-pointer"
 								onClick={changeDesign}
 							>
-								Change Design
+								Save/Add Design
 							</div>
 						</div>
 					)}
@@ -222,16 +230,26 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 						<div className="text-center text-gray-500">No products found</div>
 					))}
 				{query.designId == null && (
-				<div className="flex items-center justify-center">
-					<AddNewDesign
-						designGuidelinesList={designGuideLinesList}
-						setDesign={setDesign}
-						design={design}
-						storeCode={storeCode}
-					/>
-				</div>
-				 )} 
+					<div className="flex items-center justify-center">
+						<AddNewDesign
+							designGuidelinesList={designGuideLinesList}
+							setDesign={setDesign}
+							design={design}
+							storeCode={storeCode}
+						/>
+					</div>
+				)}
 			</div>
+				<div className="mt-4">
+					{design && (
+						<NotesComponent
+							note={note}
+							setNote={setNote}
+							storeCode={storeCode}
+							design={design}
+						/>
+					)}
+				</div>
 			<div className="mt-4 flex justify-between">
 				<PageSize
 					pageSize={query.pageSize}

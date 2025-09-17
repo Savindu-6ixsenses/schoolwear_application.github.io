@@ -38,4 +38,5 @@ export type DesignView = {
     width: number | null;
     design_name: string;
     store_code?: string;
+	notes: string | null;
 }

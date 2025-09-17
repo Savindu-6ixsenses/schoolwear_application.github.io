@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ import { toast } from "react-hot-toast";
 import { useStoreState } from "@/app/store/useStoreState";
 import { StoreProductReport } from "@/types/products";
 import CreateStore from "@/app/components/CreateStore";
+import ImageModal from "@/app/components/ImageModal";
+import { DesignView } from "@/types/designs";
+import { FaEye } from "react-icons/fa";
 
 // Helper to fetch a signed URL from your API
 const fetchSignedUrl = async (type: "log" | "report", storeCode: string) => {
@@ -33,11 +36,13 @@ interface StoreReportClientProps {
 }
 
 const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
-	const { store, added_products, category_list } = useStoreState();
+	const { store, added_products, category_list, designList } = useStoreState();
 	const [logUrl, setLogUrl] = useState<string | null>(null);
 	const [reportUrl, setReportUrl] = useState<string | null>(null);
 	const [logUrlExpiry, setLogUrlExpiry] = useState<number | null>(null);
 	const [reportUrlExpiry, setReportUrlExpiry] = useState<number | null>(null);
+	const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
+	const [design, setDesign] = useState<null | DesignView>(null);
 
 	const all_products: StoreProductReport[] =
 		Object.values(added_products).flat();
@@ -131,14 +136,35 @@ const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
 											className="border rounded p-3 bg-muted/50"
 										>
 											<div className="mb-2 flex items-center gap-2">
-												<span className="font-semibold">Design ID:</span>
-												<span className="text-primary">{designId}</span>
+												{/* TODO: Change this to Design Name */}
+												<span className="font-semibold">Design Name:</span>
+												<span className="text-primary">
+													{
+														designList.find(
+															(design) => design.design_id === designId
+														)?.design_name
+													}
+												</span>
 												<Badge
 													variant="outline"
 													className="ml-2"
 												>
 													Guideline: {products[0].designGuideline}
 												</Badge>
+												{/* This button now handles both setting the design and opening the modal */}
+												<Button
+													variant="outline"
+													onClick={() => {
+														setDesign(
+															designList.find(
+																(design) => design.design_id === designId
+															) || null
+														);
+														setIsDesignModalOpen(true);
+													}}
+												>
+													<FaEye />
+												</Button>
 											</div>
 											<div className="space-y-2 pl-4">
 												{products.map((product, idx) => (
@@ -206,6 +232,11 @@ const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
 					</Button>
 				</CardFooter>
 			</Card>
+			<ImageModal
+				isOpen={isDesignModalOpen}
+				onClose={() => setIsDesignModalOpen(false)}
+				item={design}
+			/>
 		</div>
 	);
 };

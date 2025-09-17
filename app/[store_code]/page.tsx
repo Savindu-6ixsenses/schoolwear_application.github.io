@@ -33,7 +33,6 @@ const ProductPage = async ({ params }: ProductPageProps) => {
 	// const designList: string[] = [];
 
 	console.log("✅ Store:", store);
-	console.log("✅ Design IDs:", designList);
 
 	return (
 		<ProductDisplay

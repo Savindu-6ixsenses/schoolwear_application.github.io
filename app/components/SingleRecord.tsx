@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { FaCopy } from "react-icons/fa";
 import AddToList from "./AddToList";
 import { StoreProduct } from "@/types/products";
 import { GLOBAL_NAMING_METHODS, GLOBAL_SIZES } from "@/constants/products";
@@ -72,13 +74,50 @@ const SingleRecord = ({
 		}));
 	};
 
+	const handleCopyDetails = async () => {
+		const sizesToCopy = Object.keys(selectedSizes)
+			.filter((size) => selectedSizes[size])
+			.join(", ");
+
+		let detailsString = `Product Name: ${item.productName}\nSAGE Code: ${item.sageCode}`;
+
+		if (sizesToCopy) {
+			detailsString += `\nSizes: ${sizesToCopy}`;
+		}
+
+		detailsString += `\nNaming Method: Method ${selectedMethod}`;
+
+		const fieldEntries = Object.entries(methodFields).filter(([, value]) => value);
+		if (fieldEntries.length > 0) {
+			detailsString += `\nFields:\n`;
+			detailsString += fieldEntries
+				.map(([key, value]) => `  ${key.replace(/([A-Z])/g, " $1")}: ${value}`)
+				.join("\n");
+		}
+
+		try {
+			await navigator.clipboard.writeText(detailsString);
+			toast.success("Product info copied!");
+		} catch (err) {
+			console.error("Failed to copy text: ", err);
+			toast.error("Failed to copy product info.");
+		}
+	};
+
 	const sizes = GLOBAL_SIZES;
 
 	return (
 		<div className="border border-gray-300 rounded-lg shadow-md bg-white mb-2">
 			{/* Product Title */}
-			<div className="bg-gray-800 text-white px-4 py-2 rounded-t-md">
+			<div className="bg-gray-800 text-white px-4 py-2 rounded-t-md flex flex-row gap-3">
 				<h2 className="text-md font-semibold truncate">{item.productName}</h2>
+				<button
+						onClick={handleCopyDetails}
+						className="p-2 text-gray-200 rounded-md hover:text-gray-300"
+						title="Copy product details"
+					>
+						<FaCopy />
+					</button>
 			</div>
 
 			{/* Product Details Row */}
