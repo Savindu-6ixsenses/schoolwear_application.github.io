@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,7 +11,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, FileText, Table2 } from "lucide-react";
+import { Download, FileText, StickyNote, Table2 } from "lucide-react";
 import { LogManager } from "@/utils/logging/logManager";
 import { toast } from "react-hot-toast";
 import { useStoreState } from "@/app/store/useStoreState";
@@ -19,6 +19,7 @@ import { StoreProductReport } from "@/types/products";
 import CreateStore from "@/app/components/CreateStore";
 import ImageModal from "@/app/components/ImageModal";
 import { DesignView } from "@/types/designs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FaEye } from "react-icons/fa";
 
 // Helper to fetch a signed URL from your API
@@ -33,19 +34,29 @@ const fetchSignedUrl = async (type: "log" | "report", storeCode: string) => {
 
 interface StoreReportClientProps {
 	canCreateStore: boolean;
+	storeCode: string;
 }
 
-const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
-	const { store, added_products, category_list, designList } = useStoreState();
+const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps) => {
+	const { store, added_products, category_list, designList, isInitialized, setStore } = useStoreState();
 	const [logUrl, setLogUrl] = useState<string | null>(null);
 	const [reportUrl, setReportUrl] = useState<string | null>(null);
 	const [logUrlExpiry, setLogUrlExpiry] = useState<number | null>(null);
 	const [reportUrlExpiry, setReportUrlExpiry] = useState<number | null>(null);
 	const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
 	const [design, setDesign] = useState<null | DesignView>(null);
+	const [expandedNotesId, setExpandedNotesId] = useState<string | null>(null);
 
 	const all_products: StoreProductReport[] =
 		Object.values(added_products).flat();
+
+	useEffect(() => {
+		// If store is not initialized, fetch initial data
+		if (!isInitialized && storeCode) {
+			setStore(storeCode);
+			// Initialize products and categories
+		}
+	}, [isInitialized, storeCode, setStore]);
 
 	const downloadLog = async () => {
 		const success = LogManager.downloadLogFile(store.store_code);
@@ -86,6 +97,53 @@ const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
 			}
 		}
 	};
+
+	if (!isInitialized) {
+		return (
+			<div className="max-w-4xl mx-auto p-6 space-y-6">
+				<Card>
+					<CardHeader>
+						<Skeleton className="h-7 w-3/4" />
+						<Skeleton className="h-4 w-full mt-2" />
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								{[...Array(3)].map((_, i) => (
+									<div key={i} className="text-center space-y-2">
+										<Skeleton className="h-8 w-1/4 mx-auto" />
+										<Skeleton className="h-4 w-1/2 mx-auto" />
+									</div>
+								))}
+							</div>
+
+							<div className="space-y-4 pt-4">
+								{[...Array(2)].map((_, i) => (
+									<div
+										key={i}
+										className="border rounded p-3 bg-muted/50 space-y-3"
+									>
+										<div className="flex items-center gap-2">
+											<Skeleton className="h-5 w-48" />
+											<Skeleton className="h-5 w-32" />
+										</div>
+										<div className="space-y-2 pl-4">
+											<Skeleton className="h-10 w-full" />
+											<Skeleton className="h-10 w-full" />
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					</CardContent>
+					<CardFooter className="flex gap-2">
+						<Skeleton className="h-10 w-32" />
+						<Skeleton className="h-10 w-32" />
+					</CardFooter>
+				</Card>
+			</div>
+		);
+	}
 
 	return (
 		<div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -129,78 +187,111 @@ const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
 									No products added yet.
 								</p>
 							) : (
-								Object.entries(added_products).map(([designId, products]) => {
-									return (
-										<div
-											key={designId}
-											className="border rounded p-3 bg-muted/50"
-										>
-											<div className="mb-2 flex items-center gap-2">
-												{/* TODO: Change this to Design Name */}
-												<span className="font-semibold">Design Name:</span>
-												<span className="text-primary">
-													{
-														designList.find(
-															(design) => design.design_id === designId
-														)?.design_name
-													}
-												</span>
-												<Badge
-													variant="outline"
-													className="ml-2"
-												>
-													Guideline: {products[0].designGuideline}
-												</Badge>
-												{/* This button now handles both setting the design and opening the modal */}
-												<Button
-													variant="outline"
-													onClick={() => {
-														setDesign(
-															designList.find(
-																(design) => design.design_id === designId
-															) || null
-														);
-														setIsDesignModalOpen(true);
-													}}
-												>
-													<FaEye />
-												</Button>
-											</div>
-											<div className="space-y-2 pl-4">
-												{products.map((product, idx) => (
-													<div
-														key={product.productId || idx}
-														className="flex items-center justify-between p-2 border rounded bg-white"
+								Object.entries(added_products).map(
+									([designId, products]) => {
+										const currentDesign = designList.find(
+											(d) => d.design_id === designId
+										);
+										return (
+											<div
+												key={designId}
+												className="border rounded p-3 bg-muted/50"
+											>
+												<div className="mb-2 flex items-center gap-2 flex-wrap">
+													<span className="font-semibold">Design Name:</span>
+													<span className="text-primary">
+														{currentDesign?.design_name}
+													</span>
+													<Badge variant="outline" className="ml-2">
+														Guideline: {products[0].designGuideline}
+													</Badge>
+													<Button
+														variant="outline"
+														size="icon"
+														onClick={() => {
+															setDesign(currentDesign || null);
+															setIsDesignModalOpen(true);
+														}}
 													>
-														<div>
-															<span className="font-medium">
-																{product.productName}
+														<FaEye className="h-4 w-4" />
+													</Button>
+													{currentDesign?.notes && (
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() =>
+																setExpandedNotesId(
+																	expandedNotesId === designId
+																		? null
+																		: designId
+																)
+															}
+															className="flex items-center gap-2"
+														>
+															<StickyNote className="h-4 w-4" />
+															<span>
+																{expandedNotesId === designId
+																	? "Hide"
+																	: "View"}{" "}
+																Notes
 															</span>
-															<Badge
-																variant="secondary"
-																className="ml-2 bg-slate-300"
-															>
-																{product.category}
-															</Badge>
-															{product.sizeVariations &&
-																product.sizeVariations
-																	.split(",")
-																	.map((size) => (
-																		<Badge
-																			key={size.trim()}
-																			variant="secondary"
-																			className="ml-1"
-																		>
-																			{size}
-																		</Badge>
-																	))}
+														</Button>
+													)}
+												</div>
+
+												{expandedNotesId === designId &&
+													currentDesign?.notes && (
+														<Card className="my-2 bg-background">
+															<CardHeader className="p-3">
+																<CardTitle className="text-base flex items-center gap-2">
+																	<StickyNote className="h-4 w-4" />
+																	Design Notes
+																</CardTitle>
+															</CardHeader>
+															<CardContent className="p-3 pt-0">
+																<p className="text-sm text-muted-foreground whitespace-pre-wrap">
+																	{currentDesign.notes}
+																</p>
+															</CardContent>
+														</Card>
+													)}
+
+												<div className="space-y-2 pl-4">
+													{products.map((product, idx) => (
+														<div
+															key={product.productId || idx}
+															className="flex items-center justify-between p-2 border rounded bg-white"
+														>
+															<div>
+																<span className="font-medium">
+																	{product.productName}
+																</span>
+																<Badge
+																	variant="secondary"
+																	className="ml-2 bg-slate-300"
+																>
+																	{product.category}
+																</Badge>
+																{product.sizeVariations &&
+																	product.sizeVariations
+																		.split(",")
+																		.map((size) => (
+																			<Badge
+																				key={size.trim()}
+																				variant="secondary"
+																				className="ml-1"
+																			>
+																				{size}
+																			</Badge>
+																		))}
+															</div>
 														</div>
-													</div>
-												))}
+													))}
+												</div>
 											</div>
-										</div>
-									);
-								})
+										);
+									}
+								)
 							)}
 						</div>
 					</div>
@@ -242,3 +333,4 @@ const StoreReportClient = ({ canCreateStore }: StoreReportClientProps) => {
 };
 
 export default StoreReportClient;
+
