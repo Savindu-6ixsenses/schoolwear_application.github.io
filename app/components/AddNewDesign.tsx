@@ -356,6 +356,14 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 		}
 	};
 
+	const handleDesignGuidelineModalOpen = () => {
+		if (selectedDesignGuideline?.reference_image) {
+			setIsDesignGuidelineModalOpen(true);
+		} else {
+			toast.error("No reference image available for this guideline.");
+		}
+	}
+
 	return (
 		<div className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-md w-full max-w-lg border border-gray-200">
 			<h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">
@@ -368,7 +376,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 					htmlFor="existingDesign"
 					className="block text-sm font-medium text-gray-700 mb-1"
 				>
-					Select Existing Design:
+					Your Current Designs:
 				</label>
 				<select
 					id="existingDesign"
@@ -434,7 +442,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 					{selectedDesignGuideline !== null ? (
 						<button
 							type="button"
-							onClick={() => setIsDesignGuidelineModalOpen(true)}
+							onClick={() => handleDesignGuidelineModalOpen()}
 							disabled={!selectedDesignGuideline}
 							className="p-2.5 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 disabled:bg-gray-200 disabled:cursor-not-allowed transition-colors"
 							aria-label="View design guideline details"

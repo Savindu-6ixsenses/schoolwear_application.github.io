@@ -38,7 +38,7 @@ interface StoreReportClientProps {
 }
 
 const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps) => {
-	const { store, added_products, category_list, designList, isInitialized, setStore } = useStoreState();
+	const {  store, added_products, category_list, designList, isInitialized, setStore } = useStoreState();
 	const [logUrl, setLogUrl] = useState<string | null>(null);
 	const [reportUrl, setReportUrl] = useState<string | null>(null);
 	const [logUrlExpiry, setLogUrlExpiry] = useState<number | null>(null);

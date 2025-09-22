@@ -161,7 +161,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								hover:cursor-pointer"
 								onClick={changeDesign}
 							>
-								Save/Add Design
+								Add new Design
 							</div>
 						</div>
 					)}
