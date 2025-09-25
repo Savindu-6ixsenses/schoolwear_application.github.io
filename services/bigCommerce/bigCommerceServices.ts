@@ -41,6 +41,8 @@ export const createBigCommerceStore = async ({
 			);
 		}
 		logger.logStoreCreation(store, responseData.data[0].category_id);
+		console.log("Store Created Successfully", responseData.data[0]);
+		console.log("Store Category ID:", responseData.data[0].category_id);
 		return responseData.data[0].category_id;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (error: any) {
@@ -120,14 +122,16 @@ export const createRelatedCategories = async (
 			});
 			result[subCat] = response.data.id;
 
-      logger.logSubCategoryCreation(subCat, response.data.id);
+			logger.logSubCategoryCreation(subCat, response.data.id);
+			console.log(`Subcategory Created: ${subCat}`, response.data);
 		}
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (error: any) {
 		// Handle error appropriately, e.g., log it or rethrow
 		console.error("Error creating related categories:", error);
-    logger.addEntry("ERROR", "Failed to create related categories", {
-      error: error.message})
+		logger.addEntry("ERROR", "Failed to create related categories", {
+			error: error.message,
+		});
 		throw new Error(`Failed to create related categories: ${error.message}`);
 	}
 

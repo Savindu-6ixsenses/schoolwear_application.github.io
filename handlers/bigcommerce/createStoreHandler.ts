@@ -20,6 +20,7 @@ export const handleCreateStore = async (
 ): Promise<{
 	logger: StoreCreationLogger;
 	reportGenerator: StoreReportGenerator;
+	error?: Error;
 }> => {
 	let errorMessage = "";
 	try {
@@ -90,6 +91,7 @@ export const handleCreateStore = async (
 		errorMessage = error.message || "Unknown error";
 		console.error("Store creation error:", errorMessage);
 		logger.completeWithError(errorMessage);
+		return {logger, reportGenerator, error: new Error("Store creation error: " + errorMessage)};
 		// Optionally, you can add more context to the log here
 	}
 

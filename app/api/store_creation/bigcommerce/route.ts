@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
 		finalLogger = result.logger;
 		finalReportGenerator = result.reportGenerator;
 
+		if (result.error) {
+			throw result.error;
+		}
+
 		// Save to in-memory manager
 		LogManager.saveLog(store.store_code, finalLogger.getLog());
 		LogManager.saveReport(store.store_code, finalReportGenerator.getReportData());

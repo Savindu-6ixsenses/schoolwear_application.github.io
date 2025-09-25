@@ -97,7 +97,7 @@ export const getProductConfigs = (
             },
             variants: sizeVariants?.length
                 ? sizeVariants.map((variant) => ({
-                        sku: `${newSageCode}-${product.sageCode}-${variant.toUpperCase()}`,
+                        sku: `${newSageCode}.${product.sageCode}-${variant.toUpperCase()}`,
                         price: 10.0, // Default price
                         inventory_level: 50, // Default inventory for variants
                         weight: 1.0, // Default weight

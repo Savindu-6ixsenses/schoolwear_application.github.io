@@ -1,6 +1,7 @@
 import { StoreCreationProps } from "@/types/store";
 import React, { useState } from "react";
 import { useStoreState } from "../store/useStoreState";
+import toast from "react-hot-toast";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
@@ -50,7 +51,8 @@ const CreateStore = (props: {
 			setStoreStatus("Approved");
 		} catch (e) {
 			console.error("Error creating the store [Client Side]:", e);
-			throw e;
+			setLoading(false);
+			toast.error("Error creating the store. Please contact support.")
 		}
 	};
 
