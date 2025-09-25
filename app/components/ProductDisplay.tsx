@@ -38,7 +38,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const [note, setNote] = useState<string | null>(null);
 	const router = useRouter();
 
-	const { store, category_list, setStore, setCategoryList } = useStoreState();
+	const { store, category_list, designList, setStore, setCategoryList, setStoreStatus } =
+		useStoreState();
 
 	const handleSearch = (q: string) => {
 		setQuery({ q, page: 1 });
@@ -46,9 +47,19 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
 	const handleGeneratePL = async () => {
 		try {
+			console.log("Store Status :", store?.status);
+
+			if (store?.status?.toLowerCase() == "approved") {
+				toast.error(
+					"Product List has already been approved. Cannot generate again."
+				);
+				return;
+			}
 			const data = await generate_pl(storeCode ? storeCode : "");
+
 			console.log("Generate PL Data :", data);
 			toast.success("Product list generation has started!");
+			setStoreStatus("Pending");
 			router.push("/list");
 		} catch (error) {
 			console.error("Failed to generate PL:", error);
@@ -70,24 +81,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		setDesign(null);
 		setQuery({ designId: null, page: 1, pageSize: 20 });
 	};
-
-	// const setCurrentDesign = (currentDesign: DesignView) => {
-	// 	setDesign(currentDesign);
-	// 	const { design_id: design_Id, design_guideline: Design_Guideline } =
-	// 		currentDesign;
-
-	// 	console.log(
-	// 		"Current Design ID:",
-	// 		design_Id,
-	// 		" \nDesign Guideline:",
-	// 		Design_Guideline
-	// 	);
-
-	// setQuery({
-	// 	designId: design_Id,
-	// 	page: query.page,
-	// });
-	// };
 
 	const handleReportGenerationClick = () => {
 		router.push(`${storeCode}/report`);
@@ -111,66 +104,68 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 		}
 	}, [design]);
 
+	useEffect(() => {
+		if (query.designId && designList.length > 0) {
+			const currentDesign = designList.find(
+				(d) => d.design_id === query.designId
+			);
+			if (currentDesign) {
+				setDesign(currentDesign);
+			}
+		}
+	}, [query.designId, designList]);
+
 	return (
 		<div className="w-full min-h-screen bg-[#F6F6F6] p-4">
-			<div className="bg-white border border-gray-300 p-4 rounded-lg shadow-md flex items-center justify-between text-black">
-				<div className="flex items-center space-x-2">
-					<input
-						type="text"
-						className="border border-gray-300 rounded-md p-2"
-						value={`${store?.store_code} | ${store?.store_name}`}
-						readOnly
-					/>
-					<button className="p-2 border border-gray-400 rounded-md hover:bg-gray-200">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-6 w-6"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-					</button>
+			<header className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm flex items-center justify-between text-black gap-3">
+				{/* Left Section: Store Info */}
+				<div className="flex items-center gap-3">
+					<div className="flex items-baseline gap-2">
+						<h2 className="text-xl font-bold text-gray-800">
+							{store?.store_name}
+						</h2>
+						<span className="text-sm font-semibold bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
+							{store?.store_code}
+						</span>
+					</div>
 				</div>
 
-				<div className="flex items-center space-x-2">
-					<div className="p-2 border border-gray-300 rounded-md flex items-center space-x-2">
-						<span className="text-black">Design</span>
-						<div className="bg-gray-200 rounded-full w-10 h-10 overflow-hidden flex items-center justify-center object-contain">
-							<Image
-								src={`${design ? design.image_url : ""}`}
-								alt="Profile"
-								width={40}
-								height={40}
-							/>
-						</div>
-					</div>
-					{design?.design_guideline != "" && (
-						<div className="flex flex-row gap-2">
-							<div className="border border-gray-300 px-4 py-2 w-20 h-10 flex items-center justify-center rounded ">
-								{design?.design_guideline}
+				{/* Middle Section: Design Info */}
+				<div className="flex items-center gap-4">
+					{design && (
+						<>
+							<div className="flex items-center gap-2 p-2 border border-gray-200 rounded-md">
+								<span className="text-sm font-medium text-gray-600">
+									Design:
+								</span>
+								<div className="bg-gray-100 rounded-full w-8 h-8 overflow-hidden flex items-center justify-center">
+									<Image
+										src={design.image_url || ""}
+										alt="Design"
+										width={32}
+										height={32}
+										className="object-cover"
+									/>
+								</div>
+								<span className="text-sm font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
+									{design.design_guideline}
+								</span>
 							</div>
-							<div
-								className="px-4 py-2 bg-blue-500 rounded-md text-white hover:bg-blue-400  active:bg-blue-500
-								hover:cursor-pointer"
-								onClick={changeDesign}
+							<button
+								className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700 active:bg-gray-800"
+								onClick={() => changeDesign()}
 							>
-								Add new Design
-							</div>
-						</div>
+								Add New Design
+							</button>
+						</>
 					)}
-					<div></div>
 				</div>
-				<div className="ml-auto">
+
+				{/* Right Section: Search */}
+				<div className="ml-auto pl-4">
 					<Search onSearch={handleSearch} />
 				</div>
-			</div>
+			</header>
 
 			<div className="flex flex-row justify-between">
 				<div className="mt-4 flex space-x-4 text-black">
@@ -189,8 +184,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 				</div>
 				<div>
 					<button
-						className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600"
+						className="mt-4 mr-3 py-2 px-4 bg-blue-500 text-white rounded-md align-end hover:bg-blue-600 disabled:bg-blue-300"
 						onClick={() => handleGeneratePL()}
+						disabled={store?.status?.toLowerCase() == "approved"}
 					>
 						Generate PL
 					</button>
@@ -224,6 +220,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								designGuideline={design ? design.design_guideline : ""}
 								category_list={category_list}
 								setCategoryList={setCategoryList}
+								storeStatus={store?.status || "Draft"}
 							/>
 						))
 					) : (
@@ -240,16 +237,16 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 					</div>
 				)}
 			</div>
-				<div className="mt-4">
-					{design && (
-						<NotesComponent
-							note={note}
-							setNote={setNote}
-							storeCode={storeCode}
-							design={design}
-						/>
-					)}
-				</div>
+			<div className="mt-4">
+				{design && (
+					<NotesComponent
+						note={note}
+						setNote={setNote}
+						storeCode={storeCode}
+						design={design}
+					/>
+				)}
+			</div>
 			<div className="mt-4 flex justify-between">
 				<PageSize
 					pageSize={query.pageSize}

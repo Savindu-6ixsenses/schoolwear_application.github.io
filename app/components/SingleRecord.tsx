@@ -14,11 +14,12 @@ interface SingleRecordProps {
 	design_id: string;
 	designGuideline?: string;
 	category_list: string[];
-	setCategoryList: (categories:string[]) => void;
+	setCategoryList: (categories: string[]) => void;
+	storeStatus: string;
 }
 
 // Define the methods and what fields they need
-const namingMethods = GLOBAL_NAMING_METHODS;
+// const namingMethods = GLOBAL_NAMING_METHODS;
 
 const SingleRecord = ({
 	item,
@@ -27,13 +28,14 @@ const SingleRecord = ({
 	designGuideline,
 	category_list,
 	setCategoryList,
+	storeStatus,
 }: SingleRecordProps) => {
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
 		[key: string]: boolean;
 	}>({});
 
-	type MethodKey = keyof typeof namingMethods;
+	type MethodKey = keyof typeof GLOBAL_NAMING_METHODS;
 
 	const [selectedMethod, setSelectedMethod] = useState<MethodKey>(
 		(item.naming_method as MethodKey) || "1"
@@ -55,16 +57,16 @@ const SingleRecord = ({
 
 		setSelectedSizes(initialSizes);
 		setMethodFields(item.naming_fields || {});
-		setSelectedMethod(item.naming_method as MethodKey || "1");
+		setSelectedMethod((item.naming_method as MethodKey) || "1");
 		setAddedToList(item.isAdded || false);
 	}, [item]);
 
-	const handleFieldChange = (field: string, value: string) => {
-		setMethodFields((prev) => ({
-			...prev,
-			[field]: value,
-		}));
-	};
+	// const handleFieldChange = (field: string, value: string) => {
+	// 	setMethodFields((prev) => ({
+	// 		...prev,
+	// 		[field]: value,
+	// 	}));
+	// };
 
 	// Toggle size selection
 	const toggleSize = (size: string) => {
@@ -87,7 +89,9 @@ const SingleRecord = ({
 
 		detailsString += `\nNaming Method: Method ${selectedMethod}`;
 
-		const fieldEntries = Object.entries(methodFields).filter(([, value]) => value);
+		const fieldEntries = Object.entries(methodFields).filter(
+			([, value]) => value
+		);
 		if (fieldEntries.length > 0) {
 			detailsString += `\nFields:\n`;
 			detailsString += fieldEntries
@@ -112,12 +116,12 @@ const SingleRecord = ({
 			<div className="bg-gray-800 text-white px-4 py-2 rounded-t-md flex flex-row gap-3">
 				<h2 className="text-md font-semibold truncate">{item.productName}</h2>
 				<button
-						onClick={handleCopyDetails}
-						className="p-2 text-gray-200 rounded-md hover:text-gray-300"
-						title="Copy product details"
-					>
-						<FaCopy />
-					</button>
+					onClick={handleCopyDetails}
+					className="p-2 text-gray-200 rounded-md hover:text-gray-300"
+					title="Copy product details"
+				>
+					<FaCopy />
+				</button>
 			</div>
 
 			{/* Product Details Row */}
@@ -131,8 +135,9 @@ const SingleRecord = ({
 					</div>
 				</div>
 
-				{/* Product Naming Method Selector */}
-				<div className="flex flex-col border-t border-gray-300 pt-4">
+				{/* Naming Method */}
+				{/*
+								<div className="flex flex-col border-t border-gray-300 pt-4">
 					<label className="block text-sm font-medium text-gray-700">
 						Product Naming Method:
 					</label>
@@ -151,7 +156,7 @@ const SingleRecord = ({
 						))}
 					</select>
 
-					{/* Dynamically render required inputs */}
+					{/* Dynamically render required inputs *
 					{namingMethods[selectedMethod].map((field) => (
 						<div
 							key={field}
@@ -169,7 +174,7 @@ const SingleRecord = ({
 							/>
 						</div>
 					))}
-				</div>
+				</div> */}
 
 				{/* Sizes */}
 				<div className="flex flex-wrap gap-2">
@@ -192,27 +197,42 @@ const SingleRecord = ({
 				</div>
 
 				{/* Action Button */}
-				<div className="flex justify-end gap-2 items-center">
-					
-					<AddToList
-						store_code={store_code}
-						product_id={item.productId}
-						product_name={item.productName}
-						design_id={design_id}
-						designGuideline={designGuideline || ""}
-						size_variations={selectedSizes}
-						added_to_list={added_to_list || false}
-						method={selectedMethod}
-						naming_fields={methodFields}
-						product_category={item.category || ""}
-						categoryList={category_list}
-						setCategoryList={setCategoryList}
-						setAddedToList={setAddedToList}
-					/>
-					<div>
-						<RemoveFromList store_code={store_code} design_id={design_id} product_id={item.productId} added_to_list={added_to_list || false} setAddedToList={setAddedToList} setMethodFields={setMethodFields} setSelectedMethod={setSelectedMethod} setSelectedSizes={setSelectedSizes} />
+				{storeStatus !== "Approved" ? (
+					<div className="flex justify-end gap-2 items-center">
+						{/* TODO: Restrict these buttons from the logic inside to restrict if the store  */}
+						<AddToList
+							store_code={store_code}
+							product_id={item.productId}
+							product_name={item.productName}
+							design_id={design_id}
+							designGuideline={designGuideline || ""}
+							size_variations={selectedSizes}
+							added_to_list={added_to_list || false}
+							method={selectedMethod}
+							naming_fields={methodFields}
+							product_category={item.category || ""}
+							categoryList={category_list}
+							setCategoryList={setCategoryList}
+							setAddedToList={setAddedToList}
+						/>
+						<div>
+							<RemoveFromList
+								store_code={store_code}
+								design_id={design_id}
+								product_id={item.productId}
+								added_to_list={added_to_list || false}
+								setAddedToList={setAddedToList}
+								setMethodFields={setMethodFields}
+								setSelectedMethod={setSelectedMethod}
+								setSelectedSizes={setSelectedSizes}
+							/>
+						</div>
 					</div>
-				</div>
+				) : (
+					<div className="flex justify-end gap-2 items-center">
+						<div className="text-gray-500 italic">Store approved</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);

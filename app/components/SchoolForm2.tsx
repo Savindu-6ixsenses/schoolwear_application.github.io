@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import SchoolDetailsStep from "./steps/SchoolDetailsStep";
-import PersonalDetailsStep from "./steps/PersonalDetailsStep";
+import InstitutionalDetailsStep from "./steps/InstitutionalDetailsStep";
 import StoreDetailsStep from "./steps/StoreDetailsStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { FormData } from "@/types/store";
 const NEXT_MONTH = new Date();
 NEXT_MONTH.setMonth(NEXT_MONTH.getMonth() + 1);
 
-const steps = ["School Details", "Personal Details", "Store Details"];
+const steps = ["School Details", "Contact Details", "Store Details"];
 
 /**
  * Fetches a unique store code from the server.
@@ -46,7 +46,7 @@ const schema = z.object({
 	city: z.string().min(1, "City is required"),
 	provinceState: z.string().min(1, "Province/State is required"),
 	postalCode: z.string().min(1, "Postal code is required"),
-	country: z.string().min(1, "Country is required"),
+	country: z.literal("Canada"),
 	firstName: z.string().min(1, "First name is required"),
 	lastName: z.string().min(1, "Last name is required"),
 	email: z.string().email("Invalid email address"),
@@ -68,7 +68,7 @@ const SchoolFormTabs = () => {
 		city: "",
 		provinceState: "",
 		postalCode: "",
-		country: "",
+		country: "Canada",
 		firstName: "",
 		lastName: "",
 		email: "",
@@ -81,7 +81,7 @@ const SchoolFormTabs = () => {
 	});
 	// const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-    const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+	const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -96,7 +96,9 @@ const SchoolFormTabs = () => {
 		debounceTimeout.current = setTimeout(() => {
 			const generateCode = async () => {
 				try {
-					const uniqueCode = await getUniqueStoreCodeFromServer(formData.schoolName);
+					const uniqueCode = await getUniqueStoreCodeFromServer(
+						formData.schoolName
+					);
 					setFormData((prev) => ({ ...prev, storeCode: uniqueCode }));
 				} catch (error) {
 					console.error("Failed to get unique store code:", error);
@@ -208,7 +210,7 @@ const SchoolFormTabs = () => {
 				);
 			case 1:
 				return (
-					<PersonalDetailsStep
+					<InstitutionalDetailsStep
 						formData={formData}
 						handleChange={handleChange}
 					/>
@@ -265,13 +267,13 @@ const SchoolFormTabs = () => {
 									{label}
 								</p>
 							</div>
-							{index < steps.length - 1 && (
+							{(index < steps.length - 1) ? (
 								<div
 									className={`h-0.5 flex-1 mx-4 transition-colors duration-300 ${
 										index < step ? "bg-green-500" : "bg-gray-200"
 									}`}
 								/>
-							)}
+							) : null}
 						</div>
 					))}
 				</div>

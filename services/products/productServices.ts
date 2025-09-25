@@ -119,8 +119,10 @@ export async function fetchFilteredProductsFromSupabase(
 		designId: product["Design_Id"],
 		sizeVariations: product["size_variations"],
 		isAdded: product["is_added"],
-		naming_method: product["naming_method"],
-		naming_fields: product["naming_fields"],
+		// naming_method: product["naming_method"],
+		// naming_fields: product["naming_fields"],
+		naming_method: "1",
+		naming_fields: { brandName: product["Brand Name"] , ...product["naming_fields"]},
 		SM: product["SM"],
 		MD: product["MD"],
 		LG: product["LG"],
@@ -213,12 +215,15 @@ export const addToList = async ({
 			size_variations
 		);
 		const supabase = await createClient();
-		const { data: {user},} = await supabase.auth.getUser();
-		
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
 		if (!user) {
 			throw new Error("User not authenticated to add a product to the list.");
 		}
-		
+
+		// TODO: Check if the store status is "Approved", if so, block adding to the list.
 		const { data, error } = await supabase
 			.from("stores_products_designs_2")
 			.insert([
@@ -259,8 +264,9 @@ export const updateItem = async ({
 			method,
 			naming_fields
 		);
-		const {supabase, isAdmin, user_id} = await createClientbyRole();
-		
+		const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+		// TODO: Check if the store status is "Approved", if so, block updating the list.
 		let query = supabase
 			.from("stores_products_designs_2")
 			.update({
@@ -276,7 +282,7 @@ export const updateItem = async ({
 			query = query.eq("user_id", user_id);
 		}
 
-		const {data, error} = await query.select();
+		const { data, error } = await query.select();
 
 		console.log("Updated data:", data, "Error:", error);
 		return data;
@@ -302,7 +308,7 @@ export const removeFromList = async ({
 			product_id,
 			design_code
 		);
-		const {supabase, isAdmin, user_id} = await createClientbyRole();
+		const { supabase, isAdmin, user_id } = await createClientbyRole();
 		// const { data, error } = await supabase
 		// 	.from("stores_products_designs_2")
 		// 	.delete()
@@ -312,6 +318,7 @@ export const removeFromList = async ({
 		// 	.select();
 		// console.log(data, error);
 
+		// TODO: Check if the store status is "Approved", if so, block deleting from the list
 		let query = supabase
 			.from("stores_products_designs_2")
 			.delete()
@@ -323,7 +330,7 @@ export const removeFromList = async ({
 			query = query.eq("user_id", user_id);
 		}
 
-		const {data, error} = await query.select();
+		const { data, error } = await query.select();
 
 		if (error) {
 			console.error("Error removing from list:", error);
@@ -349,4 +356,4 @@ export const initialize_added_products = async (store_code: string) => {
 	}
 
 	return data;
-}
+};

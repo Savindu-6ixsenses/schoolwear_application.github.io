@@ -51,7 +51,7 @@ const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({
 
         <div>
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
-            Time Duration *
+            Store Open Duration *
           </Label>
           <DateRangePicker onDateChange={setDateRange} />
         </div>

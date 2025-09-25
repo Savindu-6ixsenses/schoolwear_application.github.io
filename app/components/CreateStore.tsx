@@ -1,5 +1,6 @@
 import { StoreCreationProps } from "@/types/store";
 import React, { useState } from "react";
+import { useStoreState } from "../store/useStoreState";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
@@ -8,7 +9,8 @@ const CreateStore = (props: {
 	setReportUrl: React.Dispatch<React.SetStateAction<string | null>>;
 }) => {
 	const [loading, setLoading] = useState<boolean>(false);
-	const [storeStatus, setStoreStatus] = useState<string>(props.store?.status || "Draft"); // Default to "Draft" if status is not available;
+	const { store, setStoreStatus } = useStoreState();
+	const storeStatus = store?.status || "Draft";
 
 	console.log("Props in CreateStore", props);
 
@@ -42,10 +44,10 @@ const CreateStore = (props: {
 			}
 
 			console.log("Store created successfully on BigCommerce.");
-			props.setLogUrl(response.headers.get("logUrl"));
-			props.setReportUrl(response.headers.get("reportUrl"));
+			// props.setLogUrl(response.headers.get("logUrl"));
+			// props.setReportUrl(response.headers.get("reportUrl"));
 			setLoading(false);
-			setStoreStatus("Approved"); // Update the store status to "Approved" after successful creation
+			setStoreStatus("Approved");
 		} catch (e) {
 			console.error("Error creating the store [Client Side]:", e);
 			throw e;

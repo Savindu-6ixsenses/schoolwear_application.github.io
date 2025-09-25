@@ -13,6 +13,7 @@ interface StoreState {
 	added_products: Record<string, StoreProductReport[]>;
 	isInitialized: boolean;
 
+	setStoreStatus: (status: string) => void;
 	setInitialized: (flag: boolean) => void;
 	setStore: (store_code: string) => void;
 	setDesignList: (designList: DesignView[]) => void;
@@ -44,7 +45,14 @@ export const useStoreState = create<StoreState>()(
 			added_products: {},
 			isInitialized: false,
 
-			// Actions
+			setStoreStatus: (status) =>
+				set((state) => ({
+					store: {
+						...state.store,
+						status: status,
+					},
+				})),
+
 			setDesignList: (designItems) =>
 				set({ designList: designItems }),
 
