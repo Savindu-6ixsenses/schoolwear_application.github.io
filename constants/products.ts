@@ -1,7 +1,7 @@
 // constants/categories.ts
 export const GLOBAL_SUBCATEGORIES = ["Adult", "Men", "Women", "Youth", "Accessories"];
 
-export const GLOBAL_SIZES = ["SM", "MD", "LG", "XL", "X2", "X3"];
+export const GLOBAL_SIZES = ["XS", "SM", "MD", "LG", "XL", "X2", "X3"];
 
 export const GLOBAL_NAMING_METHODS = {
 	"1": ["brandName"],

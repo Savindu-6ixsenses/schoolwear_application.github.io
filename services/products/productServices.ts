@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SupabaseClient } from "@supabase/supabase-js";
+// import { SupabaseClient } from "@supabase/supabase-js";
 import {
 	ListPropsProducts,
 	StoreProduct,
@@ -9,45 +9,46 @@ import { createClient } from "@/utils/supabase/ssr_client/server";
 import { createClientbyRole } from "@/utils/adminHelper";
 
 // utils/productFetcher.ts
-export async function fetchProductsFromSupabase(
-	supabase: SupabaseClient<any, "public", any>,
-	in_store_code: string,
-	in_design_id: string,
-	in_page_size: number | undefined,
-	in_page: number | undefined
-): Promise<StoreProduct[]> {
-	const { data: products, error } = await supabase.rpc("get_store_products_4", {
-		in_store_code,
-		in_design_id,
-		in_page_size,
-		in_page,
-	});
+// export async function fetchProductsFromSupabase(
+// 	supabase: SupabaseClient<any, "public", any>,
+// 	in_store_code: string,
+// 	in_design_id: string,
+// 	in_page_size: number | undefined,
+// 	in_page: number | undefined
+// ): Promise<StoreProduct[]> {
+// 	const { data: products, error } = await supabase.rpc("get_store_products_4", {
+// 		in_store_code,
+// 		in_design_id,
+// 		in_page_size,
+// 		in_page,
+// 	});
 
-	if (error) {
-		throw new Error(`Error fetching products: ${error.message}`);
-	}
+// 	if (error) {
+// 		throw new Error(`Error fetching products: ${error.message}`);
+// 	}
 
-	// Normalize the keys
-	return products.map((product: any) => ({
-		productId: product["Product ID"],
-		sageCode: product["SAGE Code"],
-		productName: product["Product Name"],
-		brandName: product["Brand Name"],
-		productDescription: product["Product Description"],
-		productWeight: product["Product Weight"],
-		category: product["Category"],
-		parentSageCode: product["Product Code/SKU"],
-		designId: product["Design_Id"],
-		sizeVariations: product["size_variations"],
-		isAdded: product["is_added"],
-		SM: product["SM"],
-		MD: product["MD"],
-		LG: product["LG"],
-		XL: product["XL"],
-		X2: product["X2"],
-		X3: product["X3"],
-	}));
-}
+// 	// Normalize the keys
+// 	return products.map((product: any) => ({
+// 		productId: product["Product ID"],
+// 		sageCode: product["SAGE Code"],
+// 		productName: product["Product Name"],
+// 		brandName: product["Brand Name"],
+// 		productDescription: product["Product Description"],
+// 		productWeight: product["Product Weight"],
+// 		category: product["Category"],
+// 		parentSageCode: product["Product Code/SKU"],
+// 		designId: product["Design_Id"],
+// 		sizeVariations: product["size_variations"],
+// 		isAdded: product["is_added"],
+// 		XS: product["XS"],
+// 		SM: product["SM"],
+// 		MD: product["MD"],
+// 		LG: product["LG"],
+// 		XL: product["XL"],
+// 		X2: product["X2"],
+// 		X3: product["X3"],
+// 	}));
+// }
 
 // utils/productFetcher.ts
 export async function fetchFilteredProductsFromSupabase(
@@ -123,6 +124,7 @@ export async function fetchFilteredProductsFromSupabase(
 		// naming_fields: product["naming_fields"],
 		naming_method: "1",
 		naming_fields: { brandName: product["Brand Name"] , ...product["naming_fields"]},
+		XS: product["XS"],
 		SM: product["SM"],
 		MD: product["MD"],
 		LG: product["LG"],

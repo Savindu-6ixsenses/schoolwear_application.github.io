@@ -215,6 +215,7 @@ export interface StoreProduct {
 	isAdded?: boolean;
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
+	XS?: boolean;
 	SM?: boolean;
 	MD?: boolean;
 	LG?: boolean;

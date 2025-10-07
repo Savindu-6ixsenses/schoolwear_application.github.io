@@ -1,5 +1,5 @@
 export {
-	fetchProductsFromSupabase,
+	// fetchProductsFromSupabase,
 	fetchFilteredProductsFromSupabase,
 	getStoreProducts,
 	addToList,
