@@ -183,12 +183,14 @@ const AddToList = ({
 
 			if (response.ok) {
 				console.log("Item is Edited");
+				toast.success("Item is Edited");
 				setAddedToList(true);
 			} else {
 				console.log(
 					"Error editing the item because Response not Okay ",
 					response
 				);
+				toast.error("Failed to edit the item. Please try again.");
 			}
 			setIsLoading(false);
 		} catch (error) {

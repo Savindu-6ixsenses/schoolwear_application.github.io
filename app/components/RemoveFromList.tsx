@@ -24,7 +24,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 	product_id,
 	added_to_list,
     setAddedToList,
-    setMethodFields,
+    // setMethodFields,
     setSelectedMethod,
     setSelectedSizes
 }) => {
@@ -55,7 +55,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 			// Optionally: trigger parent state update via props or context
 			removeProduct(design_id, product_id);
 			setAddedToList(false);
-			setMethodFields({}); // Reset method fields
+			// setMethodFields({}); // Do not reset method fields because it's always Brand Name for now
             setSelectedMethod("1" as MethodKey); // Reset to default method
             setSelectedSizes({}); // Reset selected sizes
 		} catch (error) {
