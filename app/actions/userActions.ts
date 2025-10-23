@@ -37,3 +37,30 @@ export async function checkUserCreatePermission(): Promise<boolean> {
 	}
 }
 
+export async function getUserRole(): Promise<string | null> {
+	try {
+		const supabase = await createClient();
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		if (!user) {
+			return null;
+		}
+		const { data: roleData, error } = await supabase
+			.from('user_roles')
+			.select('role')
+			.eq('user_id', user.id)
+			.single();
+
+		if (error) {
+			return null;
+		}
+
+		return roleData.role;
+	} catch (e) {
+		console.error('Unexpected error	 in getUserRole:', e);
+		return null;
+	}
+}
+

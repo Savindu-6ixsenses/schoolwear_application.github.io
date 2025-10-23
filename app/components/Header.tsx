@@ -4,8 +4,10 @@ import LogoutButton from "./Buttons/LogoutButton";
 import LoginButton from "./Buttons/LoginButton";
 import { redirect, usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { User } from "@supabase/supabase-js";
+import { type User } from "@supabase/supabase-js";
 import StoresListButton from "./Buttons/StoresListButton";
+import { useEffect, useState } from "react";
+import { getUserRole } from "../actions/userActions";
 
 type HeaderProps = {
 	user: User | null;
@@ -14,6 +16,18 @@ type HeaderProps = {
 const Header = ({ user }: HeaderProps) => {
 	const router = useRouter();
 	const pathName = usePathname();
+	const [userRole, setUserRole] = useState<string | null>(null);
+
+	useEffect(() => {
+		// Fetch the user's role when the component mounts or the user changes
+		if (user) {
+			const fetchRole = async () => {
+				const role = await getUserRole();
+				setUserRole(role);
+			};
+			fetchRole();
+		}
+	}, [user]);
 
 	const handleLogoClick = () => {
 		console.log("Current User: ", user);
@@ -46,6 +60,17 @@ const Header = ({ user }: HeaderProps) => {
 			{/* Only show if the path is valid */}
 			{validPath && (
 				<div className="flex">
+					{/* Only display the admin controls button to admin users */}
+					{user && userRole === "admin" && (
+						<button
+							className="mr-4 py-2 px-4 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+							onClick={() => {
+								router.push("/admin/products");
+							}}
+						>
+							Admin Panel
+						</button>
+					)}
 					{/* Only display the storelist button when there's a current user */}
 					<div>{user ? <StoresListButton /> : null}</div>
 					{/* Show logout button if user is logged in, otherwise show login button */}

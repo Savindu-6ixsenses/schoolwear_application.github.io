@@ -1,4 +1,4 @@
-import { createServerClient} from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -44,6 +44,28 @@ export async function middleware(request: NextRequest) {
 	// If user is signed in and the current path is a public route, redirect to the home page
 	if (user && publicRoutes.includes(pathname)) {
 		return NextResponse.redirect(new URL("/", request.url));
+	}
+
+	// ---- Admin-only guard for /admin and /api/admin/* ----
+	const isAdminPath =
+		pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+
+	if (isAdminPath) {
+		// Defensive: if no user (should be caught above), redirect to login
+		if (!user) {
+			return NextResponse.redirect(new URL("/login", request.url));
+		}
+
+		// Check role from your user_roles table (RLS should allow user to read own role)
+		const { data: roleRow, error: roleErr } = await supabase
+			.from("user_roles")
+			.select("role")
+			.eq("user_id", user.id)
+			.maybeSingle();
+
+		if (roleErr || !roleRow || roleRow.role !== "admin") {
+			return NextResponse.redirect(new URL("error/unauthorized", request.url));
+		}
 	}
 
 	// Return the original response, which now has the updated session cookie
