@@ -82,7 +82,7 @@ export default function BulkCsvUploader() {
       form.append("file", file);
       const res = await fetch("/api/admin/products/bulk", { method: "POST", body: form });
       const data: BulkImportResult = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      if (!res.ok) throw new Error("Upload failed");
       setResult(data);
       if (data.errorCsvUrl) setErrorCsvUrl(data.errorCsvUrl);
       setMessage({ type: "success", text: "Bulk import complete." });
