@@ -123,7 +123,11 @@ export async function fetchFilteredProductsFromSupabase(
 		// naming_method: product["naming_method"],
 		// naming_fields: product["naming_fields"],
 		naming_method: "1",
-		naming_fields: { brandName: product["Brand Name"] , ...product["naming_fields"]},
+		naming_fields: {
+			brandName: product["Brand Name"],
+			...product["naming_fields"],
+		},
+		product_status: product["product_status"],
 		XS: product["XS"],
 		SM: product["SM"],
 		MD: product["MD"],
@@ -148,9 +152,11 @@ export const getStoreProducts = async (
 	try {
 		// Get the Design IDs from the Store
 		const { data: designIds, error: storeError } = await supabase
-			.from("stores_products_designs_2")
-			.select("Design_ID")
-			.eq("Store_Code", storeCode);
+			.from("designs")
+			.select("Design_Id")
+			.eq("store_code", storeCode)
+			.order("created_at", { ascending: true });
+			
 		if (storeError) {
 			console.error("Error fetching store data:", storeError);
 			throw storeError;
@@ -162,16 +168,21 @@ export const getStoreProducts = async (
 
 		// Call the Supabase RPC function
 		for (const designCode of designIds) {
-			console.log("Fetching products for design:", designCode.Design_ID);
+			console.log("Fetching products for design:", designCode.Design_Id);
 
 			// Fetch products for the current design code
 			const { data: products } = await supabase.rpc(
 				"get_products_to_create_v2",
 				{
 					in_store_code: storeCode,
-					in_design_code: designCode.Design_ID,
+					in_design_code: designCode.Design_Id,
 				}
 			);
+
+			if (!products) {
+				console.error("No products found for design:", designCode.Design_Id);
+				continue;
+			}
 
 			// Normalize the data into the StoreProduct format
 			const normalizedProducts: StoreProduct[] = products.map(
@@ -187,10 +198,11 @@ export const getStoreProducts = async (
 					sizeVariations: product["size_variations"],
 					naming_method: product["naming_method"],
 					naming_fields: product["naming_fields"],
+					product_status: product["product_status"],
 				})
 			);
 
-			normalizedProductsList[designCode.Design_ID] = normalizedProducts;
+			normalizedProductsList[designCode.Design_Id] = normalizedProducts;
 		}
 
 		return normalizedProductsList;
@@ -255,6 +267,8 @@ export const updateItem = async ({
 	size_variations,
 	method,
 	naming_fields,
+	product_status,
+	store_status,
 }: ListPropsProducts) => {
 	try {
 		console.log(
@@ -268,14 +282,48 @@ export const updateItem = async ({
 		);
 		const { supabase, isAdmin, user_id } = await createClientbyRole();
 
+		// Prepare the data for the update operation
+		const updateData: {
+			size_variations: string[];
+			naming_method: number | string;
+			naming_fields: any;
+			product_status?: string;
+			notes?: string;
+		} = {
+			size_variations: size_variations,
+			naming_method: method || 1,
+			naming_fields: naming_fields || {},
+		};
+
+		// Conditionally set the product_status to 'modify'
+		console.log()
+		if (
+			store_status === "Modify" &&
+			(product_status === "added" || product_status === "rejected")
+		) {
+			// get the previous size_variations from the database incase of revert
+			const { data: previousSizeVariations } = await supabase
+				.from("stores_products_designs_2")
+				.select("size_variations")
+				.eq("Store_Code", store_code)
+				.eq("Product_ID", product_id)
+				.eq("Design_ID", design_code)
+				.single();
+
+			if (previousSizeVariations) {
+				console.log("Previous size variations:", previousSizeVariations);
+				updateData.notes = previousSizeVariations.size_variations;
+			}
+			updateData.product_status = "modify";
+		}
+
+		//log the update data
+		console.log("Updating data of the product : ", updateData);
+
 		// TODO: Check if the store status is "Approved", if so, block updating the list.
 		let query = supabase
 			.from("stores_products_designs_2")
-			.update({
-				size_variations: size_variations,
-				naming_method: method || 1, // Default to 1 if not provided
-				naming_fields: naming_fields || {}, // Default to empty object if not provided
-			})
+			.update(updateData)
 			.eq("Store_Code", store_code)
 			.eq("Product_ID", product_id)
 			.eq("Design_ID", design_code);
@@ -358,4 +406,33 @@ export const initialize_added_products = async (store_code: string) => {
 	}
 
 	return data;
+};
+
+export const getExistingSageCodes = async (
+	store_code: string
+): Promise<string[]> => {
+	const supabase = await createClient();
+
+	const { data, error } = await supabase
+		.from("stores_products_designs_2")
+		.select("new_sage_code")
+		.eq("Store_Code", store_code)
+		.not("new_sage_code", "is", null);
+
+	if (error) {
+		console.error(
+			`[Supabase Error] Failed to fetch existing sage codes for store ${store_code}:`,
+			error.message
+		);
+		throw new Error(`Failed to fetch existing sage codes: ${error.message}`);
+	}
+
+	// If data is null (e.g., no rows found), return an empty array.
+	if (!data) {
+		return [];
+	}
+
+	// The query returns an array of objects like [{ sageCode: '...'}, ...]. We need to flatten it.
+	// and filter out any null/undefined values.
+	return data.map((item) => item.new_sage_code).filter(Boolean);
 };

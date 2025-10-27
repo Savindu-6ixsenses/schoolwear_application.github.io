@@ -2,8 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaEdit, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+	FaEdit,
+	FaChevronDown,
+	FaChevronUp,
+	FaTrash,
+} from "react-icons/fa";
 import { StoreSummary } from "./page";
+import {
+	changeStoreStatus,
+	deleteDraftOrPendingStore,
+	disableApprovedStore,
+} from "@/services/stores/storeServices-Server";
+import { useStoreState } from "../store/useStoreState";
+import toast from "react-hot-toast";
 
 interface ListItemProps {
 	item: StoreSummary;
@@ -16,20 +28,79 @@ const getStatusColor = (status: string) => {
 			return "bg-yellow-500";
 		case "Approved":
 			return "bg-green-500";
-		case "Rejected":
+		case "Modify":
 			return "bg-red-500";
+		case "Disabled":
+			return "bg-gray-700";
 		default:
 			return "bg-gray-500";
 	}
 };
 
 const ListItem: React.FC<ListItemProps> = ({ item }) => {
+	const { setStoreStatus } = useStoreState();
 	const router = useRouter();
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	const handleEditClick = (e: React.MouseEvent) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
 		router.push(`/${item.store_code}`);
+	};
+
+	const handleUpdateClick = async (e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent triggering the expand/collapse
+		alert("Update functionality is still on development.");
+		try {
+			// Convert Store status into modifying BigCommerce store
+			if (item.status !== "Modify") {
+				// Only change if not already in Modify status
+				await changeStoreStatus(item.store_code, "Modify");
+				setStoreStatus("Modify");
+				router.refresh(); // Refresh the page to show the new status
+			}
+			router.push(`/${item.store_code}`);
+		} catch (error) {
+			console.error("Failed to update store status:", error);
+			alert("Failed to update store status.");
+		}
+	};
+
+	const handleDeleteClick = async (e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent triggering the expand/collapse
+		if (
+			window.confirm(
+				`Are you sure you want to permanently delete the store "${item.store_name}"? This action cannot be undone.`
+			)
+		) {
+			try {
+				await deleteDraftOrPendingStore(item.store_code);
+				toast.success("Store deleted successfully.");
+				router.refresh();
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Failed to delete store.";
+				toast.error(message);
+			}
+		}
+	};
+
+	const handleDisableClick = async (e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent triggering the expand/collapse
+		if (
+			window.confirm(
+				`WARNING: You are about to disable the store "${item.store_name}". This will make all its products and categories invisible on BigCommerce. Do you want to proceed?`
+			)
+		) {
+			try {
+				await disableApprovedStore(item.store_code);
+				toast.success("Store has been disabled.");
+				router.refresh();
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Failed to disable store.";
+				toast.error(message);
+			}
+		}
 	};
 
 	const statusColor = getStatusColor(item.status);
@@ -49,7 +120,8 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 					<span className="text-gray-800 font-medium">{item.store_name}</span>
 					<div className="flex gap-4 text-sm text-gray-600">
 						<span>
-							Designs: <span className="font-semibold">{item.total_designs}</span>
+							Designs:{" "}
+							<span className="font-semibold">{item.total_designs}</span>
 						</span>
 						<span>
 							Products:{" "}
@@ -63,15 +135,44 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 					<span
 						className={`${statusColor} text-white px-3 py-1 rounded-full text-xs font-semibold`}
 					>
-						{item.status}
+						{item.status == "Modify" ? "Modifying" : item.status || "Draft"}
 					</span>
-					<button
-						onClick={handleEditClick}
-						className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm"
-					>
-						<FaEdit />
-						<span>Edit</span>
-					</button>
+					<div className="flex gap-2">
+						{item.status === "Approved" || item.status === "Modify" ? (
+							<button
+								title="Update"
+								onClick={handleUpdateClick}
+								className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 text-sm active:scale-95 min-w-[95px]"
+							>
+								<FaEdit />
+								<span>Update</span>
+							</button>
+						) : (
+							<button
+								title="Edit"
+								onClick={handleEditClick}
+								className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm active:scale-95 min-w-[95px]"
+							>
+								<FaEdit />
+								<span>Edit</span>
+							</button>
+						)}
+						{item.status === "Approved" ? (<button
+							title="Delete"
+							onClick={handleDisableClick}
+							className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px]"
+						>
+							<FaTrash />
+							<span>Disable</span>
+						</button>) : (<button
+							title="Delete"
+							onClick={handleDeleteClick}
+							className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px]"
+						>
+							<FaTrash />
+							<span>Delete</span>
+						</button>)}
+					</div>
 					<button className="p-2 rounded-full hover:bg-gray-200">
 						{isExpanded ? <FaChevronUp /> : <FaChevronDown />}
 					</button>
@@ -125,4 +226,3 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 };
 
 export default ListItem;
-

@@ -215,6 +215,7 @@ export interface StoreProduct {
 	isAdded?: boolean;
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
+	product_status?: string;
 	XS?: boolean;
 	SM?: boolean;
 	MD?: boolean;
@@ -237,6 +238,7 @@ export interface SupabaseProduct {
 	size_variations: string;
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
+	product_status?: string;
 }
 
 export interface ListPropsProducts {
@@ -246,6 +248,8 @@ export interface ListPropsProducts {
 	size_variations: string[];
 	method?: string;
 	naming_fields?: { [key: string]: string };
+	product_status?: string;
+	store_status?: string;
 }
 
 export interface StoreProductReport {
@@ -256,6 +260,7 @@ export interface StoreProductReport {
 	designGuideline: string;
 	naming_method?: string | null;
 	naming_fields?: { [key: string]: string } | null;
+	product_status?: string;
 }
 
 export type ProductsQuery = {
@@ -268,6 +273,34 @@ export type ProductsQuery = {
 };
 
 export type productConfig = {
-    productConfigs: ProductCreationProps;
-    category: string;
-}
+	productConfigs:
+		| ProductCreationProps
+		| {
+				productId: number;
+				sizeLabel: string;
+				variant?: CreateVariantPayload;
+		  };
+	category: string;
+	// Identifiers for DB update after creation
+	db_identifiers?: {
+		storeCode: string;
+		productId: string;
+		designId: string;
+	};
+};
+
+// Payload type for creating a variant
+export type CreateVariantPayload = {
+	sku: string;
+	price?: number;
+	retail_price?: number;
+	sale_price?: number;
+	weight?: number;
+	inventory_level?: number;
+	inventory_warning_level?: number;
+	is_free_shipping?: boolean;
+	fixed_cost_shipping_price?: number;
+	upc?: string;
+	mpn?: string;
+	gtin?: string;
+};

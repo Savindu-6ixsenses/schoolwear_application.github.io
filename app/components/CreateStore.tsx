@@ -2,6 +2,7 @@ import { StoreCreationProps } from "@/types/store";
 import React, { useState } from "react";
 import { useStoreState } from "../store/useStoreState";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
@@ -12,6 +13,7 @@ const CreateStore = (props: {
 	const [loading, setLoading] = useState<boolean>(false);
 	const { store, setStoreStatus } = useStoreState();
 	const storeStatus = store?.status || "Draft";
+	const router = useRouter();
 
 	console.log("Props in CreateStore", props);
 
@@ -49,10 +51,12 @@ const CreateStore = (props: {
 			// props.setReportUrl(response.headers.get("reportUrl"));
 			setLoading(false);
 			setStoreStatus("Approved");
+			toast.success("Store created successfully!");
+			router.push("/list");
 		} catch (e) {
 			console.error("Error creating the store [Client Side]:", e);
 			setLoading(false);
-			toast.error("Error creating the store. Please contact support.")
+			toast.error("Error creating the store. Please contact support.");
 		}
 	};
 
@@ -60,7 +64,7 @@ const CreateStore = (props: {
 		<div className="flex justify-end">
 			{loading ? (
 				<div className="flex justify-center items-center mt-3 mr-3 bg-blue-700 shadow-md text-white w-32 h-12 rounded-md cursor-not-allowed opacity-70">
-					Creating Store...
+					{storeStatus === "Modify" ? "Updating Store..." : "Creating Store..."}
 				</div>
 			) : storeStatus === "Approved" ? (
 				<div className="flex justify-center items-center mt-3 mr-3 bg-gray-400 shadow-md text-white w-32 h-12 rounded-md cursor-not-allowed opacity-60">
@@ -71,7 +75,7 @@ const CreateStore = (props: {
 					className="flex justify-center items-center mt-3 mr-3 bg-blue-500 shadow-md hover:shadow-xl hover:bg-blue-700 text-white w-32 h-12 rounded-md cursor-pointer"
 					onClick={() => createStore()}
 				>
-					Create Store
+					{storeStatus === "Modify" ? "Update Store" : "Create Store"}
 				</div>
 			)}
 		</div>
