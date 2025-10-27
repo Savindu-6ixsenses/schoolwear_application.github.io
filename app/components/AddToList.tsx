@@ -20,6 +20,8 @@ const AddToList = ({
 	added_to_list,
 	method: naming_method,
 	naming_fields,
+	product_status,
+	store_status,
 	product_category,
 	categoryList,
 	setCategoryList,
@@ -34,6 +36,8 @@ const AddToList = ({
 	added_to_list: boolean;
 	method: string;
 	naming_fields: { [key: string]: string };
+	product_status: string;
+	store_status: string;
 	categoryList: string[];
 	product_category: string;
 	setCategoryList: (categories: string[]) => void;
@@ -82,7 +86,7 @@ const AddToList = ({
 		}
 	};
 
-	const handleClick = async () => {
+	const handleClickAdd = async () => {
 		// Logging the parameters to be sent
 		console.log(
 			"Adding to list with parameters: ",
@@ -166,7 +170,7 @@ const AddToList = ({
 				naming_fields
 			);
 
-			const response = await fetch("/api/edit_list", {
+			const response = await fetch("/api/products/edit_list", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -178,6 +182,8 @@ const AddToList = ({
 					size_variations: selected_sizes,
 					method: naming_method,
 					naming_fields: naming_fields,
+					product_status: product_status,
+					store_status: store_status,
 				}),
 			});
 
@@ -212,7 +218,7 @@ const AddToList = ({
 					{!added_to_list ? (
 						<button
 							className="bg-black text-white px-3 py-1 rounded hover:shadow-lg"
-							onClick={handleClick}
+							onClick={handleClickAdd}
 						>
 							Add to List
 						</button>

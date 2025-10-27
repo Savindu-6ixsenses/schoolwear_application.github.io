@@ -1,10 +1,10 @@
 // Function to create a unique sage code
-export const createUniqueSageCode = (
+export const createUniqueSKU = (
 	productName: string,
 	rawsageCode: string,
 	originalStoreCode: string,
 	offsetNumber: number,
-    createdSageCodes: string[]
+	createdSageCodes: string[]
 ): string => {
 	if (!rawsageCode) {
 		throw new Error("rawsageCode is required");
@@ -139,4 +139,3 @@ export const createUniqueProductNames = (
 
 	return name.replace(/\s+/g, " ").trim();
 };
-

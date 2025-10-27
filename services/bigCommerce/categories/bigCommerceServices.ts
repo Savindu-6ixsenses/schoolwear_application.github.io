@@ -1,7 +1,9 @@
+'use server'
+
 import { StoreCreationProps } from "@/types/store";
-import { sendAPIRequestBigCommerce } from "./apiClient";
-import { productConfig, ProductCreationProps } from "@/types/products";
+import { sendAPIRequestBigCommerce } from "../apiClient";
 import { StoreCreationLogger } from "@/utils/logging/storeCreationLogger";
+import { createClient } from "@/utils/supabase/ssr_client/server";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH!;
 
@@ -43,6 +45,10 @@ export const createBigCommerceStore = async ({
 		logger.logStoreCreation(store, responseData.data[0].category_id);
 		console.log("Store Created Successfully", responseData.data[0]);
 		console.log("Store Category ID:", responseData.data[0].category_id);
+
+		//update the store's category id in the stores table
+		await updateStoreCategoryId(store.store_code, responseData.data[0].category_id);
+
 		return responseData.data[0].category_id;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (error: any) {
@@ -138,54 +144,24 @@ export const createRelatedCategories = async (
 	return result;
 };
 
-export const createBigCommerceProducts = async (
-	products: productConfig[],
-	logger: StoreCreationLogger
+//Insert the new category id into the stores table for relevent store
+export const updateStoreCategoryId = async (
+	storeCode: string,
+	categoryId: number
 ) => {
-	const productUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/products`;
-	let successCount = 0;
+	const supabase = await createClient();
+	const { data, error } = await supabase
+		.from("stores")
+		.update({ category_id: categoryId, updated_at: new Date().toISOString() })
+		.eq("store_code", storeCode)
+		.select()
+		.single();
 
-	for (const _product of products) {
-		let success = false;
-		let attempt = 0;
-
-		const product: ProductCreationProps = _product.productConfigs;
-
-		while (!success && attempt < 3) {
-			try {
-				await sendAPIRequestBigCommerce(productUrl, "POST", product);
-				success = true;
-				successCount = successCount++;
-				logger.logProductSuccess(
-					product.name,
-					product.sku ? product.sku : "N/A",
-					product.variants
-				);
-			} catch (error) {
-				attempt++;
-				console.error(
-					`Attempt ${attempt} failed for product: ${product.name}`,
-					error instanceof Error ? error.message : error
-				);
-
-				if (attempt >= 3) {
-					console.error("Final failed payload:", product); // Log entire payload for debugging
-					logger.logProductError(
-						product.name,
-						error instanceof Error ? error.message : "Unknown error",
-						attempt
-					);
-					// Optionally, you can throw an error or handle it as needed
-					throw new Error(`Failed after 3 attempts: ${product.name}`);
-				}
-
-				await new Promise((res) => setTimeout(res, 2500));
-			}
-		}
+	if (error) {
+		console.error(`Failed to update store category ID:`, error);
+		throw new Error(`Failed to update store category ID: ${error.message}`);
 	}
 
-	return {
-		successCount: successCount,
-		failedCount: products.length - successCount,
-	};
-};
+	console.log(`Store ${storeCode} category ID updated to ${categoryId} successfully.`);
+	return { data };
+}

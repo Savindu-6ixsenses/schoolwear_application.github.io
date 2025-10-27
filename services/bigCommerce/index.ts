@@ -1,1 +1,5 @@
-export {createBigCommerceStore, createRelatedCategories, createBigCommerceProducts} from "@/services/bigCommerce/bigCommerceServices";
+export {
+	createBigCommerceStore,
+	createRelatedCategories,
+} from "@/services/bigCommerce/categories/bigCommerceServices";
+export { createBigCommerceProducts, addSizeVariant } from "@/services/bigCommerce/products/bigCommerceProductServices";

@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
 			size_variations,
 			method,
 			naming_fields,
+			product_status,
+			store_status,
 		} = body;
 
 		console.log("Request Body for POST:", body);
@@ -22,7 +24,8 @@ export async function POST(request: NextRequest) {
 			size_variations,
 			method: method,
 			naming_fields,
-		});
+			product_status,
+			store_status,});
 		console.log("Response from updateItem:", response);
 
 		if (!response) {

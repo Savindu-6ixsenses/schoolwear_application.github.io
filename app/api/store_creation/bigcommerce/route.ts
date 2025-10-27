@@ -1,3 +1,4 @@
+import { checkUserCreatePermission } from "@/app/actions/userActions";
 import { handleCreateStore } from "@/handlers/bigcommerce/createStoreHandler";
 import { createSignedDownloadUrl } from "@/services/logging/logsStorage";
 import { StoreCreationProps } from "@/types/store";
@@ -7,6 +8,15 @@ import { StoreReportGenerator } from "@/utils/reports/storeReportGenerator";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+	const canCreateStore = await checkUserCreatePermission();
+
+	if (!canCreateStore) {
+		return NextResponse.json(
+			{ message: "User does not have permission to create a store." },
+			{ status: 403 }
+		);
+	}
+	
 	const { store, category_list }: { store: StoreCreationProps; category_list: string[] } = await req.json();
 
 	const logger = LogManager.createLogger(store.store_code, store.store_name);

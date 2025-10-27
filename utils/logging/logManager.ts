@@ -37,8 +37,6 @@ export class LogManager {
   static getAllReports(): StoreReportData[] {
     return Array.from(this.reports.values());
   }
-  
-
 
   // Generate downloadable content
   static generateLogFile(storeCode: string): string | null {
@@ -46,6 +44,7 @@ export class LogManager {
     if (!log) return null;
 
     const logger = new StoreCreationLogger(log.storeCode, log.storeName);
+    
     // Restore the log state
     Object.assign(logger['log'], log);
     

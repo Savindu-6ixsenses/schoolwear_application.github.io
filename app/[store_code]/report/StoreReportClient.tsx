@@ -21,6 +21,8 @@ import ImageModal from "@/app/components/ImageModal";
 import { DesignView } from "@/types/designs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FaEye } from "react-icons/fa";
+import { discardUpdates } from "@/services/stores/storeServices-Server";
+import { useRouter } from "next/navigation";
 
 // Helper to fetch a signed URL from your API
 const fetchSignedUrl = async (type: "log" | "report", storeCode: string) => {
@@ -37,8 +39,18 @@ interface StoreReportClientProps {
 	storeCode: string;
 }
 
-const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps) => {
-	const {  store, added_products, category_list, designList, isInitialized, setStore } = useStoreState();
+const StoreReportClient = ({
+	canCreateStore,
+	storeCode,
+}: StoreReportClientProps) => {
+	const {
+		store,
+		added_products,
+		category_list,
+		designList,
+		isInitialized,
+		setStore,
+	} = useStoreState();
 	const [logUrl, setLogUrl] = useState<string | null>(null);
 	const [reportUrl, setReportUrl] = useState<string | null>(null);
 	const [logUrlExpiry, setLogUrlExpiry] = useState<number | null>(null);
@@ -46,6 +58,8 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 	const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
 	const [design, setDesign] = useState<null | DesignView>(null);
 	const [expandedNotesId, setExpandedNotesId] = useState<string | null>(null);
+
+	const router = useRouter();
 
 	const all_products: StoreProductReport[] =
 		Object.values(added_products).flat();
@@ -98,6 +112,36 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 		}
 	};
 
+	const handleDiscardUpdates = async () => {
+		try {
+			await discardUpdates(storeCode);
+			toast.success("Store updates discarded successfully.");
+			router.refresh()
+			router.push(`/list`); // Redirect to home or appropriate page
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to discard store updates.";
+			toast.error(message);
+		}
+	};
+
+	const getProductStatusColor = (status?: string) => {
+		switch (status) {
+			case "new":
+				return "bg-blue-100";
+			case "modify":
+				return "bg-yellow-100";
+			case "rejected":
+				return "bg-red-100";
+			case "added":
+				return "bg-green-100";
+			default:
+				return "bg-white";
+		}
+	};
+
 	if (!isInitialized) {
 		return (
 			<div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -110,7 +154,10 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 						<div className="space-y-4">
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 								{[...Array(3)].map((_, i) => (
-									<div key={i} className="text-center space-y-2">
+									<div
+										key={i}
+										className="text-center space-y-2"
+									>
 										<Skeleton className="h-8 w-1/4 mx-auto" />
 										<Skeleton className="h-4 w-1/2 mx-auto" />
 									</div>
@@ -187,111 +234,109 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 									No products added yet.
 								</p>
 							) : (
-								Object.entries(added_products).map(
-									([designId, products]) => {
-										const currentDesign = designList.find(
-											(d) => d.design_id === designId
-										);
-										return (
-											<div
-												key={designId}
-												className="border rounded p-3 bg-muted/50"
-											>
-												<div className="mb-2 flex items-center gap-2 flex-wrap">
-													<span className="font-semibold">Design Name:</span>
-													<span className="text-primary">
-														{currentDesign?.design_name}
-													</span>
-													<Badge variant="outline" className="ml-2">
-														Guideline: {products[0].designGuideline}
-													</Badge>
+								Object.entries(added_products).map(([designId, products]) => {
+									const currentDesign = designList.find(
+										(d) => d.design_id === designId
+									);
+									return (
+										<div
+											key={designId}
+											className="border rounded p-3 bg-muted/50"
+										>
+											<div className="mb-2 flex items-center gap-2 flex-wrap">
+												<span className="font-semibold">Design Name:</span>
+												<span className="text-primary">
+													{currentDesign?.design_name}
+												</span>
+												<Badge
+													variant="outline"
+													className="ml-2"
+												>
+													Guideline: {products[0].designGuideline}
+												</Badge>
+												<Button
+													variant="outline"
+													size="icon"
+													onClick={() => {
+														setDesign(currentDesign || null);
+														setIsDesignModalOpen(true);
+													}}
+												>
+													<FaEye className="h-4 w-4" />
+												</Button>
+												{currentDesign?.notes && (
 													<Button
 														variant="outline"
-														size="icon"
-														onClick={() => {
-															setDesign(currentDesign || null);
-															setIsDesignModalOpen(true);
-														}}
+														size="sm"
+														onClick={() =>
+															setExpandedNotesId(
+																expandedNotesId === designId ? null : designId
+															)
+														}
+														className="flex items-center gap-2"
 													>
-														<FaEye className="h-4 w-4" />
+														<StickyNote className="h-4 w-4" />
+														<span>
+															{expandedNotesId === designId ? "Hide" : "View"}{" "}
+															Notes
+														</span>
 													</Button>
-													{currentDesign?.notes && (
-														<Button
-															variant="outline"
-															size="sm"
-															onClick={() =>
-																setExpandedNotesId(
-																	expandedNotesId === designId
-																		? null
-																		: designId
-																)
-															}
-															className="flex items-center gap-2"
-														>
-															<StickyNote className="h-4 w-4" />
-															<span>
-																{expandedNotesId === designId
-																	? "Hide"
-																	: "View"}{" "}
-																Notes
-															</span>
-														</Button>
-													)}
-												</div>
-
-												{expandedNotesId === designId &&
-													currentDesign?.notes && (
-														<Card className="my-2 bg-background">
-															<CardHeader className="p-3">
-																<CardTitle className="text-base flex items-center gap-2">
-																	<StickyNote className="h-4 w-4" />
-																	Design Notes
-																</CardTitle>
-															</CardHeader>
-															<CardContent className="p-3 pt-0">
-																<p className="text-sm text-muted-foreground whitespace-pre-wrap">
-																	{currentDesign.notes}
-																</p>
-															</CardContent>
-														</Card>
-													)}
-
-												<div className="space-y-2 pl-4">
-													{products.map((product, idx) => (
-														<div
-															key={product.productId || idx}
-															className="flex items-center justify-between p-2 border rounded bg-white"
-														>
-															<div>
-																<span className="font-medium">
-																	{product.productName}
-																</span>
-																<Badge
-																	variant="secondary"
-																	className="ml-2 bg-slate-300"
-																>
-																	{product.category}
-																</Badge>
-																{product.sizeVariations &&
-																	product.sizeVariations
-																		.split(",")
-																		.map((size) => (
-																			<Badge
-																				key={size.trim()}
-																				variant="secondary"
-																				className="ml-1"
-																			>
-																				{size}
-																			</Badge>
-																		))}
-															</div>
-														</div>
-													))}
-												</div>
+												)}
 											</div>
-										);
-									}
-								)
+
+											{expandedNotesId === designId && currentDesign?.notes && (
+												<Card className="my-2 bg-background">
+													<CardHeader className="p-3">
+														<CardTitle className="text-base flex items-center gap-2">
+															<StickyNote className="h-4 w-4" />
+															Design Notes
+														</CardTitle>
+													</CardHeader>
+													<CardContent className="p-3 pt-0">
+														<p className="text-sm text-muted-foreground whitespace-pre-wrap">
+															{currentDesign.notes}
+														</p>
+													</CardContent>
+												</Card>
+											)}
+
+											<div className="space-y-2 pl-4">
+												{products.map((product, idx) => (
+													<div
+														key={product.productId || idx}
+														className={`flex items-center justify-between p-2 border rounded ${getProductStatusColor(
+															product.product_status
+														)}`}
+													>
+														<div>
+															<span className="font-medium">
+																{product.productName}
+															</span>
+															<Badge
+																variant="secondary"
+																className="ml-2 bg-slate-300"
+															>
+																{product.category}
+															</Badge>
+															{product.sizeVariations &&
+																product.sizeVariations
+																	.split(",")
+																	.map((size) => (
+																		<Badge
+																			key={size.trim()}
+																			variant="secondary"
+																			className="ml-1"
+																		>
+																			{size}
+																		</Badge>
+																	))}
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									);
+								})
 							)}
 						</div>
 					</div>
@@ -321,6 +366,14 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 						<Download className="h-4 w-4" />
 						Download Report
 					</Button>
+					{store.status === "Modify" && (
+						<div
+							className="flex justify-center items-center mt-3 mr-3 bg-red-700 shadow-md text-white w-32 h-12 rounded-md cursor-pointer"
+							onClick={handleDiscardUpdates}
+						>
+							Discard Updates
+						</div>
+					)}
 				</CardFooter>
 			</Card>
 			<ImageModal
@@ -333,4 +386,3 @@ const StoreReportClient = ({ canCreateStore, storeCode }: StoreReportClientProps
 };
 
 export default StoreReportClient;
-
