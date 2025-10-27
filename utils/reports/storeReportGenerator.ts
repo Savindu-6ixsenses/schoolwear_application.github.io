@@ -157,7 +157,7 @@ export class StoreReportGenerator {
   processProductData(productsByDesign: Record<string, productConfig[]>) {
     Object.entries(productsByDesign).forEach(([designId, products]) => {
       products.forEach(_product => {
-        const product: ProductCreationProps = _product.productConfigs;
+        const product: ProductCreationProps = _product.productConfigs as ProductCreationProps;
         const category = _product.category || 'Uncategorized';
         const color = this.extractColorFromName(product.name || '');
         const sizes = product.variants?.map((variant) => variant.option_values?.[0].label || 'N/A') || null;
