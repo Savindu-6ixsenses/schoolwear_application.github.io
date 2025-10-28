@@ -19,14 +19,12 @@ export async function addSingleProduct(formData: FormData) {
 
 		// Duplicate check
 		console.log(
-			`[LOG] Checking for duplicates with SKU: ${parsed.sku} OR Product ID: ${parsed.product_id}`
+			`[LOG] Checking for duplicates with SAGE Code: ${parsed.sage_code} OR SKU: ${parsed.sku}`
 		);
 		const { data: dup, error: dupError } = await supabase
 			.from("new_all_products_4")
-			.select(`"Product ID"`)
-			.or(
-				`"Product Code/SKU".eq.${parsed.sku},"Product ID".eq.${parsed.product_id}`
-			)
+			.select(`"SAGE Code", "Product Code/SKU"`)
+			.or(`"SAGE Code".eq.${parsed.sage_code},"Product Code/SKU".eq.${parsed.sku}`)
 			.limit(1);
 
 		if (dupError) {
@@ -36,14 +34,13 @@ export async function addSingleProduct(formData: FormData) {
 
 		if (dup && dup.length > 0) {
 			console.warn("[WARN] Duplicate found. Aborting insertion. Found:", dup);
-			throw new Error("Duplicate SKU or Product ID");
+			throw new Error("Duplicate SAGE Code or SKU already exists.");
 		}
 		console.log("[LOG] No duplicates found. Proceeding with insert.");
 
         // Map the parsed data to the correct database column names
 		const dataToInsert = {
 			"Item Type": parsed.item_type,
-			"Product ID": parsed.product_id,
 			"Product Name": parsed.product_name,
 			"Product Type": parsed.product_type,
 			"Product Code/SKU": parsed.sku,

@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { addSingleProduct } from "./actions";
+import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 
 type FieldError = Record<string, string | undefined>;
 
-const required = ["product_id", "product_name", "sku"] as const;
+const required = ["product_name", "sku", "sage_code"] as const;
 
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
@@ -12,8 +13,6 @@ export default function SingleAddForm() {
 		type: "success" | "error";
 		text: string;
 	} | null>(null);
-
-	const skuPlaceholder = useMemo(() => "SKU-0001", []);
 
 	const validate = (fd: FormData) => {
 		const e: FieldError = {};
@@ -36,7 +35,7 @@ export default function SingleAddForm() {
 		["is_created", "xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach(
 			(name: string) => {
 				if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
-                                                     // Zod treats any non-empty string as true
+				// Zod treats any non-empty string as true
 			}
 		);
 
@@ -111,36 +110,39 @@ export default function SingleAddForm() {
 				</div>
 				<div>
 					{labelReq("Category", "category")}
-					<input
+					<select
 						id="category"
 						name="category"
 						className={inputBase}
-						placeholder="e.g., Schoolwear"
-					/>
+						defaultValue=""
+					>
+						<option
+							value=""
+							disabled
+						>
+							Select a category
+						</option>
+						{GLOBAL_SUBCATEGORIES.map((cat) => (
+							<option
+								key={cat}
+								value={cat}
+							>
+								{cat}
+							</option>
+						))}
+					</select>
 				</div>
 			</div>
 
-			{/* Row: Product ID / SKU / Product Name */}
+			{/* Row: SKU / Product Name */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-				<div>
-					{labelReq("Product ID", "product_id")}
-					<input
-						id="product_id"
-						name="product_id"
-						className={inputBase}
-						placeholder="P0001"
-					/>
-					{errors.product_id && (
-						<p className="mt-1 text-xs text-red-600">{errors.product_id}</p>
-					)}
-				</div>
 				<div>
 					{labelReq("SKU (Product Code)", "sku")}
 					<input
 						id="sku"
 						name="sku"
 						className={inputBase}
-						placeholder={skuPlaceholder}
+						placeholder="SKU-000-BG"
 					/>
 					{errors.sku && (
 						<p className="mt-1 text-xs text-red-600">{errors.sku}</p>
@@ -207,21 +209,6 @@ export default function SingleAddForm() {
 
 			{/* Flags */}
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-				<fieldset className="border border-gray-200 rounded-lg p-4">
-					<legend className="px-2 text-sm font-semibold text-gray-700">
-						Availability Flags
-					</legend>
-					<label className="mt-2 flex items-center gap-2 text-sm">
-						<input
-							type="checkbox"
-							name="is_created"
-							value="true"
-							className="h-4 w-4"
-						/>
-						<span>isCreated</span>
-					</label>
-				</fieldset>
-
 				<fieldset className="border border-gray-200 rounded-lg p-4">
 					<legend className="px-2 text-sm font-semibold text-gray-700">
 						Sizes

@@ -195,7 +195,7 @@ export async function getStoreStatus(storeCode: string) {
 		.from("stores")
 		.select("status")
 		.eq("store_code", storeCode)
-		.single();	
+		.single();
 	if (error) {
 		console.error(`Failed to get store status:`, error);
 		throw new Error(`Failed to get store status: ${error.message}`);
