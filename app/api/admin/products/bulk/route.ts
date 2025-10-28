@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 		}
 
 		// Required headers
-		const requiredHeaders = ["Product ID", "Product Name", "Product Code/SKU"];
+		const requiredHeaders = ["Product Name", "Product Code/SKU", "SAGE Code"];
 		const headers = Object.keys(records[0] ?? {});
 		const missing = requiredHeaders.filter((h) => !headers.includes(h));
 		if (missing.length) {
@@ -78,7 +78,6 @@ export async function POST(req: Request) {
 				const candidate = {
 					// Map from DB/CSV column names to Zod schema keys
 					item_type: r["Item Type"],
-					product_id: r["Product ID"],
 					product_name: r["Product Name"],
 					product_type: r["Product Type"],
 					sku: r["Product Code/SKU"],
@@ -86,21 +85,22 @@ export async function POST(req: Request) {
 					brand_name: r["Brand Name"],
 					product_description: r["Product Description"],
 					product_weight: r["Product Weight"],
-					is_created: r.isCreated.toLowerCase() === "true" || r.isCreated === "1",
+					is_created:
+						r.isCreated.toLowerCase() === "true" || r.isCreated === "1",
 					xs: r.XS.toLowerCase() === "true" || r.XS === "1",
 					sm: r.SM.toLowerCase() === "true" || r.SM === "1",
-                    md: r.MD.toLowerCase() === "true" || r.MD === "1",
-                    lg: r.LG.toLowerCase() === "true" || r.LG === "1",
-                    xl: r.XL.toLowerCase() === "true" || r.XL === "1",
-                    x2: r.X2.toLowerCase() === "true" || r.X2 === "1",
-                    x3: r.X3.toLowerCase() === "true" || r.X3 === "1",
+					md: r.MD.toLowerCase() === "true" || r.MD === "1",
+					lg: r.LG.toLowerCase() === "true" || r.LG === "1",
+					xl: r.XL.toLowerCase() === "true" || r.XL === "1",
+					x2: r.X2.toLowerCase() === "true" || r.X2 === "1",
+					x3: r.X3.toLowerCase() === "true" || r.X3 === "1",
 					category: r.Category,
 				};
 
 				const parsed = productSchema.parse(candidate);
 				normalized.push(parsed);
 				rowResults.push({ row: i + 1, status: "inserted", sku: parsed.sku });
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			} catch (e: any) {
 				console.warn(
 					`[VALIDATION_FAIL] Row ${i + 1} (SKU: ${r.sku}):`,
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 					row: i + 1,
 					status: "failed",
 					message: e?.message ?? "Validation failed",
-					sku: r["Product Code/SKU"],
+					sku: r["SAGE Code"],
 				});
 			}
 		}
@@ -142,21 +142,16 @@ export async function POST(req: Request) {
 		// Check duplicates in DB by SKU or PRODUCT_ID (one pass)
 		console.log("[LOG] Checking for duplicates in the database...");
 		const skus = Array.from(new Set(normalized.map((p) => p.sku)));
-		const productIds = Array.from(new Set(normalized.map((p) => p.product_id)));
-		const productNames = Array.from(
-			new Set(normalized.map((p) => p.product_name))
-		);
+		const sageCodes = Array.from(new Set(normalized.map((p) => p.sage_code)));
 
 		// Note: Column names with spaces/slashes must be quoted.
 		const { data: dbExisting, error: dbErr } = await supabase
 			.from("new_all_products_4")
-			.select(`"Product Code/SKU", "Product ID", "Product Name"`)
+			.select(`"Product Code/SKU", "SAGE Code"`)
 			.or(
 				`"Product Code/SKU".in.(${skus.join(
 					","
-				)}),"Product ID".in.(${productIds.join(
-					","
-				)}),"Product Name".in.(${productNames.map((n) => `"${n}"`).join(",")})`
+				)}),"SAGE Code".in.(${sageCodes.join(",")})`
 			);
 
 		if (dbErr) {
@@ -168,8 +163,7 @@ export async function POST(req: Request) {
 		(dbExisting ?? []).forEach((d) => {
 			if (d["Product Code/SKU"])
 				existingSet.add(`sku:${d["Product Code/SKU"]}`);
-			if (d["Product ID"]) existingSet.add(`pid:${d["Product ID"]}`);
-			if (d["Product Name"]) existingSet.add(`pname:${d["Product Name"]}`);
+			if (d["SAGE Code"]) existingSet.add(`sage:${d["SAGE Code"]}`);
 		});
 
 		console.log(
@@ -181,8 +175,7 @@ export async function POST(req: Request) {
 		const toInsert = normalized.filter(
 			(p) =>
 				!existingSet.has(`sku:${p.sku}`) &&
-				!existingSet.has(`pid:${p.product_id}`) &&
-				!existingSet.has(`pname:${p.product_name}`)
+				!existingSet.has(`sage:${p.sage_code}`)
 		);
 
 		console.log(
@@ -205,7 +198,6 @@ export async function POST(req: Request) {
 			// Map from Zod schema keys back to DB column names for insertion
 			const chunkToInsert = chunk.map((p) => ({
 				"Item Type": p.item_type,
-				"Product ID": p.product_id,
 				"Product Name": p.product_name,
 				"Product Type": p.product_type,
 				"Product Code/SKU": p.sku,
@@ -293,7 +285,7 @@ export async function POST(req: Request) {
 			failed: resultSummary.filter((x) => x.status === "failed").length,
 			results: resultSummary,
 		});
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (e: any) {
 		// Log the full error to the server console for debugging
 		console.error("[BULK_IMPORT_ERROR]", e);

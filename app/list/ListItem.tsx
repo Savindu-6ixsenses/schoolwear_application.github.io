@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-	FaEdit,
-	FaChevronDown,
-	FaChevronUp,
-	FaTrash,
-} from "react-icons/fa";
+import { FaEdit, FaChevronDown, FaChevronUp, FaTrash } from "react-icons/fa";
 import { StoreSummary } from "./page";
 import {
 	changeStoreStatus,
@@ -109,8 +104,8 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 		<div className="border-2 border-gray-200 rounded-lg bg-white shadow-sm transition-all duration-300">
 			{/* Collapsed View */}
 			<div
-				className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
-				onClick={() => setIsExpanded(!isExpanded)}
+				className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 z-0"
+				onClick={() => router.push(`/${item.store_code}`)}
 			>
 				{/* Left side info */}
 				<div className="flex items-center gap-4 flex-wrap">
@@ -142,7 +137,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 							<button
 								title="Update"
 								onClick={handleUpdateClick}
-								className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 text-sm active:scale-95 min-w-[95px]"
+								className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 text-sm active:scale-95 min-w-[95px] z-10"
 							>
 								<FaEdit />
 								<span>Update</span>
@@ -151,29 +146,39 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 							<button
 								title="Edit"
 								onClick={handleEditClick}
-								className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm active:scale-95 min-w-[95px]"
+								className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 text-sm active:scale-95 min-w-[95px] z-10"
 							>
 								<FaEdit />
 								<span>Edit</span>
 							</button>
 						)}
-						{item.status === "Approved" ? (<button
-							title="Delete"
-							onClick={handleDisableClick}
-							className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px]"
-						>
-							<FaTrash />
-							<span>Disable</span>
-						</button>) : (<button
-							title="Delete"
-							onClick={handleDeleteClick}
-							className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px]"
-						>
-							<FaTrash />
-							<span>Delete</span>
-						</button>)}
+						{item.status === "Approved" ? (
+							<button
+								title="Delete"
+								onClick={handleDisableClick}
+								className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px] z-10"
+							>
+								<FaTrash />
+								<span>Disable</span>
+							</button>
+						) : (
+							<button
+								title="Delete"
+								onClick={handleDeleteClick}
+								className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-sm active:scale-95 min-w-[95px] z-10"
+							>
+								<FaTrash />
+								<span>Delete</span>
+							</button>
+						)}
 					</div>
-					<button className="p-2 rounded-full hover:bg-gray-200">
+					<button
+						className="p-2 rounded-full hover:bg-gray-200 z-10"
+						onClick={(e) => {
+							e.stopPropagation();
+							setIsExpanded(!isExpanded);
+						}}
+					>
 						{isExpanded ? <FaChevronUp /> : <FaChevronDown />}
 					</button>
 				</div>
