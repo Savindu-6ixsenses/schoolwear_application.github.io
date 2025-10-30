@@ -47,7 +47,7 @@ export async function addSingleProduct(formData: FormData) {
 			"SAGE Code": parsed.sage_code,
 			"Brand Name": parsed.brand_name,
 			"Product Description": parsed.product_description,
-			"Product Weight": parsed.product_weight,
+			// "Product Weight": parsed.product_weight,
 			isCreated: parsed.is_created,
 			XS: parsed.xs,
 			SM: parsed.sm,

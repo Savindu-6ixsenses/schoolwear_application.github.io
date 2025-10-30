@@ -162,7 +162,7 @@ export default function SingleAddForm() {
 				</div>
 			</div>
 
-			{/* Row: Brand / SAGE / Weight */}
+			{/* Row: Brand / SAGE Code */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div>
 					{labelReq("Brand Name", "brand_name")}
@@ -180,18 +180,6 @@ export default function SingleAddForm() {
 						name="sage_code"
 						className={inputBase}
 						placeholder="SG-100"
-					/>
-				</div>
-				<div>
-					{labelReq("Product Weight (kg)", "product_weight")}
-					<input
-						id="product_weight"
-						name="product_weight"
-						type="number"
-						step="any"
-						min="0"
-						className={inputBase}
-						placeholder="0.25"
 					/>
 				</div>
 			</div>

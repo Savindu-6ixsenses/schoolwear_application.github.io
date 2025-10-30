@@ -6,7 +6,6 @@ import {
 } from "@/types/products";
 import { createUniqueProductNames, createUniqueSKU } from "./naming";
 import { StoreCreationLogger } from "../logging/storeCreationLogger";
-import { CreateVariantPayload } from "@/types/products";
 import { createClient } from "../supabase/ssr_client/server";
 
 const getVariantSKU = (

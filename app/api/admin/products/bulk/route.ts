@@ -204,7 +204,7 @@ export async function POST(req: Request) {
 				"SAGE Code": p.sage_code,
 				"Brand Name": p.brand_name,
 				"Product Description": p.product_description,
-				"Product Weight": p.product_weight,
+				// "Product Weight": p.product_weight,
 				isCreated: p.is_created,
 				XS: p.xs,
 				SM: p.sm,
