@@ -12,7 +12,7 @@ type NamingFieldSet = {
 // TODO: Handle when there are no sizes originally.
 const AddToList = ({
 	store_code,
-	product_id,
+	sage_code,
 	product_name,
 	design_id,
 	designGuideline,
@@ -28,7 +28,7 @@ const AddToList = ({
 	setAddedToList
 }: {
 	store_code: string;
-	product_id: string;
+	sage_code: string;
 	product_name: string;
 	design_id: string;
 	designGuideline: string;
@@ -91,7 +91,7 @@ const AddToList = ({
 		console.log(
 			"Adding to list with parameters: ",
 			store_code,
-			product_id,
+			sage_code,
 			design_id,
 			selected_sizes,
 			naming_method,
@@ -120,7 +120,7 @@ const AddToList = ({
 				},
 				body: JSON.stringify({
 					store_code,
-					product_id,
+					sage_code,
 					design_code: design_id,
 					size_variations: selected_sizes,
 					method: naming_method,
@@ -130,7 +130,7 @@ const AddToList = ({
 
 			if (response.ok) {
 				console.log("Added to list");
-				addProduct(design_id, {productId: Number(product_id),productName: product_name, sizeVariations: selected_sizes, category: product_category, designGuideline: designGuideline, naming_method: naming_method, naming_fields: naming_fields});
+				addProduct(design_id, {sage_code: sage_code,productName: product_name, sizeVariations: selected_sizes, category: product_category, designGuideline: designGuideline, naming_method: naming_method, naming_fields: naming_fields});
 				toast.success("Item added to list successfully");
 				setAddedToList(true);
 			} else {
@@ -153,7 +153,7 @@ const AddToList = ({
 		console.log(
 			"Editing Parameters: ",
 			store_code,
-			product_id,
+			sage_code,
 			design_id,
 			selected_sizes,
 			naming_method,
@@ -177,7 +177,7 @@ const AddToList = ({
 				},
 				body: JSON.stringify({
 					store_code,
-					product_id,
+					sage_code,
 					design_code: design_id,
 					size_variations: selected_sizes,
 					method: naming_method,

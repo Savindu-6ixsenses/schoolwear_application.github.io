@@ -24,7 +24,9 @@ export async function addSingleProduct(formData: FormData) {
 		const { data: dup, error: dupError } = await supabase
 			.from("new_all_products_4")
 			.select(`"SAGE Code", "Product Code/SKU"`)
-			.or(`"SAGE Code".eq.${parsed.sage_code},"Product Code/SKU".eq.${parsed.sku}`)
+			.or(
+				`"Product Name".eq.${parsed.product_name},"Product Code/SKU".eq.${parsed.sku}`
+			)
 			.limit(1);
 
 		if (dupError) {
@@ -34,11 +36,14 @@ export async function addSingleProduct(formData: FormData) {
 
 		if (dup && dup.length > 0) {
 			console.warn("[WARN] Duplicate found. Aborting insertion. Found:", dup);
-			throw new Error("Duplicate SAGE Code or SKU already exists.");
+			return {
+				ok: false,
+				message: "A product with this SAGE Code or SKU already exists.",
+			};
 		}
 		console.log("[LOG] No duplicates found. Proceeding with insert.");
 
-        // Map the parsed data to the correct database column names
+		// Map the parsed data to the correct database column names
 		const dataToInsert = {
 			"Item Type": parsed.item_type,
 			"Product Name": parsed.product_name,
@@ -67,8 +72,10 @@ export async function addSingleProduct(formData: FormData) {
 			console.error("[ERROR] Supabase error during product insert:", error);
 			throw error;
 		}
-		console.log('[LOG] Product inserted successfully into "new_all_products_4" table.');
-        
+		console.log(
+			'[LOG] Product inserted successfully into "new_all_products_4" table.'
+		);
+
 		await supabase.from("import_logs").insert({
 			user_id: user_id,
 			source: "single_form",
@@ -88,6 +95,14 @@ export async function addSingleProduct(formData: FormData) {
 			"[FATAL] An error occurred in addSingleProduct action:",
 			error
 		);
-		throw error; // Re-throw error to be caught by the form's try/catch block
+
+		// Instead of throwing, return a structured error response
+		if (error instanceof Error) {
+			return { ok: false, message: error.message };
+		}
+		return {
+			ok: false,
+			message: "An unexpected error occurred. Please check the server logs.",
+		};
 	}
 }

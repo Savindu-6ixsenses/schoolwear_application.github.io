@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
 		const body = await request.json();
 		const {
 			store_code,
-			product_id,
+			sage_code,
 			design_code,
 			size_variations,
 			method,
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
 		const response = await updateItem({
 			store_code,
-			product_id,
+			sage_code,
 			design_code,
 			size_variations,
 			method: method,

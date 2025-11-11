@@ -97,7 +97,7 @@ export async function discardUpdates(storeCode: string) {
  * This is a destructive action and only removes data from this application, not BigCommerce.
  */
 export async function deleteDraftOrPendingStore(storeCode: string) {
-	const {supabase, isAdmin, user_id} = await createClientbyRole();
+	const {supabase} = await createClientbyRole();
 	const { error } = await supabase.rpc("delete_store_if_not_approved", {
 		p_store_code: storeCode,
 	});

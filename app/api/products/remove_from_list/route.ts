@@ -4,19 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { store_code, product_id, design_code} = body;
+        const { store_code, sage_code, design_code} = body;
 
         console.log(
             "Request Body: ",
             store_code,
-            product_id,
+            sage_code,
             design_code
         );
 
         // Remove from list
         const response = await removeFromList({
             store_code,
-            product_id,
+            sage_code,
             design_code
         });
 

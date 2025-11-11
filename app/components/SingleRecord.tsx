@@ -202,7 +202,7 @@ const SingleRecord = ({
 						{/* TODO: Restrict these buttons from the logic inside to restrict if the store  */}
 						<AddToList
 							store_code={store_code}
-							product_id={item.productId}
+							sage_code={item.sageCode}
 							product_name={item.productName}
 							design_id={design_id}
 							designGuideline={designGuideline || ""}
@@ -221,7 +221,7 @@ const SingleRecord = ({
 							<RemoveFromList
 								store_code={store_code}
 								design_id={design_id}
-								product_id={item.productId}
+								sage_code={item.sageCode}
 								added_to_list={added_to_list || false}
 								setAddedToList={setAddedToList}
 								setMethodFields={setMethodFields}

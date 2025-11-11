@@ -14,9 +14,9 @@ const store_hash = process.env.BIGCOMMERCE_STORE_HASH!;
  * Updates the database with the new product ID and SKU from BigCommerce.
  */
 async function updateProductDesignRecord(
-	identifiers: { storeCode: string; productId: string; designId: string },
+	identifiers: { storeCode: string; sageCode: string; designId: string },
 	newProductId: number,
-	newSageCode: string,
+	newSKU: string,
 	logger: StoreCreationLogger
 ) {
 	const supabase = await createClient();
@@ -24,17 +24,17 @@ async function updateProductDesignRecord(
 		.from("stores_products_designs_2")
 		.update({
 			new_product_id: newProductId,
-			new_sage_code: newSageCode,
+			new_sku: newSKU,
 			product_status: "added",
 		})
 		.eq("Store_Code", identifiers.storeCode)
-		.eq("Product_ID", identifiers.productId)
+		.eq("sage_code", identifiers.sageCode)
 		.eq("Design_ID", identifiers.designId);
 
 	if (error) {
 		logger.addEntry(
 			"ERROR",
-			`Failed to update DB for product ${identifiers.productId}`,
+			`Failed to update DB for product ${identifiers.sageCode}`,
 			{ error: error.message }
 		);
 		console.error("DB Update Error:", error);
@@ -45,7 +45,7 @@ async function updateProductDesignRecord(
  * Updates the database record to 'rejected' when a product fails to be created.
  */
 async function rejectProductDesignRecord(
-	identifiers: { storeCode: string; productId: string; designId: string },
+	identifiers: { storeCode: string; sageCode: string; designId: string },
 	logger: StoreCreationLogger
 ) {
 	const supabase = await createClient();
@@ -55,13 +55,13 @@ async function rejectProductDesignRecord(
 			product_status: "rejected",
 		})
 		.eq("Store_Code", identifiers.storeCode)
-		.eq("Product_ID", identifiers.productId)
+		.eq("sage_code", identifiers.sageCode)
 		.eq("Design_ID", identifiers.designId);
 
 	if (error) {
 		logger.addEntry(
 			"ERROR",
-			`Failed to update DB status to 'rejected' for product ${identifiers.productId}`,
+			`Failed to update DB status to 'rejected' for product ${identifiers.sageCode}`,
 			{ error: error.message }
 		);
 		console.error("DB Update to rejected Error:", error);
@@ -72,7 +72,7 @@ async function rejectProductDesignRecord(
  * Updates the product_status in the database for a given product design.
  */
 export async function updateProductDesignStatus(
-	identifiers: { storeCode: string; productId: string; designId: string },
+	identifiers: { storeCode: string; sageCode: string; designId: string },
 	status: "added" | "rejected" | "modify",
 	logger: StoreCreationLogger
 ) {
@@ -81,13 +81,13 @@ export async function updateProductDesignStatus(
 		.from("stores_products_designs_2")
 		.update({ product_status: status })
 		.eq("Store_Code", identifiers.storeCode)
-		.eq("Product_ID", identifiers.productId)
+		.eq("sage_code", identifiers.sageCode)
 		.eq("Design_ID", identifiers.designId);
 
 	if (error) {
 		logger.addEntry(
 			"ERROR",
-			`Failed to update DB status to '${status}' for product ${identifiers.productId}`,
+			`Failed to update DB status to '${status}' for product ${identifiers.sageCode}`,
 			{ error: error.message }
 		);
 		console.error(`DB Update to ${status} Error:`, error);
@@ -371,6 +371,7 @@ async function findVariantIdByLabel(productId: number, sizeLabel: string, logger
 
 	// 3. Find the variant that matches the size label
 	for (const variant of allVariants) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const sizeOptionValue = variant.option_values?.find((ov: any) => ov.option_id === sizeOption.id);
 		if (sizeOptionValue && sizeOptionValue.label.toLowerCase() === sizeLabel.toLowerCase()) {
 			return variant.id; // Found it

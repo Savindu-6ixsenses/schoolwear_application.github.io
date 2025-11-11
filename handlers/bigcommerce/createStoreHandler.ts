@@ -59,7 +59,7 @@ export const handleCreateStore = async (
 
 		const batches = await Promise.all(
 			Object.entries(storeProductsList).map(async ([designId, products], i) => {
-				const productConfigs = await getProductConfigs(
+				const productConfigs : productConfig[] = await getProductConfigs(
 					products,
 					category_id,
 					designId,
