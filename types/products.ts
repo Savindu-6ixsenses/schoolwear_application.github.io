@@ -202,7 +202,7 @@ export interface ProductResponse {
 }
 
 export interface StoreProduct {
-	productId: string;
+	// productId: string;
 	sageCode: string;
 	productName: string;
 	brandName: string;
@@ -227,7 +227,7 @@ export interface StoreProduct {
 
 // Supabase Product Attributes
 export interface SupabaseProduct {
-	"Product ID": number;
+	// "Product ID": number;
 	"SAGE Code": string;
 	"Product Name": string;
 	"Brand Name": string;
@@ -243,7 +243,7 @@ export interface SupabaseProduct {
 
 export interface ListPropsProducts {
 	store_code: string;
-	product_id: string;
+	sage_code: string;
 	design_code: string;
 	size_variations: string[];
 	method?: string;
@@ -253,7 +253,7 @@ export interface ListPropsProducts {
 }
 
 export interface StoreProductReport {
-	productId: number;
+	sage_code: string;
 	productName: string;
 	sizeVariations: string;
 	category: string;
@@ -284,7 +284,7 @@ export type productConfig = {
 	// Identifiers for DB update after creation
 	db_identifiers?: {
 		storeCode: string;
-		productId: string;
+		sageCode: string;
 		designId: string;
 	};
 };

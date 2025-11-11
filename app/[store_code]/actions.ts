@@ -1,59 +1,59 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { createClient } from "../../utils/supabase/ssr_client/server";
-import { StoreProduct } from "@/types/products";
-import { fetchFilteredProductsFromSupabase } from "@/services/products/";
+// import { redirect } from "next/navigation";
+// import { createClient } from "../../utils/supabase/ssr_client/server";
+// import { StoreProduct } from "@/types/products";
+// import { fetchFilteredProductsFromSupabase } from "@/services/products/";
 import { updateStoreStatus } from "@/services/stores/storeServices-Server";
 
 //TODO: Fix this action
-export async function get_products_list(
-	in_store_code: string,
-	in_design_id: string,
-	in_page_size: number = 20,
-	in_page: number = 1
-): Promise<[StoreProduct[], number]> {
-	const supabase = await createClient();
+// export async function get_products_list(
+// 	in_store_code: string,
+// 	in_design_id: string,
+// 	in_page_size: number = 20,
+// 	in_page: number = 1
+// ): Promise<[StoreProduct[], number]> {
+// 	const supabase = await createClient();
 
-	const { data: user, error: auth_error } = await supabase.auth.getUser();
-	if (auth_error || !user?.user) {
-		console.error("AN error is happening", auth_error);
-		redirect("/login");
-	}
+// 	const { data: user, error: auth_error } = await supabase.auth.getUser();
+// 	if (auth_error || !user?.user) {
+// 		console.error("AN error is happening", auth_error);
+// 		redirect("/login");
+// 	}
 
-	const data: [StoreProduct[], number] =
-		await fetchFilteredProductsFromSupabase(
-			supabase,
-			in_store_code,
-			in_design_id,
-			undefined,
-			undefined,
-			in_page_size,
-			in_page
-		);
+// 	const data: [StoreProduct[], number] =
+// 		await fetchFilteredProductsFromSupabase(
+// 			supabase,
+// 			in_store_code,
+// 			in_design_id,
+// 			undefined,
+// 			undefined,
+// 			in_page_size,
+// 			in_page
+// 		);
 
-	const normalizedProducts: StoreProduct[] = data[0];
-	const totalFilteredProducts: number = data[1];
+// 	const normalizedProducts: StoreProduct[] = data[0];
+// 	const totalFilteredProducts: number = data[1];
 
-	if (normalizedProducts == undefined || normalizedProducts.length === 0) {
-		console.log("No products found for the given store code and design ID.");
-		throw new Error(
-			"No products found for the given store code and design ID."
-		);
-	}
+// 	if (normalizedProducts == undefined || normalizedProducts.length === 0) {
+// 		console.log("No products found for the given store code and design ID.");
+// 		throw new Error(
+// 			"No products found for the given store code and design ID."
+// 		);
+// 	}
 
-	console.log(
-		"Products in the list are",
-		// normalizedProducts,
-		totalFilteredProducts
-	);
+// 	console.log(
+// 		"Products in the list are",
+// 		// normalizedProducts,
+// 		totalFilteredProducts
+// 	);
 
-	const totalPages = Math.ceil(
-		totalFilteredProducts / (in_page_size ? in_page_size : 10)
-	);
+// 	const totalPages = Math.ceil(
+// 		totalFilteredProducts / (in_page_size ? in_page_size : 10)
+// 	);
 
-	return [normalizedProducts, totalPages];
-}
+// 	return [normalizedProducts, totalPages];
+// }
 
 export async function generate_pl(store_code: string) {
 	const store_data = await updateStoreStatus(store_code, "Pending");

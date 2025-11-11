@@ -139,7 +139,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// Check duplicates in DB by SKU or PRODUCT_ID (one pass)
+		// Check duplicates in DB by SKU or Sage_code (one pass)
 		console.log("[LOG] Checking for duplicates in the database...");
 		const skus = Array.from(new Set(normalized.map((p) => p.sku)));
 		const sageCodes = Array.from(new Set(normalized.map((p) => p.sage_code)));

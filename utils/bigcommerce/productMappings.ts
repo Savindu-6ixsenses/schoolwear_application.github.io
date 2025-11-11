@@ -24,32 +24,32 @@ export const getVariantPayload = async (
 ): Promise<productConfig[]> => {
 	const supabase = await createClient();
 
-	const productId = product.productId;
+	const sageCode = product.sageCode;
 
 	const { data: productDesignData, error } = await supabase
 		.from("stores_products_designs_2")
-		.select("new_product_id, new_sage_code, size_variations, notes")
+		.select("new_product_id, new_sku, size_variations, notes")
 		.eq("Store_Code", storeCode)
-		.eq("Product_ID", productId)
+		.eq("sage_code", sageCode)
 		.eq("Design_ID", designId)
 		.single();
 
 	if (error || !productDesignData) {
 		logger.addEntry(
 			"ERROR",
-			`Could not find product design data for modification: Product ID ${productId}`,
+			`Could not find product design data for modification: Sage Code ${sageCode}`,
 			{ error: error?.message }
 		);
 		return [];
 	}
 
-	const { new_product_id, new_sage_code, size_variations, notes } =
+	const { new_product_id, new_sku, size_variations, notes } =
 		productDesignData;
 
-	if (!new_product_id || !new_sage_code) {
+	if (!new_product_id || !new_sku) {
 		logger.addEntry(
 			"WARNING",
-			`Product ${productId} cannot be modified as it's missing 'new_product_id' or 'new_sage_code'. It might not have been created in BigCommerce yet.`
+			`Product ${sageCode} cannot be modified as it's missing 'new_product_id' or 'new_sku'. It might not have been created in BigCommerce yet.`
 		);
 		return [];
 	}
@@ -66,7 +66,7 @@ export const getVariantPayload = async (
 	);
 
 	// --- TESTING LOGS ---
-	console.log(`[getVariantPayload] Processing Product ID: ${productId}`);
+	console.log(`[getVariantPayload] Processing Sage Code: ${sageCode}`);
 	console.log(
 		`  - Old Sizes (from notes): '${Array.from(oldSizes).join(", ")}'`
 	);
@@ -77,7 +77,7 @@ export const getVariantPayload = async (
 
 	logger.addEntry(
 		"INFO",
-		`Found ${addedSizes.length} new sizes to add and ${removedSizes.length} sizes to remove for product ${productId}`,
+		`Found ${addedSizes.length} new sizes to add and ${removedSizes.length} sizes to remove for product ${sageCode}`,
 		{ addedSizes, removedSizes }
 	);
 
@@ -87,7 +87,7 @@ export const getVariantPayload = async (
 			productId: new_product_id,
 			sizeLabel: size,
 			variant: {
-				sku: `${getVariantSKU(new_sage_code, size, product.sageCode)}`,
+				sku: `${getVariantSKU(new_sku, size, product.sageCode)}`,
 				price: 10.0,
 				inventory_level: 50,
 				weight: 1.0,
@@ -95,7 +95,7 @@ export const getVariantPayload = async (
 		},
 		db_identifiers: {
 			storeCode: storeCode,
-			productId: product.productId,
+			sageCode: product.sageCode,
 			designId: designId,
 		},
 	}));
@@ -108,7 +108,7 @@ export const getVariantPayload = async (
 		},
 		db_identifiers: {
 			storeCode: storeCode,
-			productId: product.productId,
+			sageCode: product.sageCode,
 			designId: designId,
 		},
 	}));
@@ -125,7 +125,7 @@ export const getProductConfigs = async (
 	relatedCategoryIds: Record<string, number>,
 	createdSageCodes: string[] = [],
 	logger: StoreCreationLogger
-) => {
+) : Promise<productConfig[]> => {
 	// Map the store products to BigCommerce product configurations
 
 	console.log("Creating product configurations...");
@@ -254,7 +254,7 @@ export const getProductConfigs = async (
 						category: product.category,
 						db_identifiers: {
 							storeCode: storeCode,
-							productId: product.productId,
+							sageCode: product.sageCode,
 							designId: designId,
 						},
 					},

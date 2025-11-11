@@ -6,7 +6,7 @@ export const productSchema = z.object({
   product_type: z.string().optional(),
   sku: z.string().min(1, 'SKU is required'),
   sage_code: z.string().optional(),
-  brand_name: z.string().optional(),
+  brand_name: z.string().min(1, 'Brand Name is required'),
   product_description: z.string().optional(),
   product_weight: z.coerce.number().optional(),
   is_created: z.coerce.boolean().optional().default(false),
@@ -19,7 +19,7 @@ export const productSchema = z.object({
   x2: z.coerce.boolean().optional(),
   x3: z.coerce.boolean().optional(),
 
-  category: z.string().optional(),
+  category: z.string().min(1, 'Category is required'),
 });
 
 export type ProductInput = z.infer<typeof productSchema>;

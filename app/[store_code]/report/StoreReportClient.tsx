@@ -303,7 +303,7 @@ const StoreReportClient = ({
 											<div className="space-y-2 pl-4">
 												{products.map((product, idx) => (
 													<div
-														key={product.productId || idx}
+														key={product.sage_code || idx}
 														className={`flex items-center justify-between p-2 border rounded ${getProductStatusColor(
 															product.product_status
 														)}`}

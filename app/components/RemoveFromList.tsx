@@ -10,7 +10,7 @@ type MethodKey = keyof typeof GLOBAL_NAMING_METHODS;
 interface RemoveFromListProps {
 	store_code: string;
 	design_id: string;
-	product_id: string;
+	sage_code: string;
 	added_to_list: boolean;
     setAddedToList: React.Dispatch<React.SetStateAction<boolean>>;
     setMethodFields: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
@@ -21,7 +21,7 @@ interface RemoveFromListProps {
 const RemoveFromList: React.FC<RemoveFromListProps> = ({
     store_code,
     design_id,
-	product_id,
+	sage_code,
 	added_to_list,
     setAddedToList,
     // setMethodFields,
@@ -42,7 +42,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 				},
 				body: JSON.stringify({
 					store_code,
-					product_id,
+					sage_code,
 					design_code: design_id
 				}),
 			});
@@ -53,7 +53,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 
 			toast.success("Item removed successfully");
 			// Optionally: trigger parent state update via props or context
-			removeProduct(design_id, product_id);
+			removeProduct(design_id, sage_code);
 			setAddedToList(false);
 			// setMethodFields({}); // Do not reset method fields because it's always Brand Name for now
             setSelectedMethod("1" as MethodKey); // Reset to default method

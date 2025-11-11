@@ -19,7 +19,7 @@ interface StoreState {
 	setDesignList: (designList: DesignView[]) => void;
 	setCategoryList: (categories: string[]) => void;
 	addProduct: (designId: string, product: StoreProductReport) => void;
-	removeProduct: (designId: string, productId: string) => void;
+	removeProduct: (designId: string, sage_code: string) => void;
 	resetStoreState: () => void;
 	loadInitialCategoryList: (store_code: string) => Promise<void>;
 	initializeProductsFromServer: (store_code: string) => Promise<void>;
@@ -63,7 +63,7 @@ export const useStoreState = create<StoreState>()(
 			addProduct: (designId, product) => {
 				const currentProducts = get().added_products[designId] || [];
 				const exists = currentProducts.some(
-					(p) => p.productId === product.productId
+					(p) => p.sage_code === product.sage_code
 				);
 
 				if (!exists) {
@@ -128,10 +128,10 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
-			removeProduct: (designId, productId) => {
+			removeProduct: (designId, sage_code) => {
 				const currentProducts = get().added_products[designId] || [];
 				const updatedProducts = currentProducts.filter(
-					(p) => `${p.productId}` !== productId
+					(p) => `${p.sage_code}` !== sage_code
 				);
 
 				if (updatedProducts.length < currentProducts.length) {
@@ -142,7 +142,7 @@ export const useStoreState = create<StoreState>()(
 						},
 					});
 					console.log(
-						`[Zustand] Product removed from design ${designId}: ${productId}`
+						`[Zustand] Product removed from design ${designId}: ${sage_code}`
 					);
 				}
 			},

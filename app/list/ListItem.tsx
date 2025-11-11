@@ -44,7 +44,6 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 
 	const handleUpdateClick = async (e: React.MouseEvent) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
-		alert("Update functionality is still on development.");
 		try {
 			// Convert Store status into modifying BigCommerce store
 			if (item.status !== "Modify") {

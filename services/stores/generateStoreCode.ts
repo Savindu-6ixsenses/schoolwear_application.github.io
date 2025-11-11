@@ -26,8 +26,6 @@ export async function fetchExistingStoreCodes(baseCode: string): Promise<string[
   return data.map(d => d.store_code);
 }
 
-
-
 export function getUniqueStoreCode(baseCode: string, existingCodes: string[]): string {
   if (!existingCodes.includes(baseCode)) return baseCode;
 

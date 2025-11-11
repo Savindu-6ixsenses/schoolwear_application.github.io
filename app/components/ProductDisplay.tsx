@@ -213,7 +213,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 					) : productData.length > 0 ? (
 						productData.map((item) => (
 							<SingleRecord
-								key={item.productId}
+								key={item.sageCode}
 								item={item}
 								store_code={`${store?.store_code}`}
 								design_id={design ? design.design_id : ""}

@@ -4,7 +4,7 @@ import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 
 type FieldError = Record<string, string | undefined>;
 
-const required = ["product_name", "sku", "sage_code"] as const;
+const required = ["product_name", "sku", "sage_code", "category", "brand_name"] as const;
 
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
@@ -48,15 +48,21 @@ export default function SingleAddForm() {
 
 		try {
 			setBusy(true);
-			await addSingleProduct(fd);
-			setMessage({ type: "success", text: "Product added successfully." });
-			form.reset();
+			const result = await addSingleProduct(fd);
+			if (result.ok) {
+				setMessage({ type: "success", text: "Product added successfully." });
+				form.reset();
+			} else {
+				setMessage({
+					type: "error",
+					text: result.message ?? "Failed to add product.",
+				});
+			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
-			setMessage({
-				type: "error",
-				text: err?.message ?? "Failed to add product.",
-			});
+			// This will catch network errors or other unexpected issues
+			console.error("Error adding product:", err);
+			setMessage({ type: "error", text: "An unexpected error occurred.Check Server Logs." });
 		} finally {
 			setBusy(false);
 		}

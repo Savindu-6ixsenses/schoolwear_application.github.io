@@ -109,7 +109,7 @@ export async function fetchFilteredProductsFromSupabase(
 
 	// Normalize the keys
 	const filteredProducts: StoreProduct[] = products.map((product: any) => ({
-		productId: product["Product ID"],
+		// productId: product["Product ID"],
 		sageCode: product["SAGE Code"],
 		productName: product["Product Name"],
 		brandName: product["Brand Name"],
@@ -187,7 +187,6 @@ export const getStoreProducts = async (
 			// Normalize the data into the StoreProduct format
 			const normalizedProducts: StoreProduct[] = products.map(
 				(product: SupabaseProduct) => ({
-					productId: product["Product ID"],
 					sageCode: product["SAGE Code"],
 					productName: product["Product Name"],
 					brandName: product["Brand Name"],
@@ -214,7 +213,7 @@ export const getStoreProducts = async (
 
 export const addToList = async ({
 	store_code,
-	product_id,
+	sage_code,
 	design_code,
 	size_variations,
 	method,
@@ -224,7 +223,7 @@ export const addToList = async ({
 		console.log(
 			"Adding to list: ",
 			store_code,
-			product_id,
+			sage_code,
 			design_code,
 			size_variations
 		);
@@ -244,7 +243,7 @@ export const addToList = async ({
 				{
 					user_id: user.id,
 					Store_Code: `${store_code}`,
-					Product_ID: `${product_id}`,
+					sage_code: `${sage_code}`,
 					Design_ID: `${design_code}`,
 					size_variations: size_variations,
 					naming_method: method || 1,
@@ -262,7 +261,7 @@ export const addToList = async ({
 
 export const updateItem = async ({
 	store_code,
-	product_id,
+	sage_code,
 	design_code,
 	size_variations,
 	method,
@@ -274,7 +273,7 @@ export const updateItem = async ({
 		console.log(
 			"Updating item: ",
 			store_code,
-			product_id,
+			sage_code,
 			design_code,
 			size_variations,
 			method,
@@ -306,7 +305,7 @@ export const updateItem = async ({
 				.from("stores_products_designs_2")
 				.select("size_variations")
 				.eq("Store_Code", store_code)
-				.eq("Product_ID", product_id)
+				.eq("sage_code", sage_code)
 				.eq("Design_ID", design_code)
 				.single();
 
@@ -325,7 +324,7 @@ export const updateItem = async ({
 			.from("stores_products_designs_2")
 			.update(updateData)
 			.eq("Store_Code", store_code)
-			.eq("Product_ID", product_id)
+			.eq("sage_code", sage_code)
 			.eq("Design_ID", design_code);
 
 		if (!isAdmin) {
@@ -344,18 +343,18 @@ export const updateItem = async ({
 
 export const removeFromList = async ({
 	store_code,
-	product_id,
+	sage_code,
 	design_code,
 }: {
 	store_code: string;
-	product_id: string;
+	sage_code: string;
 	design_code: string;
 }) => {
 	try {
 		console.log(
 			"Removing from the list: ",
 			store_code,
-			product_id,
+			sage_code,
 			design_code
 		);
 		const { supabase, isAdmin, user_id } = await createClientbyRole();
@@ -373,7 +372,7 @@ export const removeFromList = async ({
 			.from("stores_products_designs_2")
 			.delete()
 			.eq("Store_Code", `${store_code}`)
-			.eq("Product_ID", `${product_id}`)
+			.eq("sage_code", `${sage_code}`)
 			.eq("Design_ID", `${design_code}`);
 
 		if (!isAdmin) {
@@ -415,9 +414,9 @@ export const getExistingSageCodes = async (
 
 	const { data, error } = await supabase
 		.from("stores_products_designs_2")
-		.select("new_sage_code")
+		.select("new_sku")
 		.eq("Store_Code", store_code)
-		.not("new_sage_code", "is", null);
+		.not("new_sku", "is", null);
 
 	if (error) {
 		console.error(
@@ -434,5 +433,5 @@ export const getExistingSageCodes = async (
 
 	// The query returns an array of objects like [{ sageCode: '...'}, ...]. We need to flatten it.
 	// and filter out any null/undefined values.
-	return data.map((item) => item.new_sage_code).filter(Boolean);
+	return data.map((item) => item.new_sku).filter(Boolean);
 };
