@@ -287,8 +287,9 @@ CREATE OR REPLACE FUNCTION "public"."get_added_products_json"("store_code_input"
     LANGUAGE "plpgsql" STABLE
     AS $$
 DECLARE
-  result jsonb := '{}';
+  result jsonb := '{}'::jsonb;
   rec record;
+  key text;
 BEGIN
   FOR rec IN
     SELECT
@@ -302,28 +303,34 @@ BEGIN
       sp."naming_fields",
       sp.product_status::text
     FROM public.stores_products_designs_2 sp
-    LEFT JOIN public.new_all_products_4 np ON np."SAGE Code" = sp."sage_code"
-    LEFT JOIN public.designs d ON d."Design_Id" = sp."Design_ID"::uuid
+    LEFT JOIN public.new_all_products_4 np 
+      ON np."SAGE Code" = sp."sage_code"
+    LEFT JOIN public.designs d 
+      ON d."Design_Id" = sp."Design_ID"   -- adjust cast here if needed
     WHERE sp."Store_Code" = store_code_input
   LOOP
+    -- use text key for JSON
+    key := rec."Design_ID"::text;
+
     result := jsonb_set(
       result,
-      ARRAY[rec."Design_ID"],
-      COALESCE(result -> rec."Design_ID", '[]') ||
+      ARRAY[key],
+      COALESCE(result -> key, '[]'::jsonb) ||
       to_jsonb(
         jsonb_build_object(
-          'sage_code', rec.sage_code,
-          'productName', rec.productName,
-          'sizeVariations', rec.size_variations,
-          'category', rec."Category",
-          'designGuideline', rec."Design_Guideline",
-          'naming_method', rec."naming_method",
-          'naming_fields', rec."naming_fields",
-          'product_status', rec.product_status
+          'sage_code',        rec.sage_code,
+          'productName',      rec.productName,
+          'sizeVariations',   rec.size_variations,
+          'category',         rec."Category",
+          'designGuideline',  rec."Design_Guideline",
+          'naming_method',    rec."naming_method",
+          'naming_fields',    rec."naming_fields",
+          'product_status',   rec.product_status
         )
       )
     );
   END LOOP;
+
   RETURN result;
 END;
 $$;
@@ -374,67 +381,64 @@ $$;
 ALTER FUNCTION "public"."get_filtered_store_products"("in_store_code" "text", "in_design_id" "text", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "text", "search_query" "text" DEFAULT NULL::"text", "category_list" "text"[] DEFAULT NULL::"text"[], "in_page_size" integer DEFAULT 20, "in_page" integer DEFAULT 1) RETURNS TABLE("TotalCount" bigint, "SAGE Code" "text", "Product Name" "text", "Brand Name" "text", "Design_ID" "text", "size_variations" "text", "naming_method" smallint, "naming_fields" "jsonb", "product_status" "text", "Product Code/SKU" "text", "Category" "text", "is_added" boolean, "XS" boolean, "SM" boolean, "MD" boolean, "LG" boolean, "XL" boolean, "X2" boolean, "X3" boolean)
+CREATE OR REPLACE FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "uuid" DEFAULT NULL::"uuid", "search_query" "text" DEFAULT NULL::"text", "category_list" "text"[] DEFAULT NULL::"text"[], "in_page_size" integer DEFAULT 20, "in_page" integer DEFAULT 1) RETURNS TABLE("TotalCount" bigint, "SAGE Code" "text", "Product Name" "text", "Brand Name" "text", "Design_ID" "uuid", "size_variations" "text", "naming_method" smallint, "naming_fields" "jsonb", "product_status" "text", "Product Code/SKU" "text", "Category" "text", "is_added" boolean, "XS" boolean, "SM" boolean, "MD" boolean, "LG" boolean, "XL" boolean, "X2" boolean, "X3" boolean)
     LANGUAGE "plpgsql"
     AS $$
 BEGIN
-    -- ✅ Add logging here to see the parameters being passed
-    RAISE NOTICE 'Params: %, %, %, %, %, %', 
-        in_store_code, 
-        in_design_id, 
-        search_query, 
-        category_list, 
-        in_page_size, 
-        in_page;
-        
-    RETURN QUERY
-    WITH filtered_products AS (
-        SELECT
-            p."SAGE Code",
-            p."Product Name",
-            p."Brand Name",
-            spd."Design_ID",
-            spd.size_variations,
-            spd.naming_method,
-            spd.naming_fields,
-            spd.product_status::text,
-            p."Product Code/SKU",
-            p."Category",
-            spd."Store_Code" IS NOT NULL AS is_added,
-            p."XS",
-            p."SM",
-            p."MD",
-            p."LG",
-            p."XL",
-            p."X2",
-            p."X3"
-        FROM new_all_products_4 p
-        LEFT JOIN stores_products_designs_2 spd ON p."SAGE Code" = spd."sage_code"
-            AND spd."Store_Code" = in_store_code
-            AND spd."Design_ID" = in_design_id
-        LEFT JOIN stores s ON s.store_code = in_store_code
-        WHERE
-            p."Brand Name" IS NOT NULL AND
-            -- ✅ Handle NULL or empty search_query
-            (COALESCE(TRIM(search_query), '') = '' 
-                OR search_query IS NULL
-                OR p."SAGE Code" ILIKE '%' || TRIM(search_query) || '%' 
-                OR p."Product Name" ILIKE '%' || TRIM(search_query) || '%') AND
-            (category_list IS NULL 
-                OR p."Category" = ANY(category_list))
-    )
+  RETURN QUERY
+  WITH filtered_products AS (
     SELECT
-        (SELECT COUNT(*) FROM filtered_products) AS "TotalCount", -- Total matching items
-        fp.*
-    FROM filtered_products fp
-    ORDER BY is_added DESC, fp."Product Name"
-    LIMIT in_page_size
-    OFFSET (in_page - 1) * in_page_size;
+      p."SAGE Code",
+      p."Product Name",
+      p."Brand Name",
+      spd."Design_ID",              -- uuid
+      spd.size_variations,
+      spd.naming_method,
+      spd.naming_fields,
+      spd.product_status::text,
+      p."Product Code/SKU",
+      p."Category",
+      spd."Store_Code" IS NOT NULL AS is_added,
+      p."XS",
+      p."SM",
+      p."MD",
+      p."LG",
+      p."XL",
+      p."X2",
+      p."X3"
+    FROM new_all_products_4 p
+    LEFT JOIN stores_products_designs_2 spd
+      ON p."SAGE Code" = spd."sage_code"
+     AND spd."Store_Code" = in_store_code
+     -- only filter by design when a design id is provided
+     AND (in_design_id IS NULL OR spd."Design_ID" = in_design_id)
+    LEFT JOIN stores s
+      ON s.store_code = in_store_code
+    WHERE
+      p."Brand Name" IS NOT NULL
+      AND (
+        search_query IS NULL
+        OR trim(search_query) = ''
+        OR p."SAGE Code" ILIKE '%' || trim(search_query) || '%'
+        OR p."Product Name" ILIKE '%' || trim(search_query) || '%'
+      )
+      AND (
+        category_list IS NULL
+        OR p."Category" = ANY (category_list)
+      )
+  )
+  SELECT
+    (SELECT COUNT(*) FROM filtered_products) AS "TotalCount",
+    fp.*
+  FROM filtered_products fp
+  ORDER BY is_added DESC, fp."Product Name"
+  LIMIT in_page_size
+  OFFSET (in_page - 1) * in_page_size;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "text", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "uuid", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_products_to_create"("in_store_code" "text", "in_design_code" "text") RETURNS TABLE("Product ID" bigint, "SAGE Code" "text", "Product Name" "text", "Brand Name" "text", "Product Description" "text", "Product Weight" bigint, "Category" "text", "Product Code/SKU" "text", "size_variations" "text")
@@ -465,7 +469,7 @@ $$;
 ALTER FUNCTION "public"."get_products_to_create"("in_store_code" "text", "in_design_code" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "text") RETURNS TABLE("SAGE Code" "text", "Product Name" "text", "Brand Name" "text", "Product Description" "text", "Product Weight" real, "Category" "text", "Product Code/SKU" "text", "size_variations" "text", "naming_method" smallint, "naming_fields" "jsonb", "product_status" "text")
+CREATE OR REPLACE FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("SAGE Code" "text", "Product Name" "text", "Brand Name" "text", "Product Description" "text", "Product Weight" real, "Category" "text", "Product Code/SKU" "text", "size_variations" "text", "naming_method" smallint, "naming_fields" "jsonb", "product_status" "text")
     LANGUAGE "plpgsql"
     AS $$
 begin
@@ -494,7 +498,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "text") OWNER TO "postgres";
+ALTER FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_store_categories"("storecode" "text") RETURNS TABLE("category" "text")
@@ -723,92 +727,6 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
-CREATE TABLE IF NOT EXISTS "public"."All_Products" (
-    "Enum" bigint NOT NULL,
-    "Item Type" "text",
-    "Product ID" bigint,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code-SKU" "text",
-    "SAGE Code" "text",
-    "Parent Code-SKU" "text",
-    "Bin Picking Number" "text",
-    "Brand Name" "text",
-    "Option Set" "text",
-    "Option Set Align" "text",
-    "Product Description" "text",
-    "Price" "text",
-    "Cost Price" "text",
-    "Retail Price" "text",
-    "Sale Price" "text",
-    "Fixed Shipping Cost" "text",
-    "Free Shipping" "text",
-    "Product Warranty" "text",
-    "Product Weight" "text",
-    "Product Width" "text",
-    "Product Height" "text",
-    "Product Depth" "text",
-    "Allow Purchases" "text",
-    "Product Visible" "text",
-    "Product Availability" "text",
-    "Track Inventory" "text",
-    "Current Stock Level" "text",
-    "Low Stock Level" "text",
-    "Category" "text",
-    "Product Image ID - 1" "text",
-    "Product Image File - 1" "text",
-    "Product Image Description - 1" "text",
-    "Product Image Is Thumbnail - 1" "text",
-    "Product Image Sort - 1" "text",
-    "Product Image ID - 2" "text",
-    "Product Image File - 2" "text",
-    "Product Image Description - 2" "text",
-    "Product Image Is Thumbnail - 2" "text",
-    "Product Image Sort - 2" "text",
-    "Product Image ID - 3" "text",
-    "Product Image File - 3" "text",
-    "Product Image Description - 3" "text",
-    "Product Image Is Thumbnail - 3" "text",
-    "Product Image Sort - 3" "text",
-    "Product Image ID - 4" "text",
-    "Product Image File - 4" "text",
-    "Product Image Description - 4" "text",
-    "Product Image Is Thumbnail - 4" "text",
-    "Product Image Sort - 4" "text",
-    "Product Image ID - 5" "text",
-    "Product Image File - 5" "text",
-    "Product Image Description - 5" "text",
-    "Product Image Is Thumbnail - 5" "text",
-    "Product Image Sort - 5" "text",
-    "Search Keywords" "text",
-    "Page Title" "text",
-    "Meta Keywords" "text",
-    "Meta Description" "text",
-    "MYOB Asset Acct" "text",
-    "MYOB Income Acct" "text",
-    "MYOB Expense Acct" "text",
-    "Product Condition" "text",
-    "Event Date Required" "text",
-    "Event Date Name" "text",
-    "Event Date Is Limited" "text",
-    "Event Date Start Date" "text",
-    "Event Date End Date" "text",
-    "Sort Order" "text",
-    "Product Tax Class" "text",
-    "Product UPC-EAN" "text",
-    "Stop Processing Rules" "text",
-    "Product URL" "text",
-    "Redirect Old URL" "text",
-    "Global Trade Item Number" "text",
-    "Manufacturer Part Number" "text",
-    "Tax Provider Tax Code" "text",
-    "Product Custom Fields" "text"
-);
-
-
-ALTER TABLE "public"."All_Products" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."Color Codes" (
     "Colour" "text" NOT NULL,
     "2-Digit code" "text",
@@ -817,76 +735,6 @@ CREATE TABLE IF NOT EXISTS "public"."Color Codes" (
 
 
 ALTER TABLE "public"."Color Codes" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."New_All_Products_1" (
-    "Item Type" "text",
-    "Product ID" bigint,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code/SKU" "text",
-    "SAGE Code" "text",
-    "Brand Name" "text",
-    "Product Description" "text",
-    "Product Weight" "text",
-    "isCreated" boolean,
-    "SM" boolean,
-    "MD" boolean,
-    "LG" boolean,
-    "XL" boolean,
-    "X2" boolean,
-    "X3" boolean,
-    "Category" "text"
-);
-
-
-ALTER TABLE "public"."New_All_Products_1" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."New_All_Products_1" IS 'This is the updated products list. This is the all_products_df saved to products.csv csv file. https://colab.research.google.com/drive/1PBr2iqNWpG7uSKyw37DAa2SuoDLdBMdk?usp=sharing';
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."Products_Designs" (
-    "Product_id" bigint NOT NULL,
-    "Design_id" "uuid" NOT NULL
-);
-
-
-ALTER TABLE "public"."Products_Designs" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."Products_Designs" IS 'This table includes data related to Designs and Products Relationship';
-
-
-
-ALTER TABLE "public"."Products_Designs" ALTER COLUMN "Product_id" ADD GENERATED BY DEFAULT AS IDENTITY (
-    SEQUENCE NAME "public"."Products_Designs_Product_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."Stores_Products" (
-    "Store_Code" character varying NOT NULL,
-    "Product_Sage_Code" character varying NOT NULL,
-    "size_variations" "text"[]
-);
-
-
-ALTER TABLE "public"."Stores_Products" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."Stores_Products" IS 'Relation between Stores and Products';
-
-
-
-COMMENT ON COLUMN "public"."Stores_Products"."size_variations" IS 'This holds the products size variations';
-
 
 
 CREATE TABLE IF NOT EXISTS "public"."design_guidelines" (
@@ -920,8 +768,7 @@ CREATE TABLE IF NOT EXISTS "public"."designs" (
     "width" double precision DEFAULT '7'::double precision,
     "store_code" character varying NOT NULL,
     "Design_Name" "text" DEFAULT 'custom_design'::"text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "designs_Design_Name_check" CHECK (("length"("Design_Name") <= 50))
+    "created_at" timestamp with time zone DEFAULT "now"()
 );
 
 
@@ -957,82 +804,6 @@ ALTER TABLE "public"."import_logs" OWNER TO "postgres";
 
 COMMENT ON TABLE "public"."import_logs" IS 'This table has the logs of the products that has been added into the new_all_products_4 table';
 
-
-
-CREATE TABLE IF NOT EXISTS "public"."new_all_products_1" (
-    "Item Type" "text",
-    "Product ID" bigint,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code/SKU" "text",
-    "SAGE Code" "text",
-    "Brand Name" "text",
-    "Product Description" "text",
-    "Product Weight" "text",
-    "isCreated" boolean,
-    "SM" boolean,
-    "MD" boolean,
-    "LG" boolean,
-    "XL" boolean,
-    "X2" boolean,
-    "X3" boolean,
-    "Category" "text"
-);
-
-
-ALTER TABLE "public"."new_all_products_1" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."new_all_products_1" IS 'This is a duplicate of New_All_Products_1';
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."new_all_products_2" (
-    "Item Type" "text",
-    "Product ID" bigint,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code/SKU" "text",
-    "SAGE Code" "text",
-    "Brand Name" "text",
-    "Product Description" "text",
-    "Product Weight" "text",
-    "isCreated" boolean,
-    "SM" boolean,
-    "MD" boolean,
-    "LG" boolean,
-    "XL" boolean,
-    "X2" boolean,
-    "X3" boolean,
-    "Category" "text"
-);
-
-
-ALTER TABLE "public"."new_all_products_2" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."new_all_products_3" (
-    "Item Type" "text",
-    "Product ID" bigint NOT NULL,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code/SKU" "text",
-    "SAGE Code" "text" NOT NULL,
-    "Brand Name" "text",
-    "Product Description" "text",
-    "Product Weight" bigint,
-    "isCreated" boolean,
-    "SM" boolean,
-    "MD" boolean,
-    "LG" boolean,
-    "XL" boolean,
-    "X2" boolean,
-    "X3" boolean,
-    "Category" "text"
-);
-
-
-ALTER TABLE "public"."new_all_products_3" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."new_all_products_4" (
@@ -1105,102 +876,6 @@ ALTER TABLE "public"."notes" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENT
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."products_table" (
-    "Item Type" "text",
-    "Product ID" bigint NOT NULL,
-    "Product Name" "text",
-    "Product Type" "text",
-    "Product Code/SKU" "text",
-    "SAGE Code" "text" NOT NULL,
-    "Parent Code/SKU" "text",
-    "Bin Picking Number" "text",
-    "Brand Name" "text",
-    "Option Set" "text",
-    "Option Set Align" "text",
-    "Product Description" "text",
-    "Price" double precision,
-    "Cost Price" "text",
-    "Retail Price" "text",
-    "Sale Price" "text",
-    "Fixed Shipping Cost" "text",
-    "Free Shipping" "text",
-    "Product Warranty" "text",
-    "Product Weight" bigint,
-    "Product Width" "text",
-    "Product Height" "text",
-    "Product Depth" "text",
-    "Allow Purchases?" "text",
-    "Product Visible?" "text",
-    "Product Availability" "text",
-    "Track Inventory" "text",
-    "Current Stock Level" "text",
-    "Low Stock Level" "text",
-    "Category" "text",
-    "Product Image ID - 1" bigint,
-    "Product Image File - 1" "text",
-    "Product Image Description - 1" "text",
-    "Product Image Is Thumbnail - 1" "text",
-    "Product Image Sort - 1" "text",
-    "Product Image ID - 2" "text",
-    "Product Image File - 2" "text",
-    "Product Image Description - 2" "text",
-    "Product Image Is Thumbnail - 2" "text",
-    "Product Image Sort - 2" "text",
-    "Product Image ID - 3" "text",
-    "Product Image File - 3" "text",
-    "Product Image Description - 3" "text",
-    "Product Image Is Thumbnail - 3" "text",
-    "Product Image Sort - 3" "text",
-    "Product Image ID - 4" "text",
-    "Product Image File - 4" "text",
-    "Product Image Description - 4" "text",
-    "Product Image Is Thumbnail - 4" "text",
-    "Product Image Sort - 4" "text",
-    "Product Image ID - 5" "text",
-    "Product Image File - 5" "text",
-    "Product Image Description - 5" "text",
-    "Product Image Is Thumbnail - 5" "text",
-    "Product Image Sort - 5" "text",
-    "Search Keywords" "text",
-    "Page Title" "text",
-    "Meta Keywords" "text",
-    "Meta Description" "text",
-    "MYOB Asset Acct" "text",
-    "MYOB Income Acct" "text",
-    "MYOB Expense Acct" "text",
-    "Product Condition" "text",
-    "Event Date Required?" "text",
-    "Event Date Name" "text",
-    "Event Date Is Limited?" "text",
-    "Event Date Start Date" "text",
-    "Event Date End Date" "text",
-    "Sort Order" bigint,
-    "Product Tax Class" "text",
-    "Product UPC/EAN" "text",
-    "Stop Processing Rules" "text",
-    "Product URL" "text",
-    "Redirect Old URL?" "text",
-    "Global Trade Item Number" "text",
-    "Manufacturer Part Number" "text",
-    "Tax Provider Tax Code" "text",
-    "Product Custom Fields" "jsonb",
-    "isCreated" boolean,
-    "SM" boolean,
-    "MD" boolean,
-    "LG" boolean,
-    "XL" boolean,
-    "X2" boolean,
-    "X3" boolean
-);
-
-
-ALTER TABLE "public"."products_table" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."products_table" IS 'These are the common products that will be every table';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."stores" (
     "created_at" timestamp with time zone NOT NULL,
     "updated_at" timestamp with time zone,
@@ -1233,24 +908,9 @@ COMMENT ON COLUMN "public"."stores"."category_id" IS 'This have the category id 
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."stores_products_designs" (
-    "Store_Code" character varying NOT NULL,
-    "Product_Sage_Code" "text" NOT NULL,
-    "Design_Id" character varying NOT NULL,
-    "size_variations" "text"
-);
-
-
-ALTER TABLE "public"."stores_products_designs" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."stores_products_designs" IS 'This hold the final products in a store.';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."stores_products_designs_2" (
     "Store_Code" character varying NOT NULL,
-    "Design_ID" "text" NOT NULL,
+    "Design_ID" "uuid" NOT NULL,
     "size_variations" "text",
     "naming_method" smallint DEFAULT '1'::smallint NOT NULL,
     "naming_fields" "jsonb" DEFAULT '{}'::"jsonb",
@@ -1326,23 +986,13 @@ SELECT
     NULL::character varying AS "store_code",
     NULL::"text" AS "store_name",
     NULL::"text" AS "required_date",
-    NULL::"text" AS "design_id",
+    NULL::"uuid" AS "design_id",
     NULL::bigint AS "product_count",
     NULL::"text" AS "categories",
     NULL::"public"."Store_Status" AS "status";
 
 
 ALTER TABLE "public"."v_store_design_summary" OWNER TO "postgres";
-
-
-ALTER TABLE ONLY "public"."All_Products"
-    ADD CONSTRAINT "All_Products_Enum_key" UNIQUE ("Enum");
-
-
-
-ALTER TABLE ONLY "public"."All_Products"
-    ADD CONSTRAINT "All_Products_pkey" PRIMARY KEY ("Enum");
-
 
 
 ALTER TABLE ONLY "public"."Color Codes"
@@ -1352,31 +1002,6 @@ ALTER TABLE ONLY "public"."Color Codes"
 
 ALTER TABLE ONLY "public"."designs"
     ADD CONSTRAINT "Designs_pkey" PRIMARY KEY ("Design_Id");
-
-
-
-ALTER TABLE ONLY "public"."New_All_Products_1"
-    ADD CONSTRAINT "New_All_Products_1_Product ID_key" UNIQUE ("Product ID");
-
-
-
-ALTER TABLE ONLY "public"."Products_Designs"
-    ADD CONSTRAINT "Products_Designs_pkey" PRIMARY KEY ("Product_id", "Design_id");
-
-
-
-ALTER TABLE ONLY "public"."products_table"
-    ADD CONSTRAINT "Products_Table_SAGE Code_key" UNIQUE ("SAGE Code");
-
-
-
-ALTER TABLE ONLY "public"."products_table"
-    ADD CONSTRAINT "Products_Table_pkey" PRIMARY KEY ("Product ID");
-
-
-
-ALTER TABLE ONLY "public"."stores_products_designs"
-    ADD CONSTRAINT "Stores_Products_Designs_pkey" PRIMARY KEY ("Store_Code", "Product_Sage_Code", "Design_Id");
 
 
 
@@ -1412,21 +1037,6 @@ ALTER TABLE ONLY "public"."design_guidelines"
 
 ALTER TABLE ONLY "public"."import_logs"
     ADD CONSTRAINT "import_logs_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."new_all_products_1"
-    ADD CONSTRAINT "new_all_products_1_Product ID_key" UNIQUE ("Product ID");
-
-
-
-ALTER TABLE ONLY "public"."new_all_products_3"
-    ADD CONSTRAINT "new_all_products_3_Product ID_key" UNIQUE ("Product ID");
-
-
-
-ALTER TABLE ONLY "public"."new_all_products_3"
-    ADD CONSTRAINT "new_all_products_3_pkey" PRIMARY KEY ("Product ID");
 
 
 
@@ -1482,36 +1092,6 @@ CREATE OR REPLACE VIEW "public"."v_store_design_summary" WITH ("security_invoker
 
 
 
-ALTER TABLE ONLY "public"."Products_Designs"
-    ADD CONSTRAINT "Products_Designs_Design_id_fkey" FOREIGN KEY ("Design_id") REFERENCES "public"."designs"("Design_Id") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."Products_Designs"
-    ADD CONSTRAINT "Products_Designs_Product_id_fkey" FOREIGN KEY ("Product_id") REFERENCES "public"."products_table"("Product ID") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stores_products_designs"
-    ADD CONSTRAINT "Stores_Products_Designs_Product_Sage_Code_fkey" FOREIGN KEY ("Product_Sage_Code") REFERENCES "public"."products_table"("SAGE Code") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stores_products_designs"
-    ADD CONSTRAINT "Stores_Products_Designs_Store_Code_fkey" FOREIGN KEY ("Store_Code") REFERENCES "public"."stores"("store_code") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."Stores_Products"
-    ADD CONSTRAINT "Stores_Products_Product_Sage_Code_fkey" FOREIGN KEY ("Product_Sage_Code") REFERENCES "public"."products_table"("SAGE Code") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."Stores_Products"
-    ADD CONSTRAINT "Stores_Products_Store_Code_fkey" FOREIGN KEY ("Store_Code") REFERENCES "public"."stores"("store_code") ON UPDATE CASCADE ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "public"."design_guidelines"
     ADD CONSTRAINT "design_guidelines_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON UPDATE CASCADE ON DELETE SET DEFAULT;
 
@@ -1559,6 +1139,11 @@ ALTER TABLE ONLY "public"."notes"
 
 ALTER TABLE ONLY "public"."stores_products_designs_2"
     ADD CONSTRAINT "spd2_user_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."stores_products_designs_2"
+    ADD CONSTRAINT "stores_products_designs_2_Design_ID_fkey" FOREIGN KEY ("Design_ID") REFERENCES "public"."designs"("Design_Id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
@@ -1618,18 +1203,6 @@ CREATE POLICY "Enable admin to do all for data" ON "public"."design_guidelines" 
 
 
 CREATE POLICY "Enable authenticated users to view data only" ON "public"."design_guidelines" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."stores_products_designs" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
-
-
-
-CREATE POLICY "Enable read access for all users" ON "public"."products_table" FOR SELECT TO "authenticated", "anon" USING (true);
-
-
-
-CREATE POLICY "Enable read access for all users" ON "public"."stores_products_designs" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
 
@@ -2014,9 +1587,9 @@ GRANT ALL ON FUNCTION "public"."get_filtered_store_products"("in_store_code" "te
 
 
 
-GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "text", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "text", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "text", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "uuid", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "uuid", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_filtered_store_products_v2"("in_store_code" "text", "in_design_id" "uuid", "search_query" "text", "category_list" "text"[], "in_page_size" integer, "in_page" integer) TO "service_role";
 
 
 
@@ -2026,9 +1599,9 @@ GRANT ALL ON FUNCTION "public"."get_products_to_create"("in_store_code" "text", 
 
 
 
-GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_products_to_create_v2"("in_store_code" "text", "in_design_code" "uuid") TO "service_role";
 
 
 
@@ -2103,39 +1676,9 @@ GRANT ALL ON FUNCTION "public"."is_store_in_modify"("p_store_code" "text") TO "s
 
 
 
-GRANT ALL ON TABLE "public"."All_Products" TO "anon";
-GRANT ALL ON TABLE "public"."All_Products" TO "authenticated";
-GRANT ALL ON TABLE "public"."All_Products" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."Color Codes" TO "anon";
 GRANT ALL ON TABLE "public"."Color Codes" TO "authenticated";
 GRANT ALL ON TABLE "public"."Color Codes" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."New_All_Products_1" TO "anon";
-GRANT ALL ON TABLE "public"."New_All_Products_1" TO "authenticated";
-GRANT ALL ON TABLE "public"."New_All_Products_1" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."Products_Designs" TO "anon";
-GRANT ALL ON TABLE "public"."Products_Designs" TO "authenticated";
-GRANT ALL ON TABLE "public"."Products_Designs" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."Products_Designs_Product_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."Products_Designs_Product_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."Products_Designs_Product_id_seq" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."Stores_Products" TO "anon";
-GRANT ALL ON TABLE "public"."Stores_Products" TO "authenticated";
-GRANT ALL ON TABLE "public"."Stores_Products" TO "service_role";
 
 
 
@@ -2157,24 +1700,6 @@ GRANT ALL ON TABLE "public"."import_logs" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."new_all_products_1" TO "anon";
-GRANT ALL ON TABLE "public"."new_all_products_1" TO "authenticated";
-GRANT ALL ON TABLE "public"."new_all_products_1" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."new_all_products_2" TO "anon";
-GRANT ALL ON TABLE "public"."new_all_products_2" TO "authenticated";
-GRANT ALL ON TABLE "public"."new_all_products_2" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."new_all_products_3" TO "anon";
-GRANT ALL ON TABLE "public"."new_all_products_3" TO "authenticated";
-GRANT ALL ON TABLE "public"."new_all_products_3" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."new_all_products_4" TO "anon";
 GRANT ALL ON TABLE "public"."new_all_products_4" TO "authenticated";
 GRANT ALL ON TABLE "public"."new_all_products_4" TO "service_role";
@@ -2193,21 +1718,9 @@ GRANT ALL ON SEQUENCE "public"."notes_id_seq" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."products_table" TO "anon";
-GRANT ALL ON TABLE "public"."products_table" TO "authenticated";
-GRANT ALL ON TABLE "public"."products_table" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."stores" TO "anon";
 GRANT ALL ON TABLE "public"."stores" TO "authenticated";
 GRANT ALL ON TABLE "public"."stores" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."stores_products_designs" TO "anon";
-GRANT ALL ON TABLE "public"."stores_products_designs" TO "authenticated";
-GRANT ALL ON TABLE "public"."stores_products_designs" TO "service_role";
 
 
 
