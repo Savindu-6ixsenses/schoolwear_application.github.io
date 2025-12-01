@@ -1808,3 +1808,179 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
+drop extension if exists "pg_net";
+
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+  create policy "list_all_buckets"
+  on "storage"."buckets"
+  as permissive
+  for select
+  to public
+using (true);
+
+
+
+  create policy "Upload_images2 1wf9cnf_0"
+  on "storage"."objects"
+  as permissive
+  for select
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "Upload_images2 1wf9cnf_1"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "Upload_images2 1wf9cnf_2"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "Upload_images2 1wf9cnf_3"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "logs_report_policy f1lxup_0"
+  on "storage"."objects"
+  as permissive
+  for select
+  to public
+using ((bucket_id = 'logs-reports'::text));
+
+
+
+  create policy "logs_report_policy f1lxup_1"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'logs-reports'::text));
+
+
+
+  create policy "logs_report_policy f1lxup_2"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'logs-reports'::text));
+
+
+
+  create policy "logs_report_policy f1lxup_3"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'logs-reports'::text));
+
+
+
+  create policy "upload_images 1va6avm_0"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'uploads'::text));
+
+
+
+  create policy "upload_images 1va6avm_2"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'uploads'::text));
+
+
+
+  create policy "upload_images 1va6avm_3"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'uploads'::text));
+
+
+
+  create policy "upload_images 1wf9cnf_0"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "upload_images 1wf9cnf_1"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "upload_images 1wf9cnf_2"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "upload_images 1wf9cnf_3"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'design-logo-images'::text));
+
+
+
+  create policy "upload_images_1 1va6avm_1"
+  on "storage"."objects"
+  as permissive
+  for select
+  to public
+using ((bucket_id = 'uploads'::text));
+
+
+
+  create policy "upload_images_1 1va6avm_2"
+  on "storage"."objects"
+  as permissive
+  for update
+  to public
+using ((bucket_id = 'uploads'::text));
+
+
+
+  create policy "upload_images_1 1va6avm_3"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to public
+using ((bucket_id = 'uploads'::text));
+
+
+
