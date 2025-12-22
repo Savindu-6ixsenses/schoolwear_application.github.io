@@ -59,7 +59,8 @@ export default function BulkCsvUploader() {
 	const downloadTemplate = () => {
 		const header = [
 			"Item Type",
-			"Product Name",
+			"Product Name-Color",
+			"Color_Code",
 			"Product Type",
 			"Product Code/SKU",
 			"SAGE Code",
@@ -76,9 +77,10 @@ export default function BulkCsvUploader() {
 			"Category",
 		].join(",");
 		const sample = [
-			"Shirt",
-			"Girls Polo",
-			"Top",
+			"Product",
+			"Girls Polo-Red",
+			"RE",
+			"P",
 			"SKU-GIRLS-POLO-01",
 			"SG-100",
 			"BrandX",

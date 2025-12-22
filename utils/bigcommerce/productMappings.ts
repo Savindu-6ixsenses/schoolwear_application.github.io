@@ -43,8 +43,7 @@ export const getVariantPayload = async (
 		return [];
 	}
 
-	const { new_product_id, new_sku, size_variations, notes } =
-		productDesignData;
+	const { new_product_id, new_sku, size_variations, notes } = productDesignData;
 
 	if (!new_product_id || !new_sku) {
 		logger.addEntry(
@@ -121,15 +120,15 @@ export const getProductConfigs = async (
 	category_id: number,
 	designId: string,
 	storeCode: string,
-	offsetNumber: number = 1,
 	relatedCategoryIds: Record<string, number>,
 	createdSageCodes: string[] = [],
+	designIndex: number,
 	logger: StoreCreationLogger
-) : Promise<productConfig[]> => {
+): Promise<productConfig[]> => {
 	// Map the store products to BigCommerce product configurations
 
-	console.log("Creating product configurations...");
-	// logging the arguments for createUniqueProductNames fucntion
+	console.log("[getProductConfigs] Creating product configurations...");
+	// logging the arguments for createUniqueProductNames function
 	products.forEach((product) => {
 		// Log only the products that are not added according to product_status field
 		if (product.product_status !== "added") {
@@ -140,128 +139,146 @@ export const getProductConfigs = async (
 					product.naming_method
 				}, Naming Fields: ${JSON.stringify(
 					product.naming_fields
-				)}, Store Code: ${storeCode}, Offset Number: ${offsetNumber}`
+				)}, Store Code: ${storeCode}`
 			);
 		} else {
-			console.log(
-				`Skipping product already added: ${product.productName}, Offset Number: ${offsetNumber}`
-			);
+			console.log(`Skipping product already added: ${product.productName}`);
 		}
 	});
 
-	const productList: productConfig[] = (
-		await Promise.all(
-			products.map(async (product) => {
-				// Skip products that have already been added to BigCommerce
-				if (product.product_status === "added") {
-					// By returning an empty array, flatMap will skip this item.
-					return [];
-				} else if (product.product_status === "modify") {
-					console.log(`Modifying existing product: ${product.productName}`);
-					return await getVariantPayload(storeCode, product, designId, logger);
-				}
+	const productList: productConfig[] = [];
+	let prevCategory = "";
+	let offsetNumber = 1;
 
-				const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
+	await Promise.all(
+		products.map(async (product) => {
+			// Reset the Offset counter for each product category
+			if (prevCategory !== product.category) {
+				prevCategory = product.category;
+				offsetNumber = 1;
+			} else {
+				offsetNumber++;
+			}
+			// In the same design offsetnumber should reset for each category
 
-				logger.addEntry(
-					"INFO",
-					`Updating product configurations: ${product.productName}`
-				);
-
-				// get the new sage code
-				const newSKU = createUniqueSKU(
-					product.productName,
-					product.parentSageCode,
+			// Skip products that have already been added to BigCommerce
+			if (product.product_status === "added") {
+				// Skip this iteration
+				return;
+			} else if (product.product_status === "modify") {
+				console.log(`Modifying existing product: ${product.productName}`);
+				const variantPayloads = await getVariantPayload(
 					storeCode,
-					offsetNumber,
-					createdSageCodes
+					product,
+					designId,
+					logger
 				);
+				productList.push(...variantPayloads);
+				return;
+			}
 
-				logger.logProductSageCodeProcessing(product.productName, {
-					old: product.sageCode,
-					new: newSKU,
-				});
+			const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
 
-				const categories: number[] = [
-					category_id,
-					relatedCategoryIds[product.category],
-				];
+			logger.addEntry(
+				"INFO",
+				`Updating product configurations: ${product.productName}\n
+			Size Variants: ${sizeVariants?.join(", ") || "None"}\n
+			offsetNumber: ${offsetNumber}\n
+			Color Code: ${product.color_code || "N/A"}`
+			);
 
-				let productFinalName = createUniqueProductNames(
-					product.productName,
-					storeCode,
-					offsetNumber,
-					product.category,
-					product.brandName,
-					product.naming_method || "1",
-					product.naming_fields || {}
-				);
+			// get the new sage code
+			const newSKU = createUniqueSKU(
+				product.productName,
+				product.color_code || "Red", // Default color code if missing
+				product.category,
+				storeCode,
+				offsetNumber,
+				createdSageCodes
+			);
 
-				logger.logProductNameProcessing(
-					productFinalName,
-					product.naming_method || "2",
-					product.naming_fields || {}
-				);
+			logger.logProductSageCodeProcessing(product.productName, {
+				old: product.sageCode,
+				new: newSKU,
+			});
 
-				console.log(
-					`Final Product Name: ${productFinalName}, Sage Code: ${newSKU}`
-				);
+			const categories: number[] = [
+				category_id,
+				relatedCategoryIds[product.category],
+			];
 
-				if (!productFinalName) {
-					console.warn("Product name is missing. Using default name instead.");
-					productFinalName = `${randomUUID()}`; // Fallback to a default name if missing
-				}
+			let productFinalName = createUniqueProductNames(
+				product.productName,
+				storeCode,
+				designIndex,
+				product.category,
+				product.brandName,
+				product.naming_method || "1",
+				product.naming_fields || {}
+			);
 
-				const productConfig: ProductCreationProps = {
-					name: productFinalName, // Default if name is missing
-					type: "physical", // Default type
-					sku:
-						newSKU ||
-						`SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, // Generate SKU if missing
-					description: `${product.productDescription}`, // Generate a description
-					weight: product.productWeight || 1, // Default weight, adjust if necessary
-					price: 10.0, // Default price, adjust if necessary
-					categories: categories, // Default category ID, adjust if necessary
-					brand_name: product.brandName || "Default Brand", // Use the brand name or default
-					inventory_level: 100, // Default inventory
-					// is_visible: product.isAdded, // Map directly to is_visible
-					is_visible: false, //TODO: Default to false, adjust if necessary
-					custom_url: {
-						url: `/${newSKU || "default-product"}`, // Generate a URL
-						is_customized: true,
-					},
-					variants: sizeVariants?.length
-						? sizeVariants.map((variant) => ({
-								sku: `${getVariantSKU(newSKU, variant, product.sageCode)}`,
-								price: 10.0, // Default price
-								inventory_level: 50, // Default inventory for variants
-								weight: 1.0, // Default weight
-								option_values: [
-									{
-										id: 0,
-										label: variant,
-										option_id: 151,
-										option_display_name: "Size",
-									},
-								],
-						  }))
-						: [], // No variants if no sizes are selected
-				};
+			logger.logProductNameProcessing(
+				productFinalName,
+				product.naming_method || "2",
+				product.naming_fields || {}
+			);
 
-				return [
-					{
-						productConfigs: productConfig,
-						category: product.category,
-						db_identifiers: {
-							storeCode: storeCode,
-							sageCode: product.sageCode,
-							designId: designId,
-						},
-					},
-				];
-			})
-		)
-	).flat();
+			console.log(
+				`Final Product Name: ${productFinalName}, Sage Code: ${newSKU}`
+			);
+
+			if (!productFinalName) {
+				console.warn("Product name is missing. Using default name instead.");
+				productFinalName = `${randomUUID()}`; // Fallback to a default name if missing
+			}
+
+			const productConfig: ProductCreationProps = {
+				name: productFinalName, // Default if name is missing
+				type: "physical", // Default type
+				sku:
+					newSKU ||
+					`SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, // Generate SKU if missing
+				description: `${product.productDescription}`, // Generate a description
+				weight: product.productWeight || 1, // Default weight, adjust if necessary
+				price: 10.0, // Default price, adjust if necessary
+				categories: categories, // Default category ID, adjust if necessary
+				brand_name: product.brandName || "Default Brand", // Use the brand name or default
+				inventory_level: 100, // Default inventory
+				// is_visible: product.isAdded, // Map directly to is_visible
+				is_visible: false, //TODO0: Default to false, adjust if necessary
+				custom_url: {
+					url: `/${newSKU || "default-product"}`, // Generate a URL
+					is_customized: true,
+				},
+				variants: sizeVariants?.length
+					? sizeVariants.map((variant) => ({
+							sku: `${getVariantSKU(newSKU, variant, product.sageCode)}`,
+							price: 10.0, // Default price
+							inventory_level: 50, // Default inventory for variants
+							weight: 1.0, // Default weight
+							option_values: [
+								{
+									id: 0,
+									label: variant,
+									option_id: 151,
+									option_display_name: "Size",
+								},
+							],
+					  }))
+					: [], // No variants if no sizes are selected
+			};
+
+			productList.push({
+				productConfigs: productConfig,
+				category: product.category,
+				db_identifiers: {
+					storeCode: storeCode,
+					sageCode: product.sageCode,
+					designId: designId,
+				},
+			});
+		})
+	);
 
 	return productList;
 };

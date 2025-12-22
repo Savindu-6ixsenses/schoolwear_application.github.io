@@ -1,10 +1,20 @@
-import { useState } from "react";
-import { addSingleProduct } from "./actions";
+import { useState, useEffect } from "react";
+import { addSingleProduct, getAllColors } from "./actions";
 import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 
 type FieldError = Record<string, string | undefined>;
 
-const required = ["product_name", "sku", "sage_code", "category", "brand_name"] as const;
+const required = [
+	"product_name",
+	"sku",
+	"sage_code",
+	"category",
+	"brand_name",
+	"color",
+	"color_code",
+] as const;
+
+type ColorOption = { name: string; code: string | null };
 
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
@@ -13,6 +23,36 @@ export default function SingleAddForm() {
 		type: "success" | "error";
 		text: string;
 	} | null>(null);
+
+	const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
+	const [colorCode, setColorCode] = useState("");
+
+	// Fetch colors from the database on component mount
+	useEffect(() => {
+		const fetchColors = async () => {
+			try {
+				const result = await getAllColors();
+				if (result.ok && result.data) {
+					setColorOptions(result.data);
+				} else {
+					// Optionally set an error message for the user
+					console.error(result.message);
+				}
+			} catch (error) {
+				console.error("Failed to fetch colors:", error);
+			}
+		};
+		fetchColors();
+	}, []);
+
+	// Handler for color dropdown change
+	const handleColorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const selectedColorName = e.target.value;
+		const selectedColor = colorOptions.find(
+			(c) => c.name === selectedColorName
+		);
+		setColorCode(selectedColor?.code ?? "");
+	};
 
 	const validate = (fd: FormData) => {
 		const e: FieldError = {};
@@ -62,7 +102,10 @@ export default function SingleAddForm() {
 		} catch (err: any) {
 			// This will catch network errors or other unexpected issues
 			console.error("Error adding product:", err);
-			setMessage({ type: "error", text: "An unexpected error occurred.Check Server Logs." });
+			setMessage({
+				type: "error",
+				text: "An unexpected error occurred.Check Server Logs.",
+			});
 		} finally {
 			setBusy(false);
 		}
@@ -166,6 +209,52 @@ export default function SingleAddForm() {
 						<p className="mt-1 text-xs text-red-600">{errors.product_name}</p>
 					)}
 				</div>
+				<div className="flex flex-row gap-3">
+					<div>
+						{labelReq("Color", "color")}
+						<select
+							id="color"
+							name="color"
+							className={inputBase}
+							onChange={handleColorChange}
+							defaultValue=""
+							disabled={colorOptions.length === 0}
+						>
+							<option
+								value=""
+								disabled
+							>
+								{colorOptions.length > 0 ? "Select a color" : "Loading..."}
+							</option>
+							{colorOptions.map((c) => (
+								<option
+									key={c.name}
+									value={c.name}
+								>
+									{c.name}
+								</option>
+							))}
+						</select>
+						{errors.color && (
+							<p className="mt-1 text-xs text-red-600">{errors.color}</p>
+						)}
+					</div>
+					<div>
+						{labelReq("Color Code", "color_code")}
+						<input
+							id="color_code"
+							name="color_code"
+							className={inputBase}
+							placeholder="RED"
+							value={colorCode}
+							onChange={(e) => setColorCode(e.target.value)}
+							readOnly
+						/>
+						{errors.color_code && (
+							<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
+						)}
+					</div>
+				</div>
 			</div>
 
 			{/* Row: Brand / SAGE Code */}
@@ -242,6 +331,7 @@ export default function SingleAddForm() {
 					onClick={() => {
 						setErrors({});
 						setMessage(null);
+						setColorCode("");
 					}}
 				>
 					Reset

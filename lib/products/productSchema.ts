@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const productSchema = z.object({
   item_type: z.string().optional().or(z.literal('').transform(() => undefined)),
   product_name: z.string().min(1, 'Product Name is required'),
+  color: z.string().optional(),
+  color_code: z.string().min(2, 'Color Code is required'),
   product_type: z.string().optional(),
   sku: z.string().min(1, 'SKU is required'),
   sage_code: z.string().optional(),

@@ -7,6 +7,7 @@ import {
 } from "@/types/products";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import { createClientbyRole } from "@/utils/adminHelper";
+import { colorVariants } from "@nextui-org/theme";
 
 // utils/productFetcher.ts
 // export async function fetchProductsFromSupabase(
@@ -54,7 +55,7 @@ import { createClientbyRole } from "@/utils/adminHelper";
 export async function fetchFilteredProductsFromSupabase(
 	supabase: any,
 	in_store_code: string,
-	in_design_id: string,
+	in_design_id: string | null,
 	in_search_query: string | undefined | null,
 	in_category: string[] | undefined | null,
 	in_page_size: number | undefined,
@@ -87,6 +88,10 @@ export async function fetchFilteredProductsFromSupabase(
 
 	if (!in_search_query) {
 		in_search_query = null;
+	}
+
+	if (!in_design_id) {
+		in_design_id = null;
 	}
 
 	const { data: products, error } = await supabase.rpc(
@@ -156,7 +161,7 @@ export const getStoreProducts = async (
 			.select("Design_Id")
 			.eq("store_code", storeCode)
 			.order("created_at", { ascending: true });
-			
+
 		if (storeError) {
 			console.error("Error fetching store data:", storeError);
 			throw storeError;
@@ -198,6 +203,7 @@ export const getStoreProducts = async (
 					naming_method: product["naming_method"],
 					naming_fields: product["naming_fields"],
 					product_status: product["product_status"],
+					color_code: product["color_code"],
 				})
 			);
 
@@ -295,7 +301,7 @@ export const updateItem = async ({
 		};
 
 		// Conditionally set the product_status to 'modify'
-		console.log()
+		console.log();
 		if (
 			store_status === "Modify" &&
 			(product_status === "added" || product_status === "rejected")
@@ -351,12 +357,7 @@ export const removeFromList = async ({
 	design_code: string;
 }) => {
 	try {
-		console.log(
-			"Removing from the list: ",
-			store_code,
-			sage_code,
-			design_code
-		);
+		console.log("Removing from the list: ", store_code, sage_code, design_code);
 		const { supabase, isAdmin, user_id } = await createClientbyRole();
 		// const { data, error } = await supabase
 		// 	.from("stores_products_designs_2")
@@ -407,7 +408,7 @@ export const initialize_added_products = async (store_code: string) => {
 	return data;
 };
 
-export const getExistingSageCodes = async (
+export const getExistingSKUs = async (
 	store_code: string
 ): Promise<string[]> => {
 	const supabase = await createClient();
@@ -434,4 +435,31 @@ export const getExistingSageCodes = async (
 	// The query returns an array of objects like [{ sageCode: '...'}, ...]. We need to flatten it.
 	// and filter out any null/undefined values.
 	return data.map((item) => item.new_sku).filter(Boolean);
+};
+
+export const getColorCode = async (
+	colorName: string
+): Promise<string | null> => {
+	try {
+		if (!colorName || !colorName.trim()) return null;
+		const supabase = await createClient();
+
+		const { data, error } = await supabase
+			.from("Color Codes")
+			.select("color_code")
+			.ilike("name", `%${colorName}%`)
+			.limit(1);
+
+		if (error) {
+			console.error("[getColorCode] Supabase error:", error.message ?? error);
+			return null;
+		}
+		if (!data || data.length === 0) return null;
+
+		return data[0]?.color_code ?? null;
+	} catch (e) {
+		const colorCodeError = e as Error;
+		console.error("[getColorCode] unexpected error:", e);
+		throw new Error(`Failed to get color code: ${colorCodeError.message}`);
+	}
 };

@@ -5,7 +5,7 @@ import {
 	createRelatedCategories,
 	createBigCommerceProducts,
 } from "@/services/bigCommerce";
-import { getStoreProducts, getExistingSageCodes } from "@/services/products";
+import { getStoreProducts, getExistingSKUs } from "@/services/products";
 import { updateStoreStatus } from "@/services/stores/storeServices-Server";
 import { CreateVariantPayload } from "@/types/products";
 import { StoreCreationProps } from "@/types/store";
@@ -13,7 +13,10 @@ import { getProductConfigs } from "@/utils/bigcommerce/productMappings"; // Crea
 import { StoreCreationLogger } from "@/utils/logging/storeCreationLogger";
 import { StoreReportGenerator } from "@/utils/reports/storeReportGenerator";
 import { productConfig } from "@/types/products";
-import { deleteSizeVariant, updateProductDesignStatus } from "@/services/bigCommerce/products/bigCommerceProductServices";
+import {
+	deleteSizeVariant,
+	updateProductDesignStatus,
+} from "@/services/bigCommerce/products/bigCommerceProductServices";
 
 export const handleCreateStore = async (
 	store: StoreCreationProps,
@@ -34,7 +37,7 @@ export const handleCreateStore = async (
 		// If the store is being modified, fetch existing sage codes to avoid duplicates.
 		let createdSageCodes: string[] = [];
 		if (store.status === "Modify") {
-			createdSageCodes = await getExistingSageCodes(store.store_code);
+			createdSageCodes = await getExistingSKUs(store.store_code);
 		}
 
 		if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
@@ -53,20 +56,21 @@ export const handleCreateStore = async (
 
 		// --- PRODUCT CREATION & LOGGING ---
 		const processedProductsByDesign: Record<string, productConfig[]> = {};
+
 		console.log(
 			"[handleCreateStore] Generating product and variant configurations..."
 		);
 
 		const batches = await Promise.all(
-			Object.entries(storeProductsList).map(async ([designId, products], i) => {
-				const productConfigs : productConfig[] = await getProductConfigs(
+			Object.entries(storeProductsList).map(async ([designId, products], designIndex) => {
+				const productConfigs: productConfig[] = await getProductConfigs(
 					products,
 					category_id,
 					designId,
 					store.store_code,
-					i + 1,
 					relatedCategories,
 					createdSageCodes,
+					designIndex,
 					logger
 				);
 				logger.logProductFetch(store.store_code, products.length);

@@ -7,6 +7,8 @@ import { createClient } from "@/utils/supabase/ssr_client/server";
 
 const store_hash = process.env.BIGCOMMERCE_STORE_HASH!;
 
+// Creates the main store category in BigCommerce
+// This is the Schoolwear Store which contains all sub-categories and products
 export const createBigCommerceStore = async ({
 	store,
 	logger,
@@ -89,6 +91,8 @@ export const createBigCommerceStore = async ({
 	}
 };
 
+// Create the related sub-categories under the main store category
+// Returns a mapping of sub-category names to their IDs
 export const createRelatedCategories = async (
 	parentId: number,
 	subcategories: string[],

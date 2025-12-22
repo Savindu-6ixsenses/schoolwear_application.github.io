@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 		// Parse the query parameters
 		const { searchParams } = new URL(request.url);
 		const store_code = searchParams.get("store_code");
-		const design_id = searchParams.get("design_id");
+		const design_id = searchParams.get("design_id") || null;
 		const query = searchParams.get("q") || undefined;
 		const categories = searchParams.get("categories")?.split(",") || undefined;
 		const page = searchParams.get("page") || undefined;

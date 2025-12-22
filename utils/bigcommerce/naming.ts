@@ -1,47 +1,100 @@
+import { de } from "date-fns/locale";
+
 // Function to create a unique sage code
+// export const createUniqueSKU_2 = (
+// 	productName: string,
+// 	rawsageCode: string,
+// 	originalStoreCode: string,
+// 	offsetNumber: number,
+// 	createdSageCodes: string[]
+// ): string => {
+// 	if (!rawsageCode) {
+// 		throw new Error("rawsageCode is required");
+// 	}
+
+// 	const sageCode = rawsageCode.includes(".")
+// 		? rawsageCode.split(".")[0]
+// 		: rawsageCode;
+
+// 	// Split and validate the structure of sageCode
+// 	const parts = sageCode.split("-");
+
+// 	if (parts.length < 3) {
+// 		throw new Error("Invalid sageCode format");
+// 	}
+
+// 	let designCode = parts[1];
+// 	const colorCode = parts[2];
+
+// 	// ✅ Attempt to add offsetNumber to designCode (if numeric)
+// 	const designCodeNumber = parseInt(designCode, 10);
+
+// 	if (!isNaN(designCodeNumber)) {
+// 		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
+// 	} else {
+// 		// Fallback: Just append offset if not a valid number
+// 		designCode = `${designCode}${offsetNumber}`;
+// 	}
+
+// 	// ✅ Create new sage code using template literals
+// 	let newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+
+// 	// Check if the newSageCode is unique
+// 	while (createdSageCodes.includes(newSageCode)) {
+// 		offsetNumber = offsetNumber + 1;
+// 		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
+// 		newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+// 		console.log(
+// 			`Duplicate sage code found. New sage code generated: ${newSageCode}`
+// 		);
+// 	}
+
+// 	createdSageCodes.push(newSageCode); // Add to the list of created sage codes
+
+// 	console.log("Product Name:", productName);
+
+// 	console.log(`Sage Code: ${rawsageCode} => New Sage Code: ${newSageCode}`);
+
+// 	return newSageCode;
+// };
+
+export const getCategoryOffsetNumber = (product_category: string): number => {
+	switch (product_category.toLowerCase()) {
+		case "adult":
+			return 0;
+		case "men":
+			return 100;
+		case "women":
+			return 200;
+		case "youth":
+			return 300;
+		case "accessories":
+			return 400;
+		default:
+			return 0; // If there's no match, Consider it as Adult
+	}
+};
+
+// Function to create a unique sage code
+// Example Sage Code: ORG-001-RE (Store Code - Design Code - Color Code)
 export const createUniqueSKU = (
 	productName: string,
-	rawsageCode: string,
+	colorCode: string,
+	product_category: string,
 	originalStoreCode: string,
 	offsetNumber: number,
 	createdSageCodes: string[]
 ): string => {
-	if (!rawsageCode) {
-		throw new Error("rawsageCode is required");
-	}
-
-	const sageCode = rawsageCode.includes(".")
-		? rawsageCode.split(".")[0]
-		: rawsageCode;
-
-	// Split and validate the structure of sageCode
-	const parts = sageCode.split("-");
-
-	if (parts.length < 3) {
-		throw new Error("Invalid sageCode format");
-	}
-
-	let designCode = parts[1];
-	const colorCode = parts[2];
-
-	// ✅ Attempt to add offsetNumber to designCode (if numeric)
-	const designCodeNumber = parseInt(designCode, 10);
-
-	if (!isNaN(designCodeNumber)) {
-		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
-	} else {
-		// Fallback: Just append offset if not a valid number
-		designCode = `${designCode}${offsetNumber}`;
-	}
+	let designCode: number = getCategoryOffsetNumber(product_category);
+	designCode += offsetNumber;
 
 	// ✅ Create new sage code using template literals
-	let newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+	let newSageCode = `${originalStoreCode}-${String(designCode).padStart(3, "0")}-${colorCode}`;
 
 	// Check if the newSageCode is unique
 	while (createdSageCodes.includes(newSageCode)) {
-		offsetNumber = offsetNumber + 1;
-		designCode = String(designCodeNumber + offsetNumber).padStart(3, "0"); // Ensure two digits
-		newSageCode = `${originalStoreCode}-${designCode}-${colorCode}`;
+		designCode += 1;
+		newSageCode = `${originalStoreCode}-${String(designCode).padStart(3, "0")}-${colorCode}`;
 		console.log(
 			`Duplicate sage code found. New sage code generated: ${newSageCode}`
 		);
@@ -51,7 +104,7 @@ export const createUniqueSKU = (
 
 	console.log("Product Name:", productName);
 
-	console.log(`Sage Code: ${rawsageCode} => New Sage Code: ${newSageCode}`);
+	console.log(`New Sage Code: ${newSageCode}`);
 
 	return newSageCode;
 };
@@ -59,7 +112,7 @@ export const createUniqueSKU = (
 export const createUniqueProductNames = (
 	productName: string,
 	storeCode: string,
-	offsetNumber: number,
+	designIndex: number,
 	category_: string,
 	brandName: string,
 	namingMethod: string,
@@ -86,8 +139,8 @@ export const createUniqueProductNames = (
 	let name = "";
 	let designName = "";
 
-	if (offsetNumber > 0) {
-		designName = `Design (${offsetNumber})`;
+	if (designIndex > 0) {
+		designName = `Design (${designIndex})`;
 	}
 
 	// logging the product name and naming method
@@ -100,6 +153,7 @@ export const createUniqueProductNames = (
 
 	// Create the product name based on the naming method
 	if (namingMethod == "1") {
+		// TODO: Change this method.
 		name = `${storeCode} ${brand} ${category} ${productName} ${designName}`;
 	} else if (namingMethod == "2") {
 		name = `${storeCode} ${category} ${productName} ${designName}`;

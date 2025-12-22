@@ -216,6 +216,8 @@ export interface StoreProduct {
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
+	color_code?: string;
+	// Size Variations Flags
 	XS?: boolean;
 	SM?: boolean;
 	MD?: boolean;
@@ -239,6 +241,7 @@ export interface SupabaseProduct {
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
+	color_code?: string;
 }
 
 export interface ListPropsProducts {

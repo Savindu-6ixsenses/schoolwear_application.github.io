@@ -6,5 +6,6 @@ export {
 	updateItem,
 	removeFromList,
 	initialize_added_products,
-	getExistingSageCodes,
+	getExistingSKUs,
+	getColorCode,
 } from "./productServices";

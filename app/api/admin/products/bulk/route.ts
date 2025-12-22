@@ -7,6 +7,7 @@ import {
 } from "@/lib/products/productSchema";
 import { parse } from "csv-parse/sync";
 import { createClientbyRole } from "@/utils/adminHelper";
+import { getColorCode } from "@/services/products";
 
 export const runtime = "nodejs"; // ensure Node env for sync parsing
 
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
 					// Map from DB/CSV column names to Zod schema keys
 					item_type: r["Item Type"],
 					product_name: r["Product Name"],
+					product_color: r["color_code"],
 					product_type: r["Product Type"],
 					sku: r["Product Code/SKU"],
 					sage_code: r["SAGE Code"],
@@ -192,13 +194,16 @@ export async function POST(req: Request) {
 		console.log(
 			`[LOG] Starting database insertion in chunks of ${chunkSize}...`
 		);
+		const insertionPromises = [];
 		for (let i = 0; i < toInsert.length; i += chunkSize) {
 			console.log(`[LOG] Inserting chunk ${i / chunkSize + 1}...`);
+			
 			const chunk = toInsert.slice(i, i + chunkSize);
 			// Map from Zod schema keys back to DB column names for insertion
-			const chunkToInsert = chunk.map((p) => ({
+			const chunkToInsert = chunk.map(async (p) => ({
 				"Item Type": p.item_type,
 				"Product Name": p.product_name,
+				"color_code": p.color_code, // getColorCode is async, but we can await it later
 				"Product Type": p.product_type,
 				"Product Code/SKU": p.sku,
 				"SAGE Code": p.sage_code,
@@ -216,26 +221,34 @@ export async function POST(req: Request) {
 				Category: p.category,
 				created_by: user_id,
 			}));
-			const { error: insErr } = await supabase
-				.from("new_all_products_4")
-				.insert(chunkToInsert);
-			if (insErr) {
-				console.error(`[ERROR] Chunk insertion failed:`, insErr);
-				// Mark these as failed in the results (generic chunk failure)
-				chunk.forEach((p) => {
-					// Find the original row number from the initial validation results
-					const originalRow = rowResults.find((r) => r.sku === p.sku);
-					failures.push({
-						row: originalRow ? originalRow.row : -1, // Use original row number
-						status: "failed",
-						message: insErr.message,
-						sku: p.sku,
-					});
-				});
-			} else {
-				inserted += chunk.length;
-			}
+
+			insertionPromises.push(
+				(async () => {
+					// Await getColorCode for each item in the chunk
+					const resolvedChunkToInsert = await Promise.all(chunkToInsert.map(async item => ({
+						...item,
+						color_code: await (await item).color_code, // Await the promise returned by getColorCode
+					})));
+
+					const { error: insErr } = await supabase.from("new_all_products_4").insert(resolvedChunkToInsert);
+					if (insErr) {
+						console.error(`[ERROR] Chunk insertion failed:`, insErr);
+						chunk.forEach((p) => {
+							const originalRow = rowResults.find((r) => r.sku === p.sku);
+							failures.push({
+								row: originalRow ? originalRow.row : -1,
+								status: "failed",
+								message: insErr.message,
+								sku: p.sku,
+							});
+						});
+					} else {
+						inserted += chunk.length;
+					}
+				})()
+			);
 		}
+		await Promise.all(insertionPromises);
 
 		console.log("[LOG] Compiling final results...");
 		// Mark duplicates as skipped
