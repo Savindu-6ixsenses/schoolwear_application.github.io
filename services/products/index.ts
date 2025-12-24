@@ -4,6 +4,7 @@ export {
 	getStoreProducts,
 	addToList,
 	updateItem,
+	updateProductName,
 	removeFromList,
 	initialize_added_products,
 	getExistingSKUs,

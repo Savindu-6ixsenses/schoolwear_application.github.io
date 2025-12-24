@@ -216,6 +216,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								key={item.sageCode}
 								item={item}
 								store_code={`${store?.store_code}`}
+								store_design_index={design? (design.store_design_index || "") : ""}
 								design_id={design ? design.design_id : ""}
 								designGuideline={design ? design.design_guideline : ""}
 								category_list={category_list}

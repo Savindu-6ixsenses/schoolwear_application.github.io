@@ -224,6 +224,7 @@ export const addToList = async ({
 	size_variations,
 	method,
 	naming_fields,
+	productName,
 }: ListPropsProducts) => {
 	try {
 		console.log(
@@ -254,6 +255,7 @@ export const addToList = async ({
 					size_variations: size_variations,
 					naming_method: method || 1,
 					naming_fields: naming_fields || {},
+					product_name: productName,
 				},
 			])
 			.select();
@@ -343,6 +345,52 @@ export const updateItem = async ({
 		return data;
 	} catch (e) {
 		console.error("Unexpected error during update:", e);
+		throw e;
+	}
+};
+
+export const updateProductName = async ({
+	store_code,
+	sage_code,
+	design_code,
+	product_name,
+}: {
+	store_code: string;
+	sage_code: string;
+	design_code: string;
+	product_name: string;
+}) => {
+	try {
+		console.log(
+			"Updating product name: ",
+			store_code,
+			sage_code,
+			design_code,
+			product_name
+		);
+		const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+		let query = supabase
+			.from("stores_products_designs_2")
+			.update({ product_name: product_name })
+			.eq("Store_Code", store_code)
+			.eq("sage_code", sage_code)
+			.eq("Design_ID", design_code);
+
+		if (!isAdmin) {
+			query = query.eq("user_id", user_id);
+		}
+
+		const { data, error } = await query.select();
+
+		if (error) {
+			console.error("Error updating product name:", error);
+			throw error;
+		}
+
+		return data;
+	} catch (e) {
+		console.error("Unexpected error updating product name:", e);
 		throw e;
 	}
 };

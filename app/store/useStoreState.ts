@@ -207,6 +207,7 @@ export const useStoreState = create<StoreState>()(
 					}
 
 					set({ added_products: designItems });
+					
 					// Handle case where there are no products at initialization
 					if (Object.keys(designItems).length === 0) {
 						console.warn("[Zustand] No products found for the store");

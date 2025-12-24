@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FaEye } from "react-icons/fa";
 import { discardUpdates } from "@/services/stores/storeServices-Server";
 import { useRouter } from "next/navigation";
+import EditableProductName from "@/app/components/EditableProductName";
 
 // Helper to fetch a signed URL from your API
 const fetchSignedUrl = async (type: "log" | "report", storeCode: string) => {
@@ -310,9 +311,7 @@ const StoreReportClient = ({
 														)}`}
 													>
 														<div>
-															<span className="font-medium">
-																{product.productName}
-															</span>
+															<EditableProductName product={product} designId={designId} storeCode={storeCode} />
 															<Badge
 																variant="secondary"
 																className="ml-2 bg-slate-300"

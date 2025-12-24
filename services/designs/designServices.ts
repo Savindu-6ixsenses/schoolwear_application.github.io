@@ -15,7 +15,7 @@ export async function createDesign({
 	storeCode,
 	height = 7,
 	width = 7,
-}: CreateDesignParams): Promise<Design[]> {
+}: CreateDesignParams): Promise<{store_design_index: any;}[]> {
 	const supabase = await createClient();
 	const {
 		data: { user },
@@ -39,7 +39,7 @@ export async function createDesign({
 				width,
 			},
 		])
-		.select()
+		.select("store_design_index")
 
 	if (error) {
 		throw new Error(`Failed to create design: ${error.message}`);

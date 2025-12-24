@@ -11,6 +11,7 @@ import RemoveFromList from "./RemoveFromList";
 interface SingleRecordProps {
 	item: StoreProduct;
 	store_code: string;
+	store_design_index: string | number;
 	design_id: string;
 	designGuideline?: string;
 	category_list: string[];
@@ -24,6 +25,7 @@ interface SingleRecordProps {
 const SingleRecord = ({
 	item,
 	store_code,
+	store_design_index,
 	design_id,
 	designGuideline,
 	category_list,
@@ -204,6 +206,8 @@ const SingleRecord = ({
 							store_code={store_code}
 							sage_code={item.sageCode}
 							product_name={item.productName}
+							brandName={item.brandName || ""}
+							store_design_index={store_design_index}
 							design_id={design_id}
 							designGuideline={designGuideline || ""}
 							size_variations={selectedSizes}

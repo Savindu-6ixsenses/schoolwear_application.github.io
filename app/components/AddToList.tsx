@@ -14,6 +14,8 @@ const AddToList = ({
 	store_code,
 	sage_code,
 	product_name,
+	brandName,
+	store_design_index,
 	design_id,
 	designGuideline,
 	size_variations,
@@ -30,6 +32,8 @@ const AddToList = ({
 	store_code: string;
 	sage_code: string;
 	product_name: string;
+	brandName: string;
+	store_design_index: string | number;
 	design_id: string;
 	designGuideline: string;
 	size_variations: { [key: string]: boolean };
@@ -92,11 +96,35 @@ const AddToList = ({
 			"Adding to list with parameters: ",
 			store_code,
 			sage_code,
-			design_id,
+			store_design_index,
 			selected_sizes,
 			naming_method,
 			naming_fields
 		);
+
+		const createProductName = () => {
+			const parts = [store_code];
+
+			if (brandName.trim().toLowerCase() !== "under armour") {
+				parts.push(brandName);
+			}
+
+			// TODO: Revisit this logic later
+			// if (product_category) {
+			// 	parts.push(product_category);
+			// }
+
+			parts.push(product_name);
+
+			if (store_design_index) {
+				parts.push(`(Design ${store_design_index})`);
+			}
+
+			return parts.join(" ");
+		};
+
+		const generatedProductName = createProductName();
+		console.log("Generated Product Name: ", generatedProductName);
 
 		try {
 			setIsLoading(true);
@@ -125,12 +153,22 @@ const AddToList = ({
 					size_variations: selected_sizes,
 					method: naming_method,
 					naming_fields: naming_fields,
+					product_name: generatedProductName,
 				}),
 			});
 
 			if (response.ok) {
 				console.log("Added to list");
-				addProduct(design_id, {sage_code: sage_code,productName: product_name, sizeVariations: selected_sizes, category: product_category, designGuideline: designGuideline, naming_method: naming_method, naming_fields: naming_fields});
+				addProduct(design_id, {
+					sage_code: sage_code,
+					productName: product_name,
+					newProductName: generatedProductName,
+					sizeVariations: selected_sizes,
+					category: product_category,
+					designGuideline: designGuideline,
+					naming_method: naming_method,
+					naming_fields: naming_fields,
+				});
 				toast.success("Item added to list successfully");
 				setAddedToList(true);
 			} else {

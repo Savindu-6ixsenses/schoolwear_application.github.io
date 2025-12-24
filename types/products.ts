@@ -253,11 +253,13 @@ export interface ListPropsProducts {
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
 	store_status?: string;
+	productName: string;
 }
 
 export interface StoreProductReport {
 	sage_code: string;
 	productName: string;
+	newProductName: string;
 	sizeVariations: string;
 	category: string;
 	designGuideline: string;

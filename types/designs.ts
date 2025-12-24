@@ -17,6 +17,7 @@ export type Design = {
 	width: number | null;
 	store_code: string;
 	Design_Name: string;
+	store_design_index?: number | null;
 };
 
 export type CreateDesignParams = {
@@ -39,4 +40,5 @@ export type DesignView = {
     design_name: string;
     store_code?: string;
 	notes: string | null;
+	store_design_index?: number | null;
 }

@@ -35,7 +35,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 	const supabase = createClient();
 
-	const { designList, setDesignList } = useStoreState();
+	const { designList, setDesignList, initializeDesignItems } = useStoreState();
 
 	const [selectedDesignGuideline, setSelectedDesignGuideline] =
 		useState<DesignGuideline | null>(null);
@@ -126,6 +126,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 			if (response.ok) {
 				console.log("Added the design");
+				return await response.json();
 			} else {
 				console.log("Error adding the design: Response not Okay ", response);
 				throw new Error(`Failed to add design: ${response.statusText}`);
@@ -194,19 +195,24 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				notes: null
 			};
 
-			// Update the list of design items
-
-			const updatedDesignItems = [...(designList ?? []), newDesignItem];
-			setDesignList(updatedDesignItems);
-
 			try {
-				addNewDesign(newDesignItem);
+				const responseData = await addNewDesign(newDesignItem);
+				if (responseData && responseData[0]) {
+					Object.assign(newDesignItem, {
+						store_design_index: responseData[0].store_design_index,
+					});
+				}
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			} catch (error: any) {
 				console.error("Error adding new design:", error);
 				toast.error(`Failed to add new design: ${error.message}`);
 				return;
 			}
+			
+			// Update the list of design items
+			const updatedDesignItems = [...(designList ?? []), newDesignItem];
+			setDesignList(updatedDesignItems);
+
 
 			setDesign(newDesignItem);
 			setQuery({ designId: newDesignItem.design_id, page: 1, pageSize: 20 });
@@ -259,7 +265,8 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				height: designHeight,
 				width: designWidth,
 				store_code: storeCode,
-				notes: design.notes
+				notes: design.notes,
+				store_design_index: design.store_design_index
 			};
 
 			await updateDesign(updatedDesignItem);
@@ -309,10 +316,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				}
 
 				// Update local state
-				const updatedList = designList.filter(
-					(d) => d.design_id !== design.design_id
-				);
-				setDesignList(updatedList);
+				initializeDesignItems(storeCode); // Refresh the design items list
 				setQuery({ designId: null, page: 1, pageSize: 20 }); // Clear the current design
 
 				toast.success("Design deleted successfully!");
