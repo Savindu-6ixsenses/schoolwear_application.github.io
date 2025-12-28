@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaEdit, FaChevronDown, FaChevronUp, FaTrash } from "react-icons/fa";
-import { StoreSummary } from "./page";
+import { StoreSummary } from "@/types/store";
 import {
 	changeStoreStatus,
 	deleteDraftOrPendingStore,
@@ -13,7 +13,7 @@ import { useStoreState } from "../store/useStoreState";
 import toast from "react-hot-toast";
 
 interface ListItemProps {
-	item: StoreSummary;
+	store: StoreSummary;
 }
 
 // Change the status button color
@@ -32,27 +32,27 @@ const getStatusColor = (status: string) => {
 	}
 };
 
-const ListItem: React.FC<ListItemProps> = ({ item }) => {
+const ListItem: React.FC<ListItemProps> = ({ store }) => {
 	const { setStoreStatus } = useStoreState();
 	const router = useRouter();
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	const handleEditClick = (e: React.MouseEvent) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
-		router.push(`/${item.store_code}`);
+		router.push(`/${store.store_code}`);
 	};
 
 	const handleUpdateClick = async (e: React.MouseEvent) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
 		try {
 			// Convert Store status into modifying BigCommerce store
-			if (item.status !== "Modify") {
+			if (store.status !== "Modify") {
 				// Only change if not already in Modify status
-				await changeStoreStatus(item.store_code, "Modify");
+				await changeStoreStatus(store.store_code, "Modify");
 				setStoreStatus("Modify");
 				router.refresh(); // Refresh the page to show the new status
 			}
-			router.push(`/${item.store_code}`);
+			router.push(`/${store.store_code}`);
 		} catch (error) {
 			console.error("Failed to update store status:", error);
 			alert("Failed to update store status.");
@@ -63,11 +63,11 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
 		if (
 			window.confirm(
-				`Are you sure you want to permanently delete the store "${item.store_name}"? This action cannot be undone.`
+				`Are you sure you want to permanently delete the store "${store.store_name}"? This action cannot be undone.`
 			)
 		) {
 			try {
-				await deleteDraftOrPendingStore(item.store_code);
+				await deleteDraftOrPendingStore(store.store_code);
 				toast.success("Store deleted successfully.");
 				router.refresh();
 			} catch (error) {
@@ -82,11 +82,11 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 		e.stopPropagation(); // Prevent triggering the expand/collapse
 		if (
 			window.confirm(
-				`WARNING: You are about to disable the store "${item.store_name}". This will make all its products and categories invisible on BigCommerce. Do you want to proceed?`
+				`WARNING: You are about to disable the store "${store.store_name}". This will make all its products and categories invisible on BigCommerce. Do you want to proceed?`
 			)
 		) {
 			try {
-				await disableApprovedStore(item.store_code);
+				await disableApprovedStore(store.store_code);
 				toast.success("Store has been disabled.");
 				router.refresh();
 			} catch (error) {
@@ -97,29 +97,29 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 		}
 	};
 
-	const statusColor = getStatusColor(item.status);
+	const statusColor = getStatusColor(store.status);
 
 	return (
 		<div className="border-2 border-gray-200 rounded-lg bg-white shadow-sm transition-all duration-300">
 			{/* Collapsed View */}
 			<div
 				className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 z-0"
-				onClick={() => router.push(`/${item.store_code}`)}
+				onClick={() => router.push(`/${store.store_code}`)}
 			>
 				{/* Left side info */}
 				<div className="flex items-center gap-4 flex-wrap">
 					<span className="text-blue-600 font-bold min-w-[80px]">
-						{item.store_code}
+						{store.store_code}
 					</span>
-					<span className="text-gray-800 font-medium">{item.store_name}</span>
+					<span className="text-gray-800 font-medium">{store.store_name}</span>
 					<div className="flex gap-4 text-sm text-gray-600">
 						<span>
 							Designs:{" "}
-							<span className="font-semibold">{item.total_designs}</span>
+							<span className="font-semibold">{store.total_designs}</span>
 						</span>
 						<span>
 							Products:{" "}
-							<span className="font-semibold">{item.total_products}</span>
+							<span className="font-semibold">{store.total_products}</span>
 						</span>
 					</div>
 				</div>
@@ -129,10 +129,10 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 					<span
 						className={`${statusColor} text-white px-3 py-1 rounded-full text-xs font-semibold`}
 					>
-						{item.status == "Modify" ? "Modifying" : item.status || "Draft"}
+						{store.status == "Modify" ? "Modifying" : store.status || "Draft"}
 					</span>
 					<div className="flex gap-2">
-						{item.status === "Approved" || item.status === "Modify" ? (
+						{store.status === "Approved" || store.status === "Modify" ? (
 							<button
 								title="Update"
 								onClick={handleUpdateClick}
@@ -151,7 +151,7 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 								<span>Edit</span>
 							</button>
 						)}
-						{item.status === "Approved" ? (
+						{store.status === "Approved" ? (
 							<button
 								title="Delete"
 								onClick={handleDisableClick}
@@ -187,17 +187,17 @@ const ListItem: React.FC<ListItemProps> = ({ item }) => {
 			{isExpanded && (
 				<div className="p-4 border-t border-gray-200 bg-gray-50">
 					<h4 className="font-semibold text-gray-700 mb-2">Design Details</h4>
-					{item.designs.length > 0 ? (
+					{store.designs.length > 0 ? (
 						<div className="space-y-2">
-							{item.designs.map((design, index) => (
+							{store.designs.map((design, index) => (
 								<div
 									key={design.design_id || index}
 									className="grid grid-cols-3 gap-4 p-2 bg-white rounded border"
 								>
 									<div>
-										<span className="text-xs text-gray-500">Design ID</span>
+										<span className="text-xs text-gray-500">Design Name</span>
 										<p className="font-medium text-gray-800">
-											{design.design_id}
+											{design.design_name}
 										</p>
 									</div>
 									<div>

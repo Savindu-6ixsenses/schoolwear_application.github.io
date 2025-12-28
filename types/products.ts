@@ -253,7 +253,7 @@ export interface ListPropsProducts {
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
 	store_status?: string;
-	productName: string;
+	productName?: string;
 }
 
 export interface StoreProductReport {

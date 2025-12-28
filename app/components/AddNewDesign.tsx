@@ -125,7 +125,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			});
 
 			if (response.ok) {
-				console.log("Added the design");
+				console.log("Design added successfully");
 				return await response.json();
 			} else {
 				console.log("Error adding the design: Response not Okay ", response);
@@ -194,20 +194,24 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				store_code: storeCode,
 				notes: null
 			};
-
+			
 			try {
 				const responseData = await addNewDesign(newDesignItem);
-				if (responseData && responseData[0]) {
+				if (responseData.success && responseData.data[0]) {
 					Object.assign(newDesignItem, {
-						store_design_index: responseData[0].store_design_index,
+						store_design_index: responseData.data[0].store_design_index,
 					});
 				}
+
+				
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			} catch (error: any) {
 				console.error("Error adding new design:", error);
 				toast.error(`Failed to add new design: ${error.message}`);
 				return;
 			}
+
+			console.log("New Design Item :", newDesignItem);
 			
 			// Update the list of design items
 			const updatedDesignItems = [...(designList ?? []), newDesignItem];

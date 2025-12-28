@@ -6,7 +6,14 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const { store_code, sage_code, design_code, product_name } = body;
 
-		if (!store_code || !sage_code || !design_code || !product_name) {
+		// Checks for falsy values AND whitespace-only strings
+		if (
+			!store_code ||
+			!sage_code ||
+			!design_code ||
+			!product_name ||
+			(typeof product_name === "string" && !product_name.trim())
+		) {
 			return NextResponse.json(
 				{ message: "Missing required fields" },
 				{ status: 400 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/ssr_client/server";
-import { StoreSummary } from "./page";
+import { StoreSummary } from "@/types/store";
 
 /**
  * Fetches data from the v_store_design_summary view and groups it by store.
@@ -47,6 +47,7 @@ export async function getStoreSummaries(): Promise<StoreSummary[]> {
 			if (item.design_id) {
 				acc[storeCode].designs.push({
 					design_id: item.design_id,
+					design_name : item.design_name,
 					product_count: item.product_count,
 					categories: item.categories,
 				});

@@ -110,6 +110,17 @@ const SingleRecord = ({
 		}
 	};
 
+	// Copy the Sage code to clipboard when clicked
+	const handleCopySageCode = async () => {
+		try {
+			await navigator.clipboard.writeText(item.sageCode);
+			toast.success("Sage copied to clipboard!");
+		} catch (err) {
+			console.error("Failed to copy Sage code: ", err);
+			toast.error("Failed to copy Sage code.");
+		}
+	};
+
 	const sizes = GLOBAL_SIZES;
 
 	return (
@@ -131,7 +142,9 @@ const SingleRecord = ({
 				{/* Sage Code */}
 				<div className="flex">
 					<div className="flex items-center">
-						<button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md border border-gray-300 shadow-sm">
+						{/* When clicked on this sage code is copied */}
+						<button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md border border-gray-300 shadow-sm" 
+						onClick={handleCopySageCode} title="Click to copy SAGE Code">
 							{item.sageCode}
 						</button>
 					</div>

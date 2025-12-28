@@ -4,7 +4,7 @@ import { addToList } from "@/services/products";
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { store_code, sage_code, design_code, size_variations, method, naming_fields, productName } = body;
+		const { store_code, sage_code, design_code, size_variations, method, naming_fields, product_name } = body;
 
 		console.log(
 			"Request Body: ",
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 			size_variations,
 			method,
 			naming_fields,
-			productName
+			product_name
 		);
 
 		// Add to list
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 			size_variations,
 			method,
 			naming_fields,
-			productName,
+			productName: product_name,
 		});
 
 		console.log("Response: ", response);

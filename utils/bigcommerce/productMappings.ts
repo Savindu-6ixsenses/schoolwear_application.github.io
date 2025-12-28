@@ -207,33 +207,23 @@ export const getProductConfigs = async (
 				relatedCategoryIds[product.category],
 			];
 
-			let productFinalName = createUniqueProductNames(
-				product.productName,
-				storeCode,
-				designIndex,
-				product.category,
-				product.brandName,
-				product.naming_method || "1",
-				product.naming_fields || {}
-			);
-
 			logger.logProductNameProcessing(
-				productFinalName,
+				product.productName,
 				product.naming_method || "2",
 				product.naming_fields || {}
 			);
 
 			console.log(
-				`Final Product Name: ${productFinalName}, Sage Code: ${newSKU}`
+				`Final Product Name: ${product.productName}, Sage Code: ${newSKU}`
 			);
 
-			if (!productFinalName) {
+			if (!product.productName) {
 				console.warn("Product name is missing. Using default name instead.");
-				productFinalName = `${randomUUID()}`; // Fallback to a default name if missing
+				product.productName = `${randomUUID()}`; // Fallback to a default name if missing
 			}
 
 			const productConfig: ProductCreationProps = {
-				name: productFinalName, // Default if name is missing
+				name: product.productName, // Default if name is missing
 				type: "physical", // Default type
 				sku:
 					newSKU ||

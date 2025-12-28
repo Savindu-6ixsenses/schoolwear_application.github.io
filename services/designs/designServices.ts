@@ -1,7 +1,11 @@
-import { CreateDesignParams, Design, DesignGuideline, DesignView } from "@/types/designs";
+import {
+	CreateDesignParams,
+	Design,
+	DesignGuideline,
+	DesignView,
+} from "@/types/designs";
 import { createClientbyRole } from "@/utils/adminHelper";
 import { createClient } from "@/utils/supabase/ssr_client/server";
-
 
 /**
  * Creates a new design instance for a specific store.
@@ -15,7 +19,7 @@ export async function createDesign({
 	storeCode,
 	height = 7,
 	width = 7,
-}: CreateDesignParams): Promise<{store_design_index: any;}[]> {
+}: CreateDesignParams): Promise<{ store_design_index: any }[]> {
 	const supabase = await createClient();
 	const {
 		data: { user },
@@ -39,7 +43,7 @@ export async function createDesign({
 				width,
 			},
 		])
-		.select("store_design_index")
+		.select("store_design_index");
 
 	if (error) {
 		throw new Error(`Failed to create design: ${error.message}`);
@@ -53,19 +57,19 @@ export async function updateDesign(
 	designUpdateParams: Partial<Design>
 ): Promise<Design[]> {
 	const { supabase, isAdmin, user_id } = await createClientbyRole();
-	
+
 	let query = supabase
 		.from("designs")
 		.update(designUpdateParams)
-		.eq("Design_Id", design_id)
-	
+		.eq("Design_Id", design_id);
+
 	if (!isAdmin) {
-			query = query.eq("user_id", user_id);
-		}
+		query = query.eq("user_id", user_id);
+	}
 
 	const { data, error } = await query.select();
 
-	console.log("Updated data: ", data, "Error", error)
+	console.log("Updated data: ", data, "Error", error);
 
 	if (error) {
 		throw new Error(`Failed to update design: ${error.message}`);
@@ -81,10 +85,7 @@ export async function updateDesign(
 export async function deleteDesign(design_id: string): Promise<void> {
 	const { supabase, isAdmin, user_id } = await createClientbyRole();
 
-	let query = supabase
-		.from("designs")
-		.delete()
-		.eq("Design_Id", design_id);
+	let query = supabase.from("designs").delete().eq("Design_Id", design_id);
 
 	if (!isAdmin) {
 		query = query.eq("user_id", user_id);
@@ -96,7 +97,7 @@ export async function deleteDesign(design_id: string): Promise<void> {
 		throw new Error(`Failed to delete design: ${error.message}`);
 	}
 
-	console.log("Design deleted successfully : ",data);
+	console.log("Design deleted successfully : ", data);
 }
 
 /**
@@ -104,9 +105,7 @@ export async function deleteDesign(design_id: string): Promise<void> {
  */
 export async function getDesignGuidelines(): Promise<DesignGuideline[]> {
 	const supabase = await createClient();
-	const { data, error } = await supabase
-		.from("design_guidelines")
-		.select("*")
+	const { data, error } = await supabase.from("design_guidelines").select("*");
 
 	if (error) {
 		throw new Error(`Failed to fetch design guidelines: ${error.message}`);
@@ -115,17 +114,20 @@ export async function getDesignGuidelines(): Promise<DesignGuideline[]> {
 	return data || [];
 }
 
-
-export async function getExistingDesigns(storeCode: string): Promise<DesignView[]> {
+export async function getExistingDesigns(
+	storeCode: string
+): Promise<DesignView[]> {
 	const supabase = await createClient();
 
-	const {data: session} = await supabase.auth.getSession();
+	const { data: session } = await supabase.auth.getSession();
 
 	if (!session) {
 		throw new Error("User not authenticated to fetch designs.");
 	}
 
-	console.log(`Fetching Existing Designs in Store ${storeCode} for User ${session}`);
+	console.log(
+		`Fetching Existing Designs in Store ${storeCode} for User ${session}`
+	);
 
 	const { data, error } = await supabase
 		.from("v_designs")
@@ -136,7 +138,7 @@ export async function getExistingDesigns(storeCode: string): Promise<DesignView[
 		throw new Error(`Failed to fetch existing designs: ${error.message}`);
 	}
 
-	console.log(`Fetched Existing Designs in Store ${storeCode} : `, data)
+	console.log(`Fetched Existing Designs in Store ${storeCode} : `, data);
 
 	return data || [];
 }

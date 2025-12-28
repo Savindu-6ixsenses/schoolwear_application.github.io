@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import ListItem from "./ListItem";
-import { StoreSummary } from "./page";
+import { StoreSummary } from "@/types/store";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 
 interface StoreListProps {
@@ -50,7 +50,7 @@ const StoreList: React.FC<StoreListProps> = ({ initialStores }) => {
 				filteredData.map((item) => (
 					<ListItem
 						key={item.store_code}
-						item={item}
+						store={item}
 					/>
 				))
 			) : (

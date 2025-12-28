@@ -72,14 +72,22 @@ export default function SingleAddForm() {
 		const fd = new FormData(form);
 
 		// Normalize booleans (unchecked checkboxes won't appear in FormData)
-		["is_created", "xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach(
+		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach(
 			(name: string) => {
 				if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
 				// Zod treats any non-empty string as true
+
+				// If every value is false, we can consider the field as not set. However, since at least one size should be selected, we leave it to validation.
 			}
 		);
 
 		const v = validate(fd);
+
+		const sizes = ["xs", "sm", "md", "lg", "xl", "x2", "x3"];
+		if (!sizes.some((sz) => fd.get(sz) === "true")) {
+			v["sizes"] = "At least one size is required.";
+		}
+
 		if (Object.values(v).some(Boolean)) {
 			setErrors(v);
 			setMessage({ type: "error", text: "Please fill the required fields." });
@@ -294,7 +302,7 @@ export default function SingleAddForm() {
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<fieldset className="border border-gray-200 rounded-lg p-4">
 					<legend className="px-2 text-sm font-semibold text-gray-700">
-						Sizes
+						Sizes <span className="text-red-600">*</span>
 					</legend>
 					<div className="grid grid-cols-4 gap-2 text-sm">
 						{["xs", "sm", "md", "lg", "xl", "x2", "x3"].map((sz) => (

@@ -58,3 +58,20 @@ export type FormData = {
 };
 
 
+interface DesignDetail {
+	design_id: number | null;
+	design_name?: string;
+	product_count: number;
+	categories: string | null;
+}
+
+export interface StoreSummary {
+	store_code: string;
+	store_name: string;
+	status: string;
+	required_date: string;
+	total_designs: number;
+	total_products: number;
+	designs: DesignDetail[];
+}
+

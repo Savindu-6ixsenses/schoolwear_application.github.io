@@ -103,6 +103,7 @@ const AddToList = ({
 		);
 
 		const createProductName = () => {
+			console.log("Creating Product Name...")
 			const parts = [store_code];
 
 			if (brandName.trim().toLowerCase() !== "under armour") {
@@ -115,6 +116,8 @@ const AddToList = ({
 			// }
 
 			parts.push(product_name);
+
+			console.log(`For product : ${product_name} store_design_index : ${store_design_index}`);
 
 			if (store_design_index) {
 				parts.push(`(Design ${store_design_index})`);

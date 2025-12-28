@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
 			height,
 			width}
 		);
+
+		// Check the response and return appropriate status
+		if (!data) {
+			return NextResponse.json(
+				{ success: false, message: "Failed to create design." },
+				{ status: 500 }
+			);
+		}
 		return NextResponse.json({ success: true, data: data }, { status: 200 });
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (e: any) {
