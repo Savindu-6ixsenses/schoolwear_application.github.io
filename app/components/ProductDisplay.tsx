@@ -17,6 +17,7 @@ import Image from "next/image";
 import toast from "react-hot-toast";
 import { DesignGuideline, DesignView } from "@/types/designs";
 import NotesComponent from "./NotesComponent";
+import EditStoreButton from "./Buttons/EditStoreButton";
 
 interface ProductDisplayProps {
 	storeCode: string;
@@ -38,8 +39,14 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 	const [note, setNote] = useState<string | null>(null);
 	const router = useRouter();
 
-	const { store, category_list, designList, setStore, setCategoryList, setStoreStatus } =
-		useStoreState();
+	const {
+		store,
+		category_list,
+		designList,
+		setStore,
+		setCategoryList,
+		setStoreStatus,
+	} = useStoreState();
 
 	const handleSearch = (q: string) => {
 		setQuery({ q, page: 1 });
@@ -55,7 +62,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 				);
 				return;
 			}
-			const data = await generate_pl(storeCode ? storeCode : "");
+
+			const data = await generate_pl(storeCode ? storeCode : "", store?.status?.toLowerCase());
 
 			console.log("Generate PL Data :", data);
 			toast.success("Product list generation has started!");
@@ -63,9 +71,20 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 			router.push("/list");
 		} catch (error) {
 			console.error("Failed to generate PL:", error);
-			toast.error(
-				error instanceof Error ? error.message : "An unknown error occurred."
-			);
+
+			if (
+				error instanceof Error &&
+				error.message === "Contact details are incomplete."
+			) {
+				toast.error(
+					"Please complete the contact details before generating PL."
+				);
+				router.push(`/?storeCode=${storeCode}&edit=true`);
+			} else {
+				toast.error(
+					error instanceof Error ? error.message : "An unknown error occurred."
+				);
+			}
 		}
 	};
 
@@ -128,6 +147,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 							{store?.store_code}
 						</span>
 					</div>
+					<EditStoreButton store_status={store?.status || "Draft"} store_code={store?.store_code || ""} />
 				</div>
 
 				{/* Middle Section: Design Info */}
@@ -216,7 +236,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								key={item.sageCode}
 								item={item}
 								store_code={`${store?.store_code}`}
-								store_design_index={design? (((design.store_design_index) as number + 1) || "") : ""}
+								store_design_index={
+									design ? (design.store_design_index as number) + 1 || "" : ""
+								}
 								design_id={design ? design.design_id : ""}
 								designGuideline={design ? design.design_guideline : ""}
 								category_list={category_list}

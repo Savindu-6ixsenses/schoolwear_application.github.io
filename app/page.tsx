@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import SchoolFormTabs from "./components/SchoolForm2";
 
 export default function Home() {
@@ -12,7 +13,9 @@ export default function Home() {
 				</div>
 
 				{/* Form */}
-				<SchoolFormTabs />
+				<Suspense fallback={<div className="text-center py-10">Loading form...</div>}>
+					<SchoolFormTabs />
+				</Suspense>
 			</div>
 		</div>
 	);

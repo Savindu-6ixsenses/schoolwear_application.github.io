@@ -27,7 +27,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						htmlFor="schoolName"
 						className="text-sm font-medium text-gray-700"
 					>
-						School Name *
+						School Name <span className="text-red-600">*</span>
 					</Label>
 					<Input
 						id="schoolName"
@@ -35,7 +35,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						type="text"
 						value={formData.schoolName}
 						onChange={handleChange}
-						placeholder="Enter school name"
+						placeholder="E.g. University of Toronto - Scarborough Campus"
 						className="mt-1"
 						required
 					/>
@@ -50,7 +50,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						htmlFor="streetAddress"
 						className="text-sm font-medium text-gray-700"
 					>
-						Street Address (Line 1) *
+						Street Address (Line 1) <span className="text-red-600">*</span>
 					</Label>
 					<Input
 						id="streetAddress"
@@ -87,7 +87,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						htmlFor="city"
 						className="text-sm font-medium text-gray-700"
 					>
-						City *
+						City <span className="text-red-600">*</span>
 					</Label>
 					<Input
 						id="city"
@@ -106,7 +106,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						htmlFor="provinceState"
 						className="text-sm font-medium text-gray-700"
 					>
-						Province/State *
+						Province/State <span className="text-red-600">*</span>
 					</Label>
 					<Input
 						id="provinceState"
@@ -125,7 +125,7 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 						htmlFor="postalCode"
 						className="text-sm font-medium text-gray-700"
 					>
-						Postal Code / Zip Code *
+						Postal Code / Zip Code <span className="text-red-600">*</span>
 					</Label>
 					<Input
 						id="postalCode"

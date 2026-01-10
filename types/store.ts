@@ -1,10 +1,10 @@
 // Props for creating a store in the database
 export interface StoreCreationProps {
 	store_name: string;
-	account_manager: string;
+	account_manager: string | undefined;
 	store_address: string;
-	main_client_name: string;
-	main_client_contact_number: string;
+	main_client_name: string | undefined;
+	main_client_contact_number: string | undefined;
 	store_code: string;
 	start_date: string;
 	end_date: string;

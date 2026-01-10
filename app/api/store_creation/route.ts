@@ -1,34 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StoreCreationProps } from "@/types/store";
-import { createClient } from "@/utils/supabase/ssr_client/server";
-
-async function createDbStore(storeData: StoreCreationProps) {
-	try {
-		const supabase = await createClient();
-		// Use getUser() on the server as recommended to validate the session.
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-
-		const { data, status, statusText, error } = await supabase
-			.from("stores")
-			.insert([
-				{
-					...storeData,
-					user_id: user?.id,
-					created_at: new Date().toISOString(),
-					updated_at: new Date().toISOString(),
-				},
-			])
-			.select();
-
-		if (error) throw error;
-		return { data, status, statusText };
-	} catch (e) {
-		console.error("Unexpected error:", e);
-		throw e;
-	}
-}
+import {
+	createDbStore,
+	updateDbStore,
+	getDbStore,
+} from "@/services/stores/storeServices-Server";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -65,6 +41,64 @@ export async function POST(request: NextRequest) {
 		// Log the full error to the console for debugging
 		console.error("Error in POST handler:", error);
 
+		// Ensure a response is always returned
+		const errorMessage =
+			error instanceof Error ? error.message : "An unknown error occurred.";
+		return NextResponse.json(
+			{
+				message: "Internal Server Error",
+				error: errorMessage,
+			},
+			{ status: 500 }
+		);
+	}
+}
+
+// Get store details by store code
+export async function GET(request: NextRequest) {
+	try {
+		const { searchParams } = new URL(request.url);
+		const storeCode = searchParams.get("store_code");
+
+		if (!storeCode) {
+			return NextResponse.json(
+				{ message: "Store code is required" },
+				{ status: 400 }
+			);
+		}
+
+		const data = await getDbStore(storeCode);
+		return NextResponse.json(data, { status: 200 });
+	} catch (error: unknown) {
+		console.error("Error in GET handler:", error);
+		return NextResponse.json(
+			{ message: "Internal Server Error", error: String(error) },
+			{ status: 500 }
+		);
+	}
+}
+
+// Edit the store details based on store code
+export async function PUT(request: NextRequest) {
+	try {
+		const storeData: StoreCreationProps = await request.json();
+
+		// Edit an existing store
+		const response: Awaited<ReturnType<typeof updateDbStore>> =
+			await updateDbStore({
+				...storeData,
+			});
+
+		return NextResponse.json(
+			{
+				message: "Store updated successfully",
+				response: response.data,
+			},
+			{ status: 200 }
+		);
+	} catch (error: unknown) {
+		// Log the full error to the console for debugging
+		console.error("Error in PUT handler:", error);
 		// Ensure a response is always returned
 		const errorMessage =
 			error instanceof Error ? error.message : "An unknown error occurred.";

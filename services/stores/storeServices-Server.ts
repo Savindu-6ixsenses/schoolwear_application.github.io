@@ -1,9 +1,9 @@
 "use server";
 
-
 import { createClientbyRole } from "@/utils/adminHelper";
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import { sendAPIRequestBigCommerce } from "../bigCommerce/apiClient";
+import { StoreCreationProps } from "@/types/store";
 
 export async function updateStoreStatus(storeCode: string, status: string) {
 	// First, create a standard client to check the current user's session
@@ -201,4 +201,108 @@ export async function getStoreStatus(storeCode: string) {
 		throw new Error(`Failed to get store status: ${error.message}`);
 	}
 	return data?.status;
+}
+
+export async function createDbStore(storeData: StoreCreationProps) {
+	try {
+		const supabase = await createClient();
+		// Use getUser() on the server as recommended to validate the session.
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		const { data, status, statusText, error } = await supabase
+			.from("stores")
+			.insert([
+				{
+					...storeData,
+					user_id: user?.id,
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
+				},
+			])
+			.select();
+
+		if (error) throw error;
+		return { data, status, statusText };
+	} catch (e) {
+		console.error("Unexpected error:", e);
+		throw e;
+	}
+}
+
+// Update an existing store
+export async function updateDbStore(storeData: StoreCreationProps) {
+	// Implementation for updating a store goes here
+	const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+	let query = supabase
+		.from("stores")
+		.update({
+			...storeData,
+			updated_at: new Date().toISOString(),
+		})
+		.eq("store_code", storeData.store_code);
+
+	if (!isAdmin) {
+		query = query.eq("user_id", user_id);
+	}
+
+	const response = await query.select();
+
+	return response;
+}
+
+export async function getDbStore(storeCode: string) {
+	const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+	let query = supabase
+		.from("stores")
+		.select("*")
+		.eq("store_code", storeCode);
+
+	if (!isAdmin) {
+		query = query.eq("user_id", user_id);
+	}
+
+	const { data, error } = await query.single();
+
+	if (error) throw error;
+
+	return data;
+}
+
+// Check whether contact details exist for a store
+export const checkContactDetailsExist = async (storeCode: string) => {
+	const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+	let query = supabase
+		.from("stores")
+		.select("main_client_name, main_client_contact_number, account_manager")
+		.eq("store_code", storeCode);
+
+	if (!isAdmin) {
+		query = query.eq("user_id", user_id);
+	}
+
+	const { data, error } = await query.single();
+	if (error) {
+		console.error(
+			`Failed to check contact details for store ${storeCode}:`,
+			error
+		);
+		throw new Error(
+			`Failed to check contact details for store ${storeCode}: ${error.message}`
+		);
+	}
+
+	console.log(`Contact Details : ${JSON.stringify(data)}`);
+
+	// Return true if all contact details exist
+	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	return (
+		data!.main_client_name?.trim() !== "" &&
+		data!.main_client_contact_number?.trim() !== "" &&
+		data!.account_manager?.trim() !== ""
+	);
 }

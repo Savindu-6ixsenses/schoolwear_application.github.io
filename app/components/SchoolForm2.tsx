@@ -9,7 +9,7 @@ import StoreDetailsStep from "./steps/StoreDetailsStep";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoreCreationProps } from "@/types/store";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormData } from "@/types/store";
 
 const NEXT_MONTH = new Date();
@@ -47,12 +47,20 @@ const schema = z.object({
 	provinceState: z.string().min(1, "Province/State is required"),
 	postalCode: z.string().min(1, "Postal code is required"),
 	country: z.literal("Canada"),
-	firstName: z.string().min(1, "First name is required"),
-	lastName: z.string().min(1, "Last name is required"),
-	email: z.string().email("Invalid email address"),
+	firstName: z.string().optional(),
+	lastName: z.string().optional(),
+	email: z
+		.string()
+		.refine((val) => val === "" || z.string().email().safeParse(val).success, {
+			message: "Invalid email address",
+		})
+		.optional(),
 	contactNumber: z
 		.string()
-		.regex(/^[0-9]{10}$/, "Phone number must be 10 digits"),
+		.refine((val) => val === "" || z.string().regex(/^[0-9]{10}$/).safeParse(val).success, {
+			message: "Contact number must be 10 digits",
+		})
+		.optional(),
 	storeCode: z
 		.string()
 		.min(2)
@@ -83,9 +91,62 @@ const SchoolFormTabs = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const editStoreCode = searchParams.get("storeCode");
+	const isEditMode = searchParams.get("edit") === "true";
+	const [storeStatus, setStoreStatus] = useState<string | null>("Draft");
+
+	// Fetch store details if in edit mode
+	useEffect(() => {
+		if (isEditMode && editStoreCode) {
+			const fetchStoreDetails = async () => {
+				try {
+					const response = await fetch(
+						`/api/store_creation?store_code=${editStoreCode}`
+					);
+					if (response.ok) {
+						const data = await response.json();
+
+						// Parse address string back to components (assuming format: street, city, state, zip, country)
+						const addressParts = (data.store_address || "")
+							.split(",")
+							.map((s: string) => s.trim());
+
+						// Parse name
+						const nameParts = (data.main_client_name || "").split(" ");
+						const firstName = nameParts[0] || "";
+						const lastName = nameParts.slice(1).join(" ") || "";
+
+						setFormData({
+							schoolName: data.store_name || "",
+							streetAddress: addressParts[0] || "",
+							addressLine2: "", // Usually lost in concatenation
+							city: addressParts[1] || "",
+							provinceState: addressParts[2] || "",
+							postalCode: addressParts[3] || "",
+							country: "Canada",
+							firstName: firstName,
+							lastName: lastName,
+							email: data.account_manager || "",
+							contactNumber: data.main_client_contact_number || "",
+							storeCode: data.store_code || "",
+						});
+
+						console.log("Store Status Updated" ,data.status)
+						setStoreStatus(data.status || "Draft");
+					}
+				} catch (error) {
+					console.error("Failed to fetch store details:", error);
+					toast.error("Could not load store details.");
+				}
+			};
+			fetchStoreDetails();
+		}
+	}, [isEditMode, editStoreCode]);
 
 	useEffect(() => {
 		if (formData.schoolName.trim().split(" ").length < 2) return;
+		if (isEditMode) return; // Don't auto-generate code in edit mode
 
 		// Clear the previous timeout
 		if (debounceTimeout.current) {
@@ -114,7 +175,7 @@ const SchoolFormTabs = () => {
 				clearTimeout(debounceTimeout.current);
 			}
 		};
-	}, [formData.schoolName]);
+	}, [formData.schoolName, isEditMode]);
 
 	const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
@@ -129,24 +190,40 @@ const SchoolFormTabs = () => {
 		// 	return;
 		// }
 
+		// Check if the contact details step is complete. If not, Give a warning and proceed.
+		if (!isContactDetailsComplete()) {
+			const proceed = confirm("You have not filled any contact details. Do you want to proceed without providing contact information?");
+			if (!proceed) {
+				return;
+			} else {
+				toast.success("You need to update contact details before PL Generation.")
+			}
+		}
+		
 		setIsSubmitting(true);
 		try {
 			const validated = schema.parse(formData);
 
+			const main_client_name = `${validated.firstName || ""} ${
+				validated.lastName || ""
+			}`.trim();
+
+			const storeAdrress = `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`;
+
 			const storeCreationBody: StoreCreationProps = {
 				store_name: validated.schoolName,
 				account_manager: validated.email,
-				main_client_name: `${validated.firstName} ${validated.lastName}`,
+				main_client_name: main_client_name,
 				main_client_contact_number: validated.contactNumber,
 				store_address: `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`,
 				store_code: validated.storeCode,
 				start_date: dateRange.startDate.toISOString(),
 				end_date: dateRange.endDate.toISOString(),
-				status: "Draft",
+				status: storeStatus || "Draft",
 			};
 
 			const response = await fetch("/api/store_creation", {
-				method: "POST",
+				method: isEditMode ? "PUT" : "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
@@ -168,7 +245,7 @@ const SchoolFormTabs = () => {
 				throw new Error(errorText);
 			}
 
-			toast.success("Store Created Successfully!");
+			toast.success(isEditMode ? "Store Updated Successfully!" : "Store Created Successfully!");
 			console.log("Form submitted with data:", storeCreationBody);
 			router.push(`/${storeCreationBody.store_code}`);
 			setIsSubmitting(false);
@@ -186,6 +263,11 @@ const SchoolFormTabs = () => {
 			setIsSubmitting(false);
 		}
 	};
+
+	// Check whether the contact details step is complete
+	const isContactDetailsComplete = () => {
+		return (formData.email.trim() !== "" || formData.contactNumber.trim() !== "" || formData.firstName.trim() !== "" || formData.lastName.trim() !== "");
+	}
 
 	const nextStep = () => {
 		if (step < steps.length - 1) {

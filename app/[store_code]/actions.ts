@@ -4,7 +4,7 @@
 // import { createClient } from "../../utils/supabase/ssr_client/server";
 // import { StoreProduct } from "@/types/products";
 // import { fetchFilteredProductsFromSupabase } from "@/services/products/";
-import { updateStoreStatus } from "@/services/stores/storeServices-Server";
+import { checkContactDetailsExist, updateStoreStatus } from "@/services/stores/storeServices-Server";
 
 //TODO: Fix this action
 // export async function get_products_list(
@@ -55,7 +55,22 @@ import { updateStoreStatus } from "@/services/stores/storeServices-Server";
 // 	return [normalizedProducts, totalPages];
 // }
 
-export async function generate_pl(store_code: string) {
-	const store_data = await updateStoreStatus(store_code, "Pending");
-	return store_data;
+export async function generate_pl(store_code: string, store_status: string) {
+
+	let _status = store_status.toLowerCase();
+	if (_status=== "modify") {
+		_status = "Modify";
+	} else if (_status === "approve") {
+		throw new Error("Product List has already been approved. Cannot generate again.");
+	} else {
+		_status = "Pending";
+	}
+
+	// Check whether the store contact details are complete
+	if (await checkContactDetailsExist(store_code)) {
+		const store_data = await updateStoreStatus(store_code, _status);
+		return store_data;
+	} else {
+		throw new Error("Contact details are incomplete.");
+	}
 }

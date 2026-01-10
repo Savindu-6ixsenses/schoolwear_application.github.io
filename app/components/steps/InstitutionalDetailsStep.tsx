@@ -27,7 +27,7 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						htmlFor="firstName"
 						className="text-sm font-medium text-gray-700"
 					>
-						First Name *
+						First Name (Optional)
 					</Label>
 					<Input
 						id="firstName"
@@ -37,7 +37,6 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						onChange={handleChange}
 						placeholder="Enter first name"
 						className="mt-1"
-						required
 					/>
 				</div>
 
@@ -46,7 +45,7 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						htmlFor="lastName"
 						className="text-sm font-medium text-gray-700"
 					>
-						Last Name *
+						Last Name (Optional)
 					</Label>
 					<Input
 						id="lastName"
@@ -56,7 +55,6 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						onChange={handleChange}
 						placeholder="Enter last name"
 						className="mt-1"
-						required
 					/>
 				</div>
 
@@ -65,7 +63,7 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						htmlFor="email"
 						className="text-sm font-medium text-gray-700"
 					>
-						Email Address *
+						Email Address (Optional)
 					</Label>
 					<Input
 						id="email"
@@ -84,7 +82,7 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						htmlFor="contactNumber"
 						className="text-sm font-medium text-gray-700"
 					>
-						Contact Number *
+						Contact Number (Optional)
 					</Label>
 					<Input
 						id="contactNumber"
@@ -95,7 +93,6 @@ const InstitutionalDetailsStep: React.FC<InstitutionalDetailsStepProps> = ({
 						placeholder="Enter 10-digit phone number"
 						className="mt-1"
 						maxLength={10}
-						required
 					/>
 					<p className="text-xs text-gray-500 mt-1">
 						Please enter a 10-digit phone number

@@ -32,35 +32,35 @@ export async function fetchStore(storeCode: string) {
 // 	return { data, status, statusText };
 // }
 
-export async function updateStoreStatus(storeCode: string, status: string) {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+// export async function updateStoreStatus(storeCode: string, status: string) {
+// 	const supabase = await createClient();
+// 	const {
+// 		data: { user },
+// 	} = await supabase.auth.getUser();
 
-	if (!user) {
-		throw new Error("User not authenticated to update store status.");
-	}
-	const {
-		data,
-		status: status2,
-		statusText,
-		error,
-	} = await supabase
-		.from("stores")
-		.update({ status: status, updated_at: new Date() })
-		.eq("store_code", storeCode)
-		.eq("user_id", user.id)
-		.select();
-	console.log(
-		`Data and Error: ${JSON.stringify(data)} ${status2} ${statusText}`
-	);
-	if (error) {
-		throw new Error(`Failed to update store status: ${error.message}`);
-	}
+// 	if (!user) {
+// 		throw new Error("User not authenticated to update store status.");
+// 	}
+// 	const {
+// 		data,
+// 		status: status2,
+// 		statusText,
+// 		error,
+// 	} = await supabase
+// 		.from("stores")
+// 		.update({ status: status, updated_at: new Date() })
+// 		.eq("store_code", storeCode)
+// 		.eq("user_id", user.id)
+// 		.select();
+// 	console.log(
+// 		`Data and Error: ${JSON.stringify(data)} ${status2} ${statusText}`
+// 	);
+// 	if (error) {
+// 		throw new Error(`Failed to update store status: ${error.message}`);
+// 	}
 
-	return { data };
-}
+// 	return { data };
+// }
 
 // export async function fetchStoreRelatedSubCategories(storecode: string) {
 // 	const supabase = await createClient();
