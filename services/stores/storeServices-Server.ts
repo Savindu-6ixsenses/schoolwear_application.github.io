@@ -253,6 +253,27 @@ export async function updateDbStore(storeData: StoreCreationProps) {
 	return response;
 }
 
+// Update the maximum offset for a store
+export async function updateMaxOffset(storeCode: string, offset: number) {
+	const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+	let query = supabase
+		.from("stores")
+		.update({ maximum_offset: offset, updated_at: new Date().toISOString() })
+		.eq("store_code", storeCode);
+
+	if (!isAdmin) {
+		query = query.eq("user_id", user_id);
+	}
+
+	const { data, error } = await query.select().single();
+
+	if (error) {
+		console.error(`Failed to update max offset:`, error);
+		throw new Error(`Failed to update max offset: ${error.message}`);
+	}
+}
+
 export async function getDbStore(storeCode: string) {
 	const { supabase, isAdmin, user_id } = await createClientbyRole();
 

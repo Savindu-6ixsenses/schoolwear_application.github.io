@@ -89,24 +89,15 @@ export const createUniqueSKU = (
 	designCode += offsetNumber;
 
 	// ✅ Create new sage code using template literals
-	let newSageCode = `${originalStoreCode}-${String(designCode).padStart(3, "0")}-${colorCode}`;
+	let newSKU = `${originalStoreCode}-${String(designCode).padStart(3, "0")}-${colorCode}`;
 
-	// Check if the newSageCode is unique
-	while (createdSageCodes.includes(newSageCode)) {
-		designCode += 1;
-		newSageCode = `${originalStoreCode}-${String(designCode).padStart(3, "0")}-${colorCode}`;
-		console.log(
-			`Duplicate sage code found. New sage code generated: ${newSageCode}`
-		);
-	}
-
-	createdSageCodes.push(newSageCode); // Add to the list of created sage codes
+	createdSageCodes.push(newSKU); // Add to the list of created sage codes
 
 	console.log("Product Name:", productName);
 
-	console.log(`New Sage Code: ${newSageCode}`);
+	console.log(`New SKU: ${newSKU}`);
 
-	return newSageCode;
+	return newSKU;
 };
 
 export const createUniqueProductNames = (

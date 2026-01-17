@@ -84,6 +84,11 @@ export async function updateProductDesignStatus(
 		.eq("sage_code", identifiers.sageCode)
 		.eq("Design_ID", identifiers.designId);
 
+	console.log("Product Status updates successfully");
+	console.log("Identifiers:", identifiers.sageCode);
+	console.log("Status:", status);
+
+
 	if (error) {
 		logger.addEntry(
 			"ERROR",
@@ -91,6 +96,27 @@ export async function updateProductDesignStatus(
 			{ error: error.message }
 		);
 		console.error(`DB Update to ${status} Error:`, error);
+	}
+}
+
+/**
+ * Deletes the product design record from the database.
+ */
+async function deleteProductDesignRecord(
+	identifiers: { storeCode: string; sageCode: string; designId: string },
+	logger: StoreCreationLogger
+) {
+	const supabase = await createClient();
+	const { error } = await supabase
+		.from("stores_products_designs_2")
+		.delete()
+		.eq("Store_Code", identifiers.storeCode)
+		.eq("sage_code", identifiers.sageCode)
+		.eq("Design_ID", identifiers.designId);
+
+	if (error) {
+		logger.addEntry("ERROR", `Failed to delete DB record for product ${identifiers.sageCode}`, { error: error.message });
+		console.error("DB Delete Error:", error);
 	}
 }
 
@@ -169,6 +195,73 @@ export const createBigCommerceProducts = async (
 					throw new Error(`Failed after 3 attempts: ${product.name}`);
 				}
 
+				await new Promise((res) => setTimeout(res, 2500));
+			}
+		}
+	}
+
+	return {
+		successCount: successCount,
+		failedCount: products.length - successCount,
+	};
+};
+
+export const deleteBigCommerceProducts = async (
+	products: productConfig[],
+	logger: StoreCreationLogger
+) => {
+	const baseUrl = `https://api.bigcommerce.com/stores/${store_hash}/v3/catalog/products`;
+	let successCount = 0;
+
+	for (const _product of products) {
+		let success = false;
+		let attempt = 0;
+
+		// Cast to the expected type for removal
+		const config = _product.productConfigs as { productId: number };
+		const productId = config.productId;
+
+		if (!productId) {
+			logger.addEntry("WARNING", "Skipping removal: Missing productId", {
+				sageCode: _product.db_identifiers?.sageCode,
+			});
+			continue;
+		}
+
+		while (!success && attempt < 3) {
+			try {
+				const url = `${baseUrl}/${productId}`;
+				await sendAPIRequestBigCommerce(url, "DELETE");
+
+				success = true;
+				successCount++;
+
+				// After successful deletion from BC, delete the database record
+				if (_product.db_identifiers) {
+					await deleteProductDesignRecord(_product.db_identifiers, logger);
+				}
+
+				logger.addEntry("INFO", `Successfully deleted product ID ${productId} from BigCommerce and Supabase.`);
+			} catch (error) {
+				// Handle 404 (Not Found) - treat as success since it's already gone
+				if (error instanceof Error && error.message.includes("404")) {
+					success = true;
+					successCount++;
+					if (_product.db_identifiers) {
+						await deleteProductDesignRecord(_product.db_identifiers, logger);
+					}
+					logger.addEntry("INFO", `Product ID ${productId} already deleted from BigCommerce. Removed from DB.`);
+					break;
+				}
+
+				console.error(`Attempt ${attempt} failed to delete product: ${productId}`, error instanceof Error ? error.message : error);
+
+				attempt++;
+				if (attempt >= 3) {
+					logger.addEntry("ERROR", `Failed to delete product ID ${productId} after 3 attempts.`, {
+						error: error instanceof Error ? error.message : "Unknown",
+					});
+				}
 				await new Promise((res) => setTimeout(res, 2500));
 			}
 		}

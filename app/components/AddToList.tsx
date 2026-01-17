@@ -49,7 +49,7 @@ const AddToList = ({
 }) => {
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
-	const {addProduct} = useStoreState();
+	const {addProduct, updateProduct} = useStoreState();
 
 
 	useEffect(() => {
@@ -198,7 +198,9 @@ const AddToList = ({
 			design_id,
 			selected_sizes,
 			naming_method,
-			naming_fields
+			naming_fields,
+			product_status,
+			store_status
 		);
 
 		// Logging the parameters to be sent for editing
@@ -231,6 +233,12 @@ const AddToList = ({
 			if (response.ok) {
 				console.log("Item is Edited");
 				toast.success("Item is Edited");
+				// Update the product in Zustand store
+				const responseData = await response.json();
+				updateProduct(design_id, sage_code, {
+					sizeVariations: responseData.data[0].size_variations,
+					product_status: responseData.data[0].product_status,
+				});
 				setAddedToList(true);
 			} else {
 				console.log(

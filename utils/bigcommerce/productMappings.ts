@@ -11,7 +11,7 @@ import { createClient } from "../supabase/ssr_client/server";
 const getVariantSKU = (
 	newSKU: string,
 	variant: string,
-	productSageCode: string
+	productSageCode: string,
 ): string => {
 	return `${newSKU}.${productSageCode}-${variant.toUpperCase()}`;
 };
@@ -20,7 +20,7 @@ export const getVariantPayload = async (
 	storeCode: string,
 	product: StoreProduct,
 	designId: string,
-	logger: StoreCreationLogger
+	logger: StoreCreationLogger,
 ): Promise<productConfig[]> => {
 	const supabase = await createClient();
 
@@ -38,7 +38,7 @@ export const getVariantPayload = async (
 		logger.addEntry(
 			"ERROR",
 			`Could not find product design data for modification: Sage Code ${sageCode}`,
-			{ error: error?.message }
+			{ error: error?.message },
 		);
 		return [];
 	}
@@ -48,26 +48,26 @@ export const getVariantPayload = async (
 	if (!new_product_id || !new_sku) {
 		logger.addEntry(
 			"WARNING",
-			`Product ${sageCode} cannot be modified as it's missing 'new_product_id' or 'new_sku'. It might not have been created in BigCommerce yet.`
+			`Product ${sageCode} cannot be modified as it's missing 'new_product_id' or 'new_sku'. It might not have been created in BigCommerce yet.`,
 		);
 		return [];
 	}
 
 	const oldSizes: Set<string> = new Set(
-		(notes || "").split(",").filter(Boolean)
+		(notes || "").split(",").filter(Boolean),
 	);
 	const newSizes: string[] = (size_variations || "").split(",").filter(Boolean);
 	const newSizesSet: Set<string> = new Set(newSizes);
 
 	const addedSizes = newSizes.filter((size: string) => !oldSizes.has(size));
 	const removedSizes = Array.from(oldSizes).filter(
-		(size: string) => !newSizesSet.has(size)
+		(size: string) => !newSizesSet.has(size),
 	);
 
 	// --- TESTING LOGS ---
 	console.log(`[getVariantPayload] Processing Sage Code: ${sageCode}`);
 	console.log(
-		`  - Old Sizes (from notes): '${Array.from(oldSizes).join(", ")}'`
+		`  - Old Sizes (from notes): '${Array.from(oldSizes).join(", ")}'`,
 	);
 	console.log(`  - New Sizes (from size_variations): '${newSizes.join(", ")}'`);
 	console.log(`  - Calculated sizes to ADD: [${addedSizes.join(", ")}]`);
@@ -77,7 +77,7 @@ export const getVariantPayload = async (
 	logger.addEntry(
 		"INFO",
 		`Found ${addedSizes.length} new sizes to add and ${removedSizes.length} sizes to remove for product ${sageCode}`,
-		{ addedSizes, removedSizes }
+		{ addedSizes, removedSizes },
 	);
 
 	const addPayloads = addedSizes.map((size: string) => ({
@@ -115,6 +115,71 @@ export const getVariantPayload = async (
 	return [...addPayloads, ...removePayloads];
 };
 
+const getTheOffsetNumber = async (
+	sageCode: string,
+	designId: string,
+	storeCode: string,
+): Promise<number> => {
+	const supabase = await createClient();
+
+	const { data, error } = await supabase
+		.from("stores_products_designs_2")
+		.select("new_sku")
+		.eq("Store_Code", storeCode)
+		.eq("sage_code", sageCode)
+		.eq("Design_ID", designId)
+		.single();
+	if (error || !data) {
+		console.error(
+			`Error fetching offset number for Sage Code ${sageCode}:`,
+			error?.message,
+		);
+		return 1; // Default offset number if not found
+	}
+	// Log the retrieved new_sku
+	console.log("Retrieved new_sku:", data.new_sku);
+	const skuParts = data.new_sku.split("-");
+	const offsetNumber = skuParts[1];
+
+	// return the modulus of the offset number to get the original offset
+	const originalOffset = parseInt(offsetNumber, 10) % 100;
+	return originalOffset;
+};
+
+const getRemovePayload = async (
+	storeCode: string,
+	product: StoreProduct,
+	designId: string,
+	logger: StoreCreationLogger,
+): Promise<productConfig> => {
+	logger.addEntry(
+		"INFO",
+		`Preparing removal payload for product: ${product.productName} (Sage Code: ${product.sageCode})`,
+	);
+
+	const supabase = await createClient();
+
+	const { data, error } = await supabase
+		.from("stores_products_designs_2")
+		.select("new_product_id, new_sku")
+		.eq("Store_Code", storeCode)
+		.eq("sage_code", product.sageCode)
+		.eq("Design_ID", designId)
+		.single();
+
+	return {
+		category: "remove_product",
+		productConfigs: {
+			productId: data?.new_product_id,
+		},
+		db_identifiers: {
+			storeCode: storeCode,
+			sageCode: product.sageCode,
+			designId: designId,
+		},
+	};
+};
+
 export const getProductConfigs = async (
 	products: StoreProduct[],
 	category_id: number,
@@ -122,59 +187,81 @@ export const getProductConfigs = async (
 	storeCode: string,
 	relatedCategoryIds: Record<string, number>,
 	createdSageCodes: string[] = [],
-	designIndex: number,
-	logger: StoreCreationLogger
-): Promise<productConfig[]> => {
+	logger: StoreCreationLogger,
+	startOffset: number = 1,
+): Promise<{ configs: productConfig[]; nextOffset: number }> => {
 	// Map the store products to BigCommerce product configurations
 
 	console.log("[getProductConfigs] Creating product configurations...");
-	// logging the arguments for createUniqueProductNames function
-	products.forEach((product) => {
-		// Log only the products that are not added according to product_status field
-		if (product.product_status !== "added") {
-			console.log(
-				`Product Name: ${product.productName}, Category: ${
-					product.category
-				}, Brand: ${product.brandName}, Naming Method: ${
-					product.naming_method
-				}, Naming Fields: ${JSON.stringify(
-					product.naming_fields
-				)}, Store Code: ${storeCode}`
-			);
-		} else {
-			console.log(`Skipping product already added: ${product.productName}`);
-		}
-	});
 
 	const productList: productConfig[] = [];
-	let prevCategory = "";
-	let offsetNumber = 1;
+	let offsetNumber = startOffset;
 
-	await Promise.all(
-		products.map(async (product) => {
-			// Reset the Offset counter for each product category
-			if (prevCategory !== product.category) {
-				prevCategory = product.category;
-				offsetNumber = 1;
+	// Group products by type
+	const groupedProducts = new Map<string, StoreProduct[]>();
+
+	for (const product of products) {
+		const key = product.type || `unique-${product.sageCode}`;
+		if (!groupedProducts.has(key)) {
+			groupedProducts.set(key, []);
+		}
+		groupedProducts.get(key)!.push(product);
+	}
+
+	// Iterate sequentially to maintain offsetNumber
+	for (const group of Array.from(groupedProducts.values())) {
+		for (const product of group) {
+			// Get the already assigned offset number
+			if (
+				product.product_status === "modify" ||
+				product.product_status === "added" ||
+				product.product_status === "removed"
+			) {
+				offsetNumber = await getTheOffsetNumber(
+					product.sageCode,
+					designId,
+					storeCode,
+				);
+				console.log("[Get Offset] Using existing offset number:", offsetNumber);
+				break;
 			} else {
-				offsetNumber++;
+				continue;
 			}
-			// In the same design offsetnumber should reset for each category
+		}
+
+		console.log("[getProductConfigs] Product Name:", group[0].productName);
+		console.log("[getProductConfigs] Sage Code:", group[0].sageCode);
+		console.log("[getProductConfigs] Product Status:", group[0].product_status);
+
+		console.log("[Get Offset] Retrieved offset number:", offsetNumber);
+
+		for (const product of group) {
+			// Get the offset number based on the product
 
 			// Skip products that have already been added to BigCommerce
 			if (product.product_status === "added") {
 				// Skip this iteration
-				return;
-			} else if (product.product_status === "modify") {
-				console.log(`Modifying existing product: ${product.productName}`);
-				const variantPayloads = await getVariantPayload(
+				continue;
+			} else if (product.product_status === "removed") {
+				console.log(`Removing product: ${product.productName}`);
+				const removePayload = await getRemovePayload(
 					storeCode,
 					product,
 					designId,
-					logger
+					logger,
 				);
-				productList.push(...variantPayloads);
-				return;
+				productList.push(removePayload);
+				continue;
+			} else if (product.product_status === "modify") {
+				console.log(`Modifying existing product: ${product.productName}`);
+				const variantPayload = await getVariantPayload(
+					storeCode,
+					product,
+					designId,
+					logger,
+				);
+				productList.push(...variantPayload);
+				continue;
 			}
 
 			const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
@@ -182,19 +269,19 @@ export const getProductConfigs = async (
 			logger.addEntry(
 				"INFO",
 				`Updating product configurations: ${product.productName}\n
-			Size Variants: ${sizeVariants?.join(", ") || "None"}\n
-			offsetNumber: ${offsetNumber}\n
-			Color Code: ${product.color_code || "N/A"}`
+				Size Variants: ${sizeVariants?.join(", ") || "None"}\n
+				offsetNumber: ${offsetNumber}\n
+				Color Code: ${product.color_code || "N/A"}`,
 			);
 
 			// get the new sage code
 			const newSKU = createUniqueSKU(
 				product.productName,
-				product.color_code || "Red", // Default color code if missing
+				product.color_code || "XX", // Default color code if missing
 				product.category,
 				storeCode,
 				offsetNumber,
-				createdSageCodes
+				createdSageCodes,
 			);
 
 			logger.logProductSageCodeProcessing(product.productName, {
@@ -210,11 +297,11 @@ export const getProductConfigs = async (
 			logger.logProductNameProcessing(
 				product.productName,
 				product.naming_method || "2",
-				product.naming_fields || {}
+				product.naming_fields || {},
 			);
 
 			console.log(
-				`Final Product Name: ${product.productName}, Sage Code: ${newSKU}`
+				`Final Product Name: ${product.productName}, Sage Code: ${newSKU}`,
 			);
 
 			if (!product.productName) {
@@ -254,7 +341,7 @@ export const getProductConfigs = async (
 									option_display_name: "Size",
 								},
 							],
-					  }))
+						}))
 					: [], // No variants if no sizes are selected
 			};
 
@@ -267,8 +354,14 @@ export const getProductConfigs = async (
 					designId: designId,
 				},
 			});
-		})
-	);
+		}
+		// Get the max value out of prev offset and current offset
+		if (offsetNumber >= startOffset) {
+			offsetNumber++
+		} else {
+			offsetNumber = startOffset
+		}
+	}
 
-	return productList;
+	return { configs: productList, nextOffset: offsetNumber };
 };

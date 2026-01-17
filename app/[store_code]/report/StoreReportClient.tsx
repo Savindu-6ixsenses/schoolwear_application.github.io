@@ -117,7 +117,7 @@ const StoreReportClient = ({
 		try {
 			await discardUpdates(storeCode);
 			toast.success("Store updates discarded successfully.");
-			router.refresh()
+			router.refresh();
 			router.push(`/list`); // Redirect to home or appropriate page
 		} catch (error) {
 			const message =
@@ -135,9 +135,11 @@ const StoreReportClient = ({
 			case "modify":
 				return "bg-yellow-100";
 			case "rejected":
-				return "bg-red-100";
+				return "bg-orange-100";
 			case "added":
 				return "bg-green-100";
+			case "removed":
+				return "bg-red-100";
 			default:
 				return "bg-white";
 		}
@@ -304,14 +306,17 @@ const StoreReportClient = ({
 											<div className="space-y-2 pl-4">
 												{products.map((product, idx) => (
 													<div
-														key={product.sage_code
-															 || idx}
+														key={product.sage_code || idx}
 														className={`flex items-center justify-between p-2 border rounded ${getProductStatusColor(
 															product.product_status
 														)}`}
 													>
 														<div>
-															<EditableProductName product={product} designId={designId} storeCode={storeCode} />
+															<EditableProductName
+																product={product}
+																designId={designId}
+																storeCode={storeCode}
+															/>
 															<Badge
 																variant="secondary"
 																className="ml-2 bg-slate-300"
@@ -330,6 +335,15 @@ const StoreReportClient = ({
 																			{size}
 																		</Badge>
 																	))}
+															<Badge
+																variant="outline"
+																className="ml-2"
+															>
+																Status: {product.product_status || "N/A"}
+															</Badge>
+														</div>
+														<div className="text-sm text-muted-foreground">
+															Sage Code: {product.sage_code}
 														</div>
 													</div>
 												))}

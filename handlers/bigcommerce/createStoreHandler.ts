@@ -4,9 +4,10 @@ import {
 	createBigCommerceStore,
 	createRelatedCategories,
 	createBigCommerceProducts,
+	deleteBigCommerceProducts,
 } from "@/services/bigCommerce";
 import { getStoreProducts, getExistingSKUs } from "@/services/products";
-import { updateStoreStatus } from "@/services/stores/storeServices-Server";
+import { updateMaxOffset, updateStoreStatus } from "@/services/stores/storeServices-Server";
 import { CreateVariantPayload } from "@/types/products";
 import { StoreCreationProps } from "@/types/store";
 import { getProductConfigs } from "@/utils/bigcommerce/productMappings"; // Create this from existing logic
@@ -22,7 +23,7 @@ export const handleCreateStore = async (
 	store: StoreCreationProps,
 	category_list: string[],
 	logger: StoreCreationLogger,
-	reportGenerator: StoreReportGenerator
+	reportGenerator: StoreReportGenerator,
 ): Promise<{
 	logger: StoreCreationLogger;
 	reportGenerator: StoreReportGenerator;
@@ -46,39 +47,55 @@ export const handleCreateStore = async (
 		}
 
 		console.log(
-			`[handleCreateStore] Creating ${category_list.length} related sub-categories.`
+			`[handleCreateStore] Creating ${category_list.length} related sub-categories.`,
 		);
 		const relatedCategories = await createRelatedCategories(
 			category_id,
 			category_list,
-			logger
+			logger,
 		);
 
 		// --- PRODUCT CREATION & LOGGING ---
 		const processedProductsByDesign: Record<string, productConfig[]> = {};
 
 		console.log(
-			"[handleCreateStore] Generating product and variant configurations..."
+			"[handleCreateStore] Generating product and variant configurations...",
 		);
 
-		const batches = await Promise.all(
-			Object.entries(storeProductsList).map(async ([designId, products], designIndex) => {
-				const productConfigs: productConfig[] = await getProductConfigs(
-					products,
-					category_id,
-					designId,
-					store.store_code,
-					relatedCategories,
-					createdSageCodes,
-					designIndex,
-					logger
-				);
-				logger.logProductFetch(store.store_code, products.length);
+		const batches: productConfig[][] = [];
+		let currentOffset = store.maximum_offset || 1;
 
-				processedProductsByDesign[designId] = productConfigs;
-				return productConfigs;
-			})
-		);
+		// print the storeProductsList keys + Values
+		console.log("Store Products List:");
+		for (const [key, value] of Object.entries(storeProductsList)) {
+			console.log(`Design ID: ${key}: Products Count: ${value.length}`);
+			for (const product of value) {
+				console.log(`- Product Name: ${product.productName} - Sage Code: ${product.sageCode}`);
+
+			}
+		}
+
+		for (const [designId, products] of Object.entries(storeProductsList)) {
+			const { configs, nextOffset } = await getProductConfigs(
+				products,
+				category_id,
+				designId,
+				store.store_code,
+				relatedCategories,
+				createdSageCodes,
+				logger,
+				currentOffset,
+			);
+			logger.logProductFetch(store.store_code, products.length);
+
+			processedProductsByDesign[designId] = configs;
+			batches.push(configs);
+			currentOffset = nextOffset;
+		}
+
+		// save the current offset number for future use
+		console.log("[handleCreateStore] Saving final offset number:", currentOffset);
+		await updateMaxOffset(store.store_code, currentOffset);
 
 		// --- REPORT GENERATION: Add all products to report, regardless of creation success ---
 		reportGenerator.processProductData(processedProductsByDesign);
@@ -87,30 +104,47 @@ export const handleCreateStore = async (
 		let totalFailedCount = 0;
 
 		console.log(
-			`[handleCreateStore] Starting to process ${batches.length} batches.`
+			`[handleCreateStore] Starting to process ${batches.length} batches.`,
 		);
 		for (const batch of batches) {
 			// Separate the products which doesn't involve variant or remove variant actions
 			const productCreationBatch = batch.filter(
-				(p) => p.category !== "variant" && p.category !== "remove_variant"
+				(p) => p.category !== "variant" && p.category !== "remove_variant" && p.category !== "remove_product",
 			);
 			const variantAdditionBatch = batch.filter(
-				(p) => p.category === "variant"
+				(p) => p.category === "variant",
 			);
 			const variantRemovalBatch = batch.filter(
-				(p) => p.category === "remove_variant"
+				(p) => p.category === "remove_variant",
+			);
+			const productRemovalBatch = batch.filter(
+				(p) => p.category === "remove_product",
 			);
 
 			console.log(
-				`[handleCreateStore] Batch contains: ${productCreationBatch.length} new products, ${variantRemovalBatch.length} variants to remove, ${variantAdditionBatch.length} variants to add.`
+				`[handleCreateStore] Batch contains	: 
+				\n${productCreationBatch.length} new products, 
+				\n${productRemovalBatch.length} products to remove, 
+				\n${variantRemovalBatch.length} variants to remove,
+				\n${variantAdditionBatch.length} variants to add.`,
 			);
+			
+			// Process product removals
+			if (productRemovalBatch.length > 0) {
+				console.log("[handleCreateStore] Processing product removals...");
+				const { successCount: removeSuccess, failedCount: removeFailed } =
+					await deleteBigCommerceProducts(productRemovalBatch, logger);
+				// We can track removal stats if needed, or just log them
+				console.log(`[handleCreateStore] Removed ${removeSuccess} products, failed ${removeFailed}`);
+			}
 
 			const { successCount, failedCount } = await createBigCommerceProducts(
 				productCreationBatch,
-				logger
+				logger,
 			);
 			totalSuccessCount = totalSuccessCount + successCount;
 			totalFailedCount = totalFailedCount + failedCount;
+
 
 			// Process variant removals first
 			if (variantRemovalBatch.length > 0)
@@ -123,7 +157,7 @@ export const handleCreateStore = async (
 					};
 					await deleteSizeVariant({ productId, sizeLabel, logger });
 					console.log(
-						`  - Variant '${sizeLabel}' for product ${productId} processed for deletion.`
+						`  - Variant '${sizeLabel}' for product ${productId} processed for deletion.`,
 					);
 				} catch (e: any) {
 					logger.addEntry("ERROR", `Failed to remove variant: ${e.message}`);
@@ -143,10 +177,10 @@ export const handleCreateStore = async (
 					await addSizeVariant({ productId, sizeLabel, variant, logger });
 					logger.addEntry(
 						"INFO",
-						`Successfully added variant ${sizeLabel} to product ID ${productId}`
+						`Successfully added variant ${sizeLabel} to product ID ${productId}`,
 					);
 					console.log(
-						`  - Variant '${sizeLabel}' for product ${productId} processed for addition.`
+						`  - Variant '${sizeLabel}' for product ${productId} processed for addition.`,
 					);
 
 					// After adding the variant, update the product status back to 'added'
@@ -154,7 +188,7 @@ export const handleCreateStore = async (
 						await updateProductDesignStatus(
 							variantConfig.db_identifiers,
 							"added",
-							logger
+							logger,
 						);
 					}
 				} catch (e: any) {
@@ -165,7 +199,7 @@ export const handleCreateStore = async (
 		}
 
 		console.log(
-			"[handleCreateStore] All batches processed. Updating store status to 'Approved'."
+			"[handleCreateStore] All batches processed. Updating store status to 'Approved'.",
 		);
 		await updateStoreStatus(store.store_code, "Approved");
 		logger.logStoreStatusUpdate("Approved");

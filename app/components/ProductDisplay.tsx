@@ -237,7 +237,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 								item={item}
 								store_code={`${store?.store_code}`}
 								store_design_index={
-									design ? (design.store_design_index as number) + 1 || "" : ""
+									design ? (design.store_design_index as number)|| "" : ""
 								}
 								design_id={design ? design.design_id : ""}
 								designGuideline={design ? design.design_guideline : ""}

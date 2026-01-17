@@ -11,6 +11,7 @@ interface RemoveFromListProps {
 	store_code: string;
 	design_id: string;
 	sage_code: string;
+	productStatus: string;
 	added_to_list: boolean;
     setAddedToList: React.Dispatch<React.SetStateAction<boolean>>;
     setMethodFields: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
@@ -22,6 +23,7 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
     store_code,
     design_id,
 	sage_code,
+	productStatus,
 	added_to_list,
     setAddedToList,
     // setMethodFields,
@@ -43,7 +45,8 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 				body: JSON.stringify({
 					store_code,
 					sage_code,
-					design_code: design_id
+					design_code: design_id,
+					product_status: productStatus.toLowerCase(),
 				}),
 			});
 

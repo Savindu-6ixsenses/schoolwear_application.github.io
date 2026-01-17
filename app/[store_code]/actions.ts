@@ -4,7 +4,11 @@
 // import { createClient } from "../../utils/supabase/ssr_client/server";
 // import { StoreProduct } from "@/types/products";
 // import { fetchFilteredProductsFromSupabase } from "@/services/products/";
-import { checkContactDetailsExist, updateStoreStatus } from "@/services/stores/storeServices-Server";
+import {
+	checkContactDetailsExist,
+	updateStoreStatus,
+} from "@/services/stores/storeServices-Server";
+import { revalidatePath } from "next/cache";
 
 //TODO: Fix this action
 // export async function get_products_list(
@@ -56,12 +60,13 @@ import { checkContactDetailsExist, updateStoreStatus } from "@/services/stores/s
 // }
 
 export async function generate_pl(store_code: string, store_status: string) {
-
 	let _status = store_status.toLowerCase();
-	if (_status=== "modify") {
+	if (_status === "modify") {
 		_status = "Modify";
 	} else if (_status === "approve") {
-		throw new Error("Product List has already been approved. Cannot generate again.");
+		throw new Error(
+			"Product List has already been approved. Cannot generate again.",
+		);
 	} else {
 		_status = "Pending";
 	}
@@ -73,4 +78,8 @@ export async function generate_pl(store_code: string, store_status: string) {
 	} else {
 		throw new Error("Contact details are incomplete.");
 	}
+}
+
+export async function revalidateStoreList() {
+	revalidatePath("/list");
 }

@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/utils/supabase/ssr_client/server";
 import { createClientbyRole } from "@/utils/adminHelper";
 import { colorVariants } from "@nextui-org/theme";
+import CategoryToggleGroup from "@/app/components/CategoryToggleGroup";
 
 // utils/productFetcher.ts
 // export async function fetchProductsFromSupabase(
@@ -204,6 +205,7 @@ export const getStoreProducts = async (
 					naming_fields: product["naming_fields"],
 					product_status: product["product_status"],
 					color_code: product["color_code"],
+					type: product["type"],
 				})
 			);
 
@@ -260,9 +262,33 @@ export const addToList = async ({
 			])
 			.select();
 		console.log(data, error);
+		if (error) throw error;
 		return data;
 	} catch (e) {
-		console.error("Unexpected error:", e);
+		console.log("Checking for duplicate entry error...");
+
+		// Check for duplicate entry error
+		const error = e as { message?: string; code?: string };
+		if (
+			error.code === "23505" ||
+			(error.message &&
+				error.message.includes(
+					"duplicate key value violates unique constraint"
+				))
+		) {
+			console.log("Duplicate entry detected.");
+			const response = await updateItem({
+				store_code,
+				sage_code,
+				design_code,
+				size_variations,
+				method,
+				naming_fields,
+				product_status: "added", // This will reset to Modify in this function
+				store_status: "Modify",
+			});
+			return response;
+		}
 		throw e;
 	}
 };
@@ -303,24 +329,10 @@ export const updateItem = async ({
 		};
 
 		// Conditionally set the product_status to 'modify'
-		console.log();
 		if (
 			store_status === "Modify" &&
-			(product_status === "added" || product_status === "rejected")
+			(product_status === "added" || product_status === "rejected" || product_status === "modify")
 		) {
-			// get the previous size_variations from the database incase of revert
-			const { data: previousSizeVariations } = await supabase
-				.from("stores_products_designs_2")
-				.select("size_variations")
-				.eq("Store_Code", store_code)
-				.eq("sage_code", sage_code)
-				.eq("Design_ID", design_code)
-				.single();
-
-			if (previousSizeVariations) {
-				console.log("Previous size variations:", previousSizeVariations);
-				updateData.notes = previousSizeVariations.size_variations;
-			}
 			updateData.product_status = "modify";
 		}
 
@@ -437,6 +449,45 @@ export const removeFromList = async ({
 		return data;
 	} catch (e) {
 		console.error("Unexpected error:", e);
+		throw e;
+	}
+};
+
+// This function marks a product as removed by adding a note instead of deleting it
+// This is useful for keeping historical data until product is completely removed from Big Commerce later.
+export const removeProductFromStore = async ({
+	store_code,
+	sage_code,
+	design_code,
+}: {
+	store_code: string;
+	sage_code: string;
+	design_code: string;
+}) => {
+	try {
+		const { supabase, isAdmin, user_id } = await createClientbyRole();
+
+		let query = supabase
+			.from("stores_products_designs_2")
+			.update({ size_variations: "", product_status: "removed" })
+			.eq("Store_Code", store_code)
+			.eq("sage_code", sage_code)
+			.eq("Design_ID", design_code);
+
+		if (!isAdmin) {
+			query = query.eq("user_id", user_id);
+		}
+
+		const { data, error } = await query.select();
+
+		if (error) {
+			console.error("Error removing product from store:", error);
+			throw error;
+		}
+
+		return data;
+	} catch (e) {
+		console.error("Unexpected error removing product from store:", e);
 		throw e;
 	}
 };

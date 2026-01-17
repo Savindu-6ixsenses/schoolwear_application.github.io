@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useStoreState } from "../store/useStoreState";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { revalidateStoreList } from "@/app/[store_code]/actions";
 
 const CreateStore = (props: {
 	store: StoreCreationProps | null;
@@ -42,7 +43,7 @@ const CreateStore = (props: {
 
 			if (!response.ok) {
 				throw new Error(
-					`Failed to create store on BigCommerce. Status: ${response.status}, Message: ${response.statusText}, Error`
+					`Failed to create store on BigCommerce. Status: ${response.status}, Message: ${response.statusText}, Error`,
 				);
 			}
 
@@ -51,6 +52,7 @@ const CreateStore = (props: {
 			// props.setReportUrl(response.headers.get("reportUrl"));
 			setLoading(false);
 			setStoreStatus("Approved");
+			await revalidateStoreList();
 			toast.success("Store created successfully!");
 			router.push("/list");
 		} catch (e) {

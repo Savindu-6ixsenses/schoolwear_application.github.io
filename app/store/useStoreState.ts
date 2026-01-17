@@ -19,6 +19,7 @@ interface StoreState {
 	setDesignList: (designList: DesignView[]) => void;
 	setCategoryList: (categories: string[]) => void;
 	addProduct: (designId: string, product: StoreProductReport) => void;
+	updateProduct: (designId: string, sage_code: string, updatedFields: Partial<StoreProductReport>) => void;
 	removeProduct: (designId: string, sage_code: string) => void;
 	resetStoreState: () => void;
 	loadInitialCategoryList: (store_code: string) => Promise<void>;
@@ -88,6 +89,28 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
+			updateProduct: (designId, sage_code, updatedFields) => {
+				const currentProducts = get().added_products[designId] || [];
+				const productIndex = currentProducts.findIndex(
+					(p) => p.sage_code === sage_code
+				);
+
+				if (productIndex !== -1) {
+					const updatedProducts = [...currentProducts];
+					updatedProducts[productIndex] = {
+						...updatedProducts[productIndex],
+						...updatedFields,
+					};
+
+					set({
+						added_products: {
+							...get().added_products,
+							[designId]: updatedProducts,
+						},
+					});
+				}
+			},
+
 			setStore: async (store_code: string) => {
 				const currentStoreCode = get().store.store_code;
 				const newStoreCode = store_code;
@@ -99,14 +122,15 @@ export const useStoreState = create<StoreState>()(
 						} → ${newStoreCode}.`
 					);
 					get().resetStoreState(); // wipes previous data
-
-					const store = await fetchStore(newStoreCode);
-					if (!store) {
-						console.error(`[Zustand] Failed to fetch store: ${newStoreCode}`);
-						return;
-					}
-					set({ store: store });
 				}
+
+				// Always fetch store details to ensure freshness
+				const store = await fetchStore(newStoreCode);
+				if (!store) {
+					console.error(`[Zustand] Failed to fetch store: ${newStoreCode}`);
+					return;
+				}
+				set({ store: store });
 
 				set({ isInitialized: false });
 				try {
@@ -270,6 +294,7 @@ export const useStoreState = create<StoreState>()(
 		}),
 		{
 			name: "store-state", // localStorage key
+			partialize: (state) => ({ ...state, isInitialized: false }),
 			onRehydrateStorage: () => {
 				console.log("[Zustand] Hydration starting");
 				return (state, error) => {

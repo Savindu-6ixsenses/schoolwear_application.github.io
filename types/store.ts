@@ -9,6 +9,7 @@ export interface StoreCreationProps {
 	start_date: string;
 	end_date: string;
 	status: string;
+	maximum_offset?: number;
 }
 
 // Props for response return after creating a store

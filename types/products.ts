@@ -217,6 +217,7 @@ export interface StoreProduct {
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
 	color_code?: string;
+	type?: string;
 	// Size Variations Flags
 	XS?: boolean;
 	SM?: boolean;
@@ -242,6 +243,7 @@ export interface SupabaseProduct {
 	naming_fields?: { [key: string]: string };
 	product_status?: string;
 	color_code?: string;
+	type?: string;
 }
 
 export interface ListPropsProducts {
@@ -284,6 +286,9 @@ export type productConfig = {
 				productId: number;
 				sizeLabel: string;
 				variant?: CreateVariantPayload;
+		  }|
+		  {
+				productId: number;
 		  };
 	category: string;
 	// Identifiers for DB update after creation

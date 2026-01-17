@@ -72,10 +72,30 @@ const SingleRecord = ({
 
 	// Toggle size selection
 	const toggleSize = (size: string) => {
-		setSelectedSizes((prev) => ({
-			...prev,
-			[size]: !prev[size],
-		}));
+		setSelectedSizes((prev) => {
+			const updatedSizes = {
+				...prev,
+				[size]: !prev[size],
+			};
+
+			const sortedSizes: { [key: string]: boolean } = {};
+
+			// Sort based on GLOBAL_SIZES order
+			GLOBAL_SIZES.forEach((s) => {
+				if (Object.prototype.hasOwnProperty.call(updatedSizes, s)) {
+					sortedSizes[s] = updatedSizes[s];
+				}
+			});
+
+			// Add any remaining sizes that are not in GLOBAL_SIZES
+			Object.keys(updatedSizes).forEach((s) => {
+				if (!Object.prototype.hasOwnProperty.call(sortedSizes, s)) {
+					sortedSizes[s] = updatedSizes[s];
+				}
+			});
+
+			return sortedSizes;
+		});
 	};
 
 	const handleCopyDetails = async () => {
@@ -143,8 +163,11 @@ const SingleRecord = ({
 				<div className="flex">
 					<div className="flex items-center">
 						{/* When clicked on this sage code is copied */}
-						<button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md border border-gray-300 shadow-sm" 
-						onClick={handleCopySageCode} title="Click to copy SAGE Code">
+						<button
+							className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md border border-gray-300 shadow-sm"
+							onClick={handleCopySageCode}
+							title="Click to copy SAGE Code"
+						>
 							{item.sageCode}
 						</button>
 					</div>
@@ -214,7 +237,6 @@ const SingleRecord = ({
 				{/* Action Button */}
 				{storeStatus !== "Approved" ? (
 					<div className="flex justify-end gap-2 items-center">
-						{/* TODO: Restrict these buttons from the logic inside to restrict if the store  */}
 						<AddToList
 							store_code={store_code}
 							sage_code={item.sageCode}
@@ -239,6 +261,7 @@ const SingleRecord = ({
 								store_code={store_code}
 								design_id={design_id}
 								sage_code={item.sageCode}
+								productStatus={item.product_status || ""}
 								added_to_list={added_to_list || false}
 								setAddedToList={setAddedToList}
 								setMethodFields={setMethodFields}
