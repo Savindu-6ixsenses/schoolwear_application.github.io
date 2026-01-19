@@ -171,6 +171,7 @@ const AddToList = ({
 					designGuideline: designGuideline,
 					naming_method: naming_method,
 					naming_fields: naming_fields,
+					product_status: "new",
 				});
 				toast.success("Item added to list successfully");
 				setAddedToList(true);
@@ -235,6 +236,8 @@ const AddToList = ({
 				toast.success("Item is Edited");
 				// Update the product in Zustand store
 				const responseData = await response.json();
+				console.log("Logging prev and new product status:", product_status, responseData.data[0].product_status);
+				
 				updateProduct(design_id, sage_code, {
 					sizeVariations: responseData.data[0].size_variations,
 					product_status: responseData.data[0].product_status,

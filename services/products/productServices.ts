@@ -269,6 +269,8 @@ export const addToList = async ({
 
 		// Check for duplicate entry error
 		const error = e as { message?: string; code?: string };
+
+		// To avoid duplicate entry error for products in removed status to get added again. 
 		if (
 			error.code === "23505" ||
 			(error.message &&
@@ -334,6 +336,8 @@ export const updateItem = async ({
 			(product_status === "added" || product_status === "rejected" || product_status === "modify")
 		) {
 			updateData.product_status = "modify";
+		} else if (store_status === "Modify" && product_status === "rejected") {
+			updateData.product_status = "new";
 		}
 
 		//log the update data

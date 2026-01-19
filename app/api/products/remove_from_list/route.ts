@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
 
 		// Remove from list
 		if (product_status === "new" || product_status === "rejected") {
+			// This will remove the product entirely since it was never approved
 			response = await removeFromList({
 				store_code,
 				sage_code,
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
 			});
 			console.log("Response to remove from list for a new product: ", response);
 		} else {
+			// This will mark the product as removed but keep it in the DB since it was approved before
 			response = await removeProductFromStore({
 				store_code,
 				sage_code,
