@@ -7,6 +7,7 @@ import AddToList from "./AddToList";
 import { StoreProduct } from "@/types/products";
 import { GLOBAL_NAMING_METHODS, GLOBAL_SIZES } from "@/constants/products";
 import RemoveFromList from "./RemoveFromList";
+import { useStoreState } from "../store/useStoreState";
 
 interface SingleRecordProps {
 	item: StoreProduct;
@@ -32,6 +33,7 @@ const SingleRecord = ({
 	setCategoryList,
 	storeStatus,
 }: SingleRecordProps) => {
+	const { added_products } = useStoreState();
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
 		[key: string]: boolean;
@@ -62,6 +64,12 @@ const SingleRecord = ({
 		setSelectedMethod((item.naming_method as MethodKey) || "1");
 		setAddedToList(item.isAdded || false);
 	}, [item]);
+
+	// Get the latest product status from the store state if available
+	const storedProduct = added_products[design_id]?.find(
+		(p) => p.sage_code === item.sageCode
+	);
+	const currentProductStatus = storedProduct?.product_status || item.product_status;
 
 	// const handleFieldChange = (field: string, value: string) => {
 	// 	setMethodFields((prev) => ({
@@ -249,7 +257,7 @@ const SingleRecord = ({
 							added_to_list={added_to_list || false}
 							method={selectedMethod}
 							naming_fields={methodFields}
-							product_status={item.product_status || ""}
+							product_status={currentProductStatus || ""}
 							store_status={storeStatus}
 							product_category={item.category || ""}
 							categoryList={category_list}
@@ -261,7 +269,7 @@ const SingleRecord = ({
 								store_code={store_code}
 								design_id={design_id}
 								sage_code={item.sageCode}
-								productStatus={item.product_status || ""}
+								productStatus={currentProductStatus || ""}
 								added_to_list={added_to_list || false}
 								setAddedToList={setAddedToList}
 								setMethodFields={setMethodFields}

@@ -24,7 +24,7 @@ const steps = ["School Details", "Contact Details", "Store Details"];
  * @returns A promise that resolves to the unique store code.
  */
 export async function getUniqueStoreCodeFromServer(
-	schoolName: string
+	schoolName: string,
 ): Promise<string> {
 	const response = await fetch("/api/generate-store-code", {
 		method: "POST",
@@ -57,9 +57,17 @@ const schema = z.object({
 		.optional(),
 	contactNumber: z
 		.string()
-		.refine((val) => val === "" || z.string().regex(/^[0-9]{10}$/).safeParse(val).success, {
-			message: "Contact number must be 10 digits",
-		})
+		.refine(
+			(val) =>
+				val === "" ||
+				z
+					.string()
+					.regex(/^[0-9]{10}$/)
+					.safeParse(val).success,
+			{
+				message: "Contact number must be 10 digits",
+			},
+		)
 		.optional(),
 	storeCode: z
 		.string()
@@ -102,7 +110,7 @@ const SchoolFormTabs = () => {
 			const fetchStoreDetails = async () => {
 				try {
 					const response = await fetch(
-						`/api/store_creation?store_code=${editStoreCode}`
+						`/api/store_creation?store_code=${editStoreCode}`,
 					);
 					if (response.ok) {
 						const data = await response.json();
@@ -132,7 +140,7 @@ const SchoolFormTabs = () => {
 							storeCode: data.store_code || "",
 						});
 
-						console.log("Store Status Updated" ,data.status)
+						console.log("Store Status Updated", data.status);
 						setStoreStatus(data.status || "Draft");
 					}
 				} catch (error) {
@@ -158,7 +166,7 @@ const SchoolFormTabs = () => {
 			const generateCode = async () => {
 				try {
 					const uniqueCode = await getUniqueStoreCodeFromServer(
-						formData.schoolName
+						formData.schoolName,
 					);
 					setFormData((prev) => ({ ...prev, storeCode: uniqueCode }));
 				} catch (error) {
@@ -192,14 +200,18 @@ const SchoolFormTabs = () => {
 
 		// Check if the contact details step is complete. If not, Give a warning and proceed.
 		if (!isContactDetailsComplete()) {
-			const proceed = confirm("You have not filled any contact details. Do you want to proceed without providing contact information?");
+			const proceed = confirm(
+				"You have not filled any contact details. Do you want to proceed without providing contact information?",
+			);
 			if (!proceed) {
 				return;
 			} else {
-				toast.success("You need to update contact details before PL Generation.")
+				toast.success(
+					"You need to update contact details before PL Generation.",
+				);
 			}
 		}
-		
+
 		setIsSubmitting(true);
 		try {
 			const validated = schema.parse(formData);
@@ -210,17 +222,30 @@ const SchoolFormTabs = () => {
 
 			const storeAdrress = `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`;
 
+			let statusToSubmit = storeStatus || "Draft";
+
+			if (isEditMode && !isContactDetailsComplete()) {
+				if (storeStatus == "Approved" || storeStatus === "Modify") {
+					throw new Error("Contact details are incomplete.");
+				} else if (storeStatus == "Pending") {
+					setStoreStatus("Draft");
+					statusToSubmit = "Draft";
+				}
+			}
+
 			const storeCreationBody: StoreCreationProps = {
 				store_name: validated.schoolName,
 				account_manager: validated.email,
 				main_client_name: main_client_name,
 				main_client_contact_number: validated.contactNumber,
-				store_address: `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`,
+				store_address: storeAdrress,
 				store_code: validated.storeCode,
 				start_date: dateRange.startDate.toISOString(),
 				end_date: dateRange.endDate.toISOString(),
-				status: storeStatus || "Draft",
+				status: statusToSubmit,
 			};
+
+			console.log("Store Creation Body:", storeCreationBody);
 
 			const response = await fetch("/api/store_creation", {
 				method: isEditMode ? "PUT" : "POST",
@@ -245,7 +270,11 @@ const SchoolFormTabs = () => {
 				throw new Error(errorText);
 			}
 
-			toast.success(isEditMode ? "Store Updated Successfully!" : "Store Created Successfully!");
+			toast.success(
+				isEditMode
+					? "Store Updated Successfully!"
+					: "Store Created Successfully!",
+			);
 			console.log("Form submitted with data:", storeCreationBody);
 			router.push(`/${storeCreationBody.store_code}`);
 			setIsSubmitting(false);
@@ -256,6 +285,7 @@ const SchoolFormTabs = () => {
 				toast.error(`Error: ${error.errors[0].message}`);
 			} else if (error instanceof Error) {
 				console.error(error.message || "Unknown error occurred");
+				toast.error(error.message || "Unknown error occurred");
 			} else {
 				toast.error("Unexpected error");
 			}
@@ -266,8 +296,13 @@ const SchoolFormTabs = () => {
 
 	// Check whether the contact details step is complete
 	const isContactDetailsComplete = () => {
-		return (formData.email.trim() !== "" || formData.contactNumber.trim() !== "" || formData.firstName.trim() !== "" || formData.lastName.trim() !== "");
-	}
+		return (
+			formData.email.trim() !== "" &&
+			formData.contactNumber.trim() !== "" &&
+			formData.firstName.trim() !== "" &&
+			formData.lastName.trim() !== ""
+		);
+	};
 
 	const nextStep = () => {
 		if (step < steps.length - 1) {
@@ -329,8 +364,8 @@ const SchoolFormTabs = () => {
 									index === step
 										? "bg-orange-500 text-white shadow-lg transform scale-110"
 										: index < step
-										? "bg-green-500 text-white"
-										: "bg-gray-200 text-gray-500"
+											? "bg-green-500 text-white"
+											: "bg-gray-200 text-gray-500"
 								}
               `}
 							>
@@ -342,14 +377,14 @@ const SchoolFormTabs = () => {
 										index === step
 											? "text-orange-600"
 											: index < step
-											? "text-green-600"
-											: "text-gray-500"
+												? "text-green-600"
+												: "text-gray-500"
 									}`}
 								>
 									{label}
 								</p>
 							</div>
-							{(index < steps.length - 1) ? (
+							{index < steps.length - 1 ? (
 								<div
 									className={`h-0.5 flex-1 mx-4 transition-colors duration-300 ${
 										index < step ? "bg-green-500" : "bg-gray-200"

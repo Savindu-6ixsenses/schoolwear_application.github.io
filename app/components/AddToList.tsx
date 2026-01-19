@@ -27,7 +27,7 @@ const AddToList = ({
 	product_category,
 	categoryList,
 	setCategoryList,
-	setAddedToList
+	setAddedToList,
 }: {
 	store_code: string;
 	sage_code: string;
@@ -49,43 +49,42 @@ const AddToList = ({
 }) => {
 	const [selected_sizes, setSelectedSizes] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
-	const {addProduct, updateProduct} = useStoreState();
-
+	const { addProduct, updateProduct } = useStoreState();
 
 	useEffect(() => {
 		setSelectedSizes(
 			Object.keys(size_variations)
 				.filter((size) => size_variations[size] === true)
-				.join(",") // Create a comma-separated string
+				.join(","), // Create a comma-separated string
 		);
 	}, [size_variations]);
 
 	useEffect(() => {
 		if (added_to_list && !categoryList.includes(product_category)) {
-			setCategoryList([...categoryList,product_category]); // Update the state to trigger re-render
+			setCategoryList([...categoryList, product_category]); // Update the state to trigger re-render
 		}
 	}, [added_to_list]);
 
 	const validateNamingFields = (
 		methodKey: keyof typeof GLOBAL_NAMING_METHODS,
-		fields: NamingFieldSet
+		fields: NamingFieldSet,
 	): void => {
 		const expectedFields = GLOBAL_NAMING_METHODS[methodKey] || [];
 
 		const providedFieldNames = Object.keys(fields).filter(
-			(key) => fields[key] !== undefined && fields[key] !== ""
+			(key) => fields[key] !== undefined && fields[key] !== "",
 		);
 
 		// Check if all required fields are present
 		const missingFields = expectedFields.filter(
-			(requiredField) => !providedFieldNames.includes(requiredField)
+			(requiredField) => !providedFieldNames.includes(requiredField),
 		);
 
 		if (missingFields.length > 0) {
 			throw new Error(
 				`Missing required fields for method ${methodKey}: ${missingFields.join(
-					", "
-				)}`
+					", ",
+				)}`,
 			);
 		}
 	};
@@ -99,11 +98,11 @@ const AddToList = ({
 			store_design_index,
 			selected_sizes,
 			naming_method,
-			naming_fields
+			naming_fields,
 		);
 
 		const createProductName = () => {
-			console.log("Creating Product Name...")
+			console.log("Creating Product Name...");
 			const parts = [store_code];
 
 			if (brandName.trim().toLowerCase() !== "under armour") {
@@ -117,7 +116,9 @@ const AddToList = ({
 
 			parts.push(product_name);
 
-			console.log(`For product : ${product_name} store_design_index : ${store_design_index}`);
+			console.log(
+				`For product : ${product_name} store_design_index : ${store_design_index}`,
+			);
 
 			if (store_design_index) {
 				parts.push(`(Design ${store_design_index})`);
@@ -135,12 +136,12 @@ const AddToList = ({
 			// Validate naming fields before making the request
 			validateNamingFields(
 				naming_method as keyof typeof GLOBAL_NAMING_METHODS,
-				naming_fields
+				naming_fields,
 			);
 
 			if (product_category !== "Accessories" && !selected_sizes) {
 				throw new Error(
-					"Please select at least one size variation for the product."
+					"Please select at least one size variation for the product.",
 				);
 			}
 
@@ -162,6 +163,10 @@ const AddToList = ({
 
 			if (response.ok) {
 				console.log("Added to list");
+				const responseData = await response.json();
+				const newProductStatus =
+					responseData.data?.[0]?.product_status || "new";
+
 				addProduct(design_id, {
 					sage_code: sage_code,
 					productName: product_name,
@@ -171,7 +176,7 @@ const AddToList = ({
 					designGuideline: designGuideline,
 					naming_method: naming_method,
 					naming_fields: naming_fields,
-					product_status: "new",
+					product_status: newProductStatus,
 				});
 				toast.success("Item added to list successfully");
 				setAddedToList(true);
@@ -201,7 +206,7 @@ const AddToList = ({
 			naming_method,
 			naming_fields,
 			product_status,
-			store_status
+			store_status,
 		);
 
 		// Logging the parameters to be sent for editing
@@ -211,7 +216,7 @@ const AddToList = ({
 			// Validate naming fields before making the request
 			validateNamingFields(
 				naming_method as keyof typeof GLOBAL_NAMING_METHODS,
-				naming_fields
+				naming_fields,
 			);
 
 			const response = await fetch("/api/products/edit_list", {
@@ -236,8 +241,12 @@ const AddToList = ({
 				toast.success("Item is Edited");
 				// Update the product in Zustand store
 				const responseData = await response.json();
-				console.log("Logging prev and new product status:", product_status, responseData.data[0].product_status);
-				
+				console.log(
+					"Logging prev and new product status:",
+					product_status,
+					responseData.data[0].product_status,
+				);
+
 				updateProduct(design_id, sage_code, {
 					sizeVariations: responseData.data[0].size_variations,
 					product_status: responseData.data[0].product_status,
@@ -246,7 +255,7 @@ const AddToList = ({
 			} else {
 				console.log(
 					"Error editing the item because Response not Okay ",
-					response
+					response,
 				);
 				toast.error("Failed to edit the item. Please try again.");
 			}

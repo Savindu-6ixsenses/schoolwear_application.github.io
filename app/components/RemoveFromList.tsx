@@ -37,6 +37,13 @@ const RemoveFromList: React.FC<RemoveFromListProps> = ({
 		try {
 			setIsRemoving(true);
 
+			console.log("Removing item with details:", {
+				store_code,
+				design_id,
+				sage_code,
+				productStatus,
+			});
+
 			const response = await fetch("/api/products/remove_from_list", {
 				method: "POST",
 				headers: {
