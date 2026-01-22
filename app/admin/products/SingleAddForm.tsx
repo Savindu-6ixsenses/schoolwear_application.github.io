@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
-import { addSingleProduct, getAllColors } from "./actions";
+import { addSingleProduct, getAllColors, getAllSageProducts } from "./actions";
 import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 
 type FieldError = Record<string, string | undefined>;
 
 const required = [
 	"product_name",
-	"sku",
 	"sage_code",
 	"category",
 	"brand_name",
 	"color",
 	"color_code",
+	"related_product",
+	"type",
 ] as const;
 
 type ColorOption = { name: string; code: string | null };
+type SageOption = { "Sage Code": string; "Type": string | number | null; "Product Name": string | null; "Brand Name": string | null };
 
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
@@ -25,24 +27,32 @@ export default function SingleAddForm() {
 	} | null>(null);
 
 	const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
+	const [sageOptions, setSageOptions] = useState<SageOption[]>([]);
 	const [colorCode, setColorCode] = useState("");
+	const [brand_name, setBrandName] = useState("");
+	const [selectedType, setSelectedType] = useState("");
 
-	// Fetch colors from the database on component mount
+	// Fetch colors and sage products from the database on component mount
 	useEffect(() => {
-		const fetchColors = async () => {
+		const fetchData = async () => {
 			try {
-				const result = await getAllColors();
-				if (result.ok && result.data) {
-					setColorOptions(result.data);
-				} else {
-					// Optionally set an error message for the user
-					console.error(result.message);
+				const [colorsResult, sageResult] = await Promise.all([
+					getAllColors(),
+					getAllSageProducts(),
+				]);
+
+				if (colorsResult.ok && colorsResult.data) {
+					setColorOptions(colorsResult.data);
+				}
+
+				if (sageResult.ok && sageResult.data) {
+					setSageOptions(sageResult.data);
 				}
 			} catch (error) {
-				console.error("Failed to fetch colors:", error);
+				console.error("Failed to fetch data:", error);
 			}
 		};
-		fetchColors();
+		fetchData();
 	}, []);
 
 	// Handler for color dropdown change
@@ -52,6 +62,16 @@ export default function SingleAddForm() {
 			(c) => c.name === selectedColorName
 		);
 		setColorCode(selectedColor?.code ?? "");
+	};
+
+	// Handler for sage dropdown change
+	const handleSageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const selectedSage = e.target.value;
+		const option = sageOptions.find((s) => s["Sage Code"] === selectedSage);
+
+		console.log("Selected Sage Option:", option);
+		setSelectedType(String(option?.Type ?? ""));
+		setBrandName(option?.["Brand Name"] ?? "");
 	};
 
 	const validate = (fd: FormData) => {
@@ -87,6 +107,13 @@ export default function SingleAddForm() {
 		if (!sizes.some((sz) => fd.get(sz) === "true")) {
 			v["sizes"] = "At least one size is required.";
 		}
+
+		// Log the required fields and their values for debugging
+		console.log("Validating required fields:");
+		required.forEach((field) => {
+			console.log(`- ${field}: "${fd.get(field)}"`);
+		}
+		);
 
 		if (Object.values(v).some(Boolean)) {
 			setErrors(v);
@@ -145,9 +172,37 @@ export default function SingleAddForm() {
 				Fields marked with <span className="text-red-600">*</span> are required.
 			</p>
 
-			{/* Row: Item Type / Product Type / Category */}
+			{/* Row: SKU / Product Name */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div>
+					{labelReq("Sage Code", "sage_code")}
+					<input
+						id="sage_code"
+						name="sage_code"
+						className={inputBase}
+						placeholder="SM-180001"
+					/>
+					{errors.sage_code && (
+						<p className="mt-1 text-xs text-red-600">{errors.sage_code}</p>
+					)}
+				</div>
+				<div>
+					{labelReq("Product Name", "product_name")}
+					<input
+						id="product_name"
+						name="product_name"
+						className={inputBase}
+						placeholder="Girls Polo Shirt"
+					/>
+					{errors.product_name && (
+						<p className="mt-1 text-xs text-red-600">{errors.product_name}</p>
+					)}
+				</div>
+			</div>
+
+			{/* Row: Category / Color Code */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				{/* <div>
 					{labelReq("Item Type", "item_type")}
 					<input
 						id="item_type"
@@ -155,8 +210,8 @@ export default function SingleAddForm() {
 						className={inputBase}
 						placeholder="e.g., Shirt"
 					/>
-				</div>
-				<div>
+				</div> */}
+				{/* <div>
 					{labelReq("Product Type", "product_type")}
 					<input
 						id="product_type"
@@ -164,7 +219,7 @@ export default function SingleAddForm() {
 						className={inputBase}
 						placeholder="e.g., Top"
 					/>
-				</div>
+				</div> */}
 				<div>
 					{labelReq("Category", "category")}
 					<select
@@ -189,36 +244,7 @@ export default function SingleAddForm() {
 						))}
 					</select>
 				</div>
-			</div>
-
-			{/* Row: SKU / Product Name */}
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div>
-					{labelReq("SKU (Product Code)", "sku")}
-					<input
-						id="sku"
-						name="sku"
-						className={inputBase}
-						placeholder="SKU-000-BG"
-					/>
-					{errors.sku && (
-						<p className="mt-1 text-xs text-red-600">{errors.sku}</p>
-					)}
-				</div>
-				<div>
-					{labelReq("Product Name", "product_name")}
-					<input
-						id="product_name"
-						name="product_name"
-						className={inputBase}
-						placeholder="Girls Polo Shirt"
-					/>
-					{errors.product_name && (
-						<p className="mt-1 text-xs text-red-600">{errors.product_name}</p>
-					)}
-				</div>
-				<div className="flex flex-row gap-3">
-					<div>
 						{labelReq("Color", "color")}
 						<select
 							id="color"
@@ -262,10 +288,9 @@ export default function SingleAddForm() {
 							<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
 						)}
 					</div>
-				</div>
 			</div>
 
-			{/* Row: Brand / SAGE Code */}
+			{/* Row: Brand / SAGE Code / Type */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div>
 					{labelReq("Brand Name", "brand_name")}
@@ -273,16 +298,38 @@ export default function SingleAddForm() {
 						id="brand_name"
 						name="brand_name"
 						className={inputBase}
-						placeholder="BrandX"
+						placeholder="Select a Sage Code to auto-fill"
+						value={brand_name}
 					/>
 				</div>
 				<div>
-					{labelReq("SAGE Code", "sage_code")}
-					<input
-						id="sage_code"
-						name="sage_code"
+					{labelReq("Related Product Code", "related_product_type")}
+					<select
+						id="related_product"
+						name="related_product"
 						className={inputBase}
-						placeholder="SG-100"
+						onChange={handleSageChange}
+						defaultValue=""
+					>
+						<option value="" disabled>
+							Select SAGE Code
+						</option>
+						{sageOptions.map((s) => (
+							<option key={s["Sage Code"]} value={s["Sage Code"]}>
+								{s["Sage Code"]} - {s["Product Name"]}
+							</option>
+						))}
+					</select>
+				</div>
+				<div>
+					{labelReq("Type", "type")}
+					<input
+						id="type"
+						name="type"
+						className={inputBase}
+						value={selectedType}
+						readOnly
+						placeholder="Auto-populated"
 					/>
 				</div>
 			</div>
@@ -340,6 +387,7 @@ export default function SingleAddForm() {
 						setErrors({});
 						setMessage(null);
 						setColorCode("");
+						setSelectedType("");
 					}}
 				>
 					Reset

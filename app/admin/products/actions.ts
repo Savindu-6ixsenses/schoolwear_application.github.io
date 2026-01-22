@@ -23,9 +23,9 @@ export async function addSingleProduct(formData: FormData) {
 		);
 		const { data: dup, error: dupError } = await supabase
 			.from("new_all_products_4")
-			.select(`"SAGE Code", "Product Code/SKU"`)
+			.select(`"SAGE Code"`)
 			.or(
-				`"Product Name".eq.${parsed.product_name},"Product Code/SKU".eq.${parsed.sku}`
+				`"SAGE Code".eq.${parsed.sage_code}`
 			)
 			.limit(1);
 
@@ -45,11 +45,11 @@ export async function addSingleProduct(formData: FormData) {
 
 		// Map the parsed data to the correct database column names
 		const dataToInsert = {
-			"Item Type": parsed.item_type,
+			"Item Type": "Product",
 			"Product Name": parsed.product_name + "-" + parsed.color,
 			color_code: parsed.color_code,
-			"Product Type": parsed.product_type,
-			"Product Code/SKU": parsed.sku,
+			"Product Type": "P",
+			"Product Code/SKU": "XX-XXXX",//TODO: Remove these sku fields
 			"SAGE Code": parsed.sage_code,
 			"Brand Name": parsed.brand_name,
 			"Product Description": parsed.product_description,
@@ -64,6 +64,7 @@ export async function addSingleProduct(formData: FormData) {
 			X3: parsed.x3,
 			Category: parsed.category,
 			created_by: user_id,
+			Type: parsed.type,
 		};
 
 		const { error } = await supabase
@@ -185,6 +186,34 @@ export async function getAllColors() {
 		return {
 			ok: false,
 			message: "Failed to fetch colors. Please check the server logs.",
+		};
+	}
+}
+
+export async function getAllSageProducts() {
+	console.log("\n--- [Action: getAllSageProducts] - Initiated ---");
+	try {
+		const { supabase } = await createClientbyRole();
+		console.log(`[LOG] Fetching all sage products from "most_selling_products" table.`);
+
+		const { data, error } = await supabase
+			.from("most_selling_products")
+			.select('"Sage Code", "Type", "Product Name", "Brand Name"')
+			.order('"Type"', { ascending: true });
+
+		if (error) {
+			console.error("[ERROR] Supabase error fetching sage products:", error);
+			throw error;
+		}
+
+		console.log(`[LOG] Successfully fetched ${data.length} sage products.`);
+		console.log("--- [Action: getAllSageProducts] - Completed Successfully ---\n");
+		return { ok: true, data };
+	} catch (error) {
+		console.error("[FATAL] An error occurred in getAllSageProducts action:", error);
+		return {
+			ok: false,
+			message: "Failed to fetch sage products. Please check the server logs.",
 		};
 	}
 }
