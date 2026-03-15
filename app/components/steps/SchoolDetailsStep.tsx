@@ -45,6 +45,13 @@ const SchoolDetailsStep: React.FC<SchoolDetailsStepProps> = ({
 					</p>
 				</div>
 
+				<div className="md:col-span-2 rounded-md bg-yellow-50 p-3">
+					<p className="text-sm text-yellow-800">
+						<strong>Note:</strong> Please avoid using commas (,) in address
+						fields to ensure correct processing.
+					</p>
+				</div>
+
 				<div className="md:col-span-2">
 					<Label
 						htmlFor="streetAddress"

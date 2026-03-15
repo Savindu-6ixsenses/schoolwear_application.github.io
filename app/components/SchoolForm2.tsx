@@ -41,11 +41,36 @@ export async function getUniqueStoreCodeFromServer(
 
 const schema = z.object({
 	schoolName: z.string().min(1, "School name is required"),
-	streetAddress: z.string().min(1, "Street address is required"),
-	addressLine2: z.string().optional(),
-	city: z.string().min(1, "City is required"),
-	provinceState: z.string().min(1, "Province/State is required"),
-	postalCode: z.string().min(1, "Postal code is required"),
+	streetAddress: z
+		.string()
+		.min(1, "Street address is required")
+		.refine((val) => !val.includes(","), {
+			message: "Street address cannot contain commas",
+		}),
+	addressLine2: z
+		.string()
+		.optional()
+		.refine((val) => !val || !val.includes(","), {
+			message: "Address Line 2 cannot contain commas",
+		}),
+	city: z
+		.string()
+		.min(1, "City is required")
+		.refine((val) => !val.includes(","), {
+			message: "City cannot contain commas",
+		}),
+	provinceState: z
+		.string()
+		.min(1, "Province/State is required")
+		.refine((val) => !val.includes(","), {
+			message: "Province/State cannot contain commas",
+		}),
+	postalCode: z
+		.string()
+		.min(1, "Postal code is required")
+		.refine((val) => !val.includes(","), {
+			message: "Postal code cannot contain commas",
+		}),
 	country: z.literal("Canada"),
 	firstName: z.string().optional(),
 	lastName: z.string().optional(),
@@ -120,6 +145,8 @@ const SchoolFormTabs = () => {
 							.split(",")
 							.map((s: string) => s.trim());
 
+						const hasLine2 = addressParts.length >= 6;
+
 						// Parse name
 						const nameParts = (data.main_client_name || "").split(" ");
 						const firstName = nameParts[0] || "";
@@ -128,10 +155,10 @@ const SchoolFormTabs = () => {
 						setFormData({
 							schoolName: data.store_name || "",
 							streetAddress: addressParts[0] || "",
-							addressLine2: "", // Usually lost in concatenation
-							city: addressParts[1] || "",
-							provinceState: addressParts[2] || "",
-							postalCode: addressParts[3] || "",
+							addressLine2: hasLine2 ? addressParts[1] || "" : "",
+							city: hasLine2 ? addressParts[2] || "" : addressParts[1] || "",
+							provinceState: hasLine2 ? addressParts[3] || "" : addressParts[2] || "",
+							postalCode: hasLine2 ? addressParts[4] || "" : addressParts[3] || "",
 							country: "Canada",
 							firstName: firstName,
 							lastName: lastName,
@@ -220,7 +247,10 @@ const SchoolFormTabs = () => {
 				validated.lastName || ""
 			}`.trim();
 
-			const storeAdrress = `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`;
+			// TODO: Comma is common in addresses, need a more robust way to handle this. Maybe send as separate fields and concatenate on server or use a less common delimiter. For now, we will assume users won't put commas in their address fields.
+			const storeAdrress = validated.addressLine2
+				? `${validated.streetAddress}, ${validated.addressLine2}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`
+				: `${validated.streetAddress}, ${validated.city}, ${validated.provinceState}, ${validated.postalCode}, ${validated.country}`;
 
 			let statusToSubmit = storeStatus || "Draft";
 
