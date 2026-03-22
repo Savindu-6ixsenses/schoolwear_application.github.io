@@ -16,7 +16,12 @@ const required = [
 ] as const;
 
 type ColorOption = { name: string; code: string | null };
-type SageOption = { "Sage Code": string; "Type": string | number | null; "Product Name": string | null; "Brand Name": string | null };
+type SageOption = {
+	"Sage Code": string;
+	Type: string | number | null;
+	"Product Name": string | null;
+	"Brand Name": string | null;
+};
 
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
@@ -31,6 +36,7 @@ export default function SingleAddForm() {
 	const [colorCode, setColorCode] = useState("");
 	const [brand_name, setBrandName] = useState("");
 	const [selectedType, setSelectedType] = useState("");
+	const [category, setCategory] = useState("");
 
 	// Fetch colors and sage products from the database on component mount
 	useEffect(() => {
@@ -59,7 +65,7 @@ export default function SingleAddForm() {
 	const handleColorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const selectedColorName = e.target.value;
 		const selectedColor = colorOptions.find(
-			(c) => c.name === selectedColorName
+			(c) => c.name === selectedColorName,
 		);
 		setColorCode(selectedColor?.code ?? "");
 	};
@@ -92,19 +98,21 @@ export default function SingleAddForm() {
 		const fd = new FormData(form);
 
 		// Normalize booleans (unchecked checkboxes won't appear in FormData)
-		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach(
-			(name: string) => {
-				if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
-				// Zod treats any non-empty string as true
+		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach((name: string) => {
+			if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
+			// Zod treats any non-empty string as true
 
-				// If every value is false, we can consider the field as not set. However, since at least one size should be selected, we leave it to validation.
-			}
-		);
+			// If every value is false, we can consider the field as not set. However, since at least one size should be selected, we leave it to validation.
+		});
 
 		const v = validate(fd);
 
 		const sizes = ["xs", "sm", "md", "lg", "xl", "x2", "x3"];
-		if (!sizes.some((sz) => fd.get(sz) === "true")) {
+		const currentCategory = fd.get("category");
+		if (
+			currentCategory !== "Accessories" &&
+			!sizes.some((sz) => fd.get(sz) === "true")
+		) {
 			v["sizes"] = "At least one size is required.";
 		}
 
@@ -112,8 +120,7 @@ export default function SingleAddForm() {
 		console.log("Validating required fields:");
 		required.forEach((field) => {
 			console.log(`- ${field}: "${fd.get(field)}"`);
-		}
-		);
+		});
 
 		if (Object.values(v).some(Boolean)) {
 			setErrors(v);
@@ -127,6 +134,7 @@ export default function SingleAddForm() {
 			if (result.ok) {
 				setMessage({ type: "success", text: "Product added successfully." });
 				form.reset();
+				setCategory("");
 			} else {
 				setMessage({
 					type: "error",
@@ -227,6 +235,7 @@ export default function SingleAddForm() {
 						name="category"
 						className={inputBase}
 						defaultValue=""
+						onChange={(e) => setCategory(e.target.value)}
 					>
 						<option
 							value=""
@@ -245,49 +254,49 @@ export default function SingleAddForm() {
 					</select>
 				</div>
 				<div>
-						{labelReq("Color", "color")}
-						<select
-							id="color"
-							name="color"
-							className={inputBase}
-							onChange={handleColorChange}
-							defaultValue=""
-							disabled={colorOptions.length === 0}
+					{labelReq("Color", "color")}
+					<select
+						id="color"
+						name="color"
+						className={inputBase}
+						onChange={handleColorChange}
+						defaultValue=""
+						disabled={colorOptions.length === 0}
+					>
+						<option
+							value=""
+							disabled
 						>
+							{colorOptions.length > 0 ? "Select a color" : "Loading..."}
+						</option>
+						{colorOptions.map((c) => (
 							<option
-								value=""
-								disabled
+								key={c.name}
+								value={c.name}
 							>
-								{colorOptions.length > 0 ? "Select a color" : "Loading..."}
+								{c.name}
 							</option>
-							{colorOptions.map((c) => (
-								<option
-									key={c.name}
-									value={c.name}
-								>
-									{c.name}
-								</option>
-							))}
-						</select>
-						{errors.color && (
-							<p className="mt-1 text-xs text-red-600">{errors.color}</p>
-						)}
-					</div>
-					<div>
-						{labelReq("Color Code", "color_code")}
-						<input
-							id="color_code"
-							name="color_code"
-							className={inputBase}
-							placeholder="RED"
-							value={colorCode}
-							onChange={(e) => setColorCode(e.target.value)}
-							readOnly
-						/>
-						{errors.color_code && (
-							<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
-						)}
-					</div>
+						))}
+					</select>
+					{errors.color && (
+						<p className="mt-1 text-xs text-red-600">{errors.color}</p>
+					)}
+				</div>
+				<div>
+					{labelReq("Color Code", "color_code")}
+					<input
+						id="color_code"
+						name="color_code"
+						className={inputBase}
+						placeholder="RED"
+						value={colorCode}
+						onChange={(e) => setColorCode(e.target.value)}
+						readOnly
+					/>
+					{errors.color_code && (
+						<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
+					)}
+				</div>
 			</div>
 
 			{/* Row: Brand / SAGE Code / Type */}
@@ -311,11 +320,17 @@ export default function SingleAddForm() {
 						onChange={handleSageChange}
 						defaultValue=""
 					>
-						<option value="" disabled>
+						<option
+							value=""
+							disabled
+						>
 							Select SAGE Code
 						</option>
 						{sageOptions.map((s) => (
-							<option key={s["Sage Code"]} value={s["Sage Code"]}>
+							<option
+								key={s["Sage Code"]}
+								value={s["Sage Code"]}
+							>
 								{s["Sage Code"]} - {s["Product Name"]}
 							</option>
 						))}
@@ -349,7 +364,10 @@ export default function SingleAddForm() {
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<fieldset className="border border-gray-200 rounded-lg p-4">
 					<legend className="px-2 text-sm font-semibold text-gray-700">
-						Sizes <span className="text-red-600">*</span>
+						Sizes{" "}
+						{category !== "Accessories" && (
+							<span className="text-red-600">*</span>
+						)}
 					</legend>
 					<div className="grid grid-cols-4 gap-2 text-sm">
 						{["xs", "sm", "md", "lg", "xl", "x2", "x3"].map((sz) => (
@@ -388,6 +406,7 @@ export default function SingleAddForm() {
 						setMessage(null);
 						setColorCode("");
 						setSelectedType("");
+						setCategory("");
 					}}
 				>
 					Reset

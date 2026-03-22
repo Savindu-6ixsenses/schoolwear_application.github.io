@@ -323,6 +323,7 @@ export const getProductConfigs = async (
 				inventory_level: 100, // Default inventory
 				// is_visible: product.isAdded, // Map directly to is_visible
 				is_visible: false, //TODO0: Default to false, adjust if necessary
+				page_title: `${product.productName} | SchoolWear.ca`, // Generate a page title
 				custom_url: {
 					url: `/${newSKU || "default-product"}`, // Generate a URL
 					is_customized: true,
