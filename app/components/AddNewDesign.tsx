@@ -31,7 +31,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 		useState(false);
 	const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
 
-	const inputRef = useRef(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 
 	const supabase = createClient();
 
@@ -52,7 +52,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			setDesignWidth(design.width || 7);
 			setDesignHeight(design.height || 7);
 			const guideline = designGuidelinesList?.find(
-				(g) => g.design_guideline === design.design_guideline
+				(g) => g.design_guideline === design.design_guideline,
 			);
 			setSelectedDesignGuideline(guideline || null);
 		} else {
@@ -68,7 +68,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 		"Design Items:",
 		designGuidelinesList,
 		"and Design List:",
-		designList
+		designList,
 	);
 
 	// Handle the file upload
@@ -136,7 +136,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			throw new Error(
 				`Failed to add design: ${
 					error instanceof Error ? error.message : "Unknown error"
-				}`
+				}`,
 			);
 		}
 	};
@@ -167,7 +167,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			throw new Error(
 				`Failed to update design: ${
 					error instanceof Error ? error.message : "Unknown error"
-				}`
+				}`,
 			);
 		}
 	};
@@ -192,9 +192,9 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				height: designHeight,
 				width: designWidth,
 				store_code: storeCode,
-				notes: null
+				notes: null,
 			};
-			
+
 			try {
 				const responseData = await addNewDesign(newDesignItem);
 				if (responseData.success && responseData.data[0]) {
@@ -203,7 +203,6 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 					});
 				}
 
-				
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			} catch (error: any) {
 				console.error("Error adding new design:", error);
@@ -212,11 +211,10 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			}
 
 			console.log("New Design Item :", newDesignItem);
-			
+
 			// Update the list of design items
 			const updatedDesignItems = [...(designList ?? []), newDesignItem];
 			setDesignList(updatedDesignItems);
-
 
 			setDesign(newDesignItem);
 			setQuery({ designId: newDesignItem.design_id, page: 1, pageSize: 20 });
@@ -270,18 +268,22 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 				width: designWidth,
 				store_code: storeCode,
 				notes: design.notes,
-				store_design_index: design.store_design_index
+				store_design_index: design.store_design_index,
 			};
 
 			await updateDesign(updatedDesignItem);
 
 			// Update the design in the local state/store
 			const updatedList = designList.map((d) =>
-				d.design_id === updatedDesignItem.design_id ? updatedDesignItem : d
+				d.design_id === updatedDesignItem.design_id ? updatedDesignItem : d,
 			);
 			setDesignList(updatedList);
 			setDesign(updatedDesignItem); // Update the currently selected design in parent
-			setQuery({designId: updatedDesignItem.design_id, page: 1, pageSize: 20})
+			setQuery({
+				designId: updatedDesignItem.design_id,
+				page: 1,
+				pageSize: 20,
+			});
 
 			toast.success("Design updated successfully!");
 		} catch (error) {
@@ -302,7 +304,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 
 		if (
 			window.confirm(
-				"Are you sure you want to delete this design? This cannot be undone."
+				"Are you sure you want to delete this design? This cannot be undone.",
 			)
 		) {
 			try {
@@ -311,7 +313,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 					`/api/add_design_items?id=${design.design_id}`,
 					{
 						method: "DELETE",
-					}
+					},
 				);
 
 				if (!response.ok) {
@@ -331,23 +333,27 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			} finally {
 				setUploading(false);
 				setSelectedDesignGuideline(null);
-				setImageFile(null)
-				setDesignName("")
-				setDesignWidth(null)
-				setDesignHeight(null)
-				setDesign(null)
+				setImageFile(null);
+				setDesignName("");
+				setDesignWidth(null);
+				setDesignHeight(null);
+				setDesign(null);
 			}
 		}
 	};
 
 	const handleSelectDesign = () => {
-		setQuery({designId: design?.design_id, page: 1, pageSize: query.pageSize})
-	}
+		setQuery({
+			designId: design?.design_id,
+			page: 1,
+			pageSize: query.pageSize,
+		});
+	};
 
 	// Handle selecting an existing design
 	const handleSelectExistingDesign = (design_ID: string) => {
 		const selectedDesign = designList?.find(
-			(item) => item.design_id === design_ID
+			(item) => item.design_id === design_ID,
 		);
 		if (selectedDesign) {
 			setDesign(selectedDesign);
@@ -357,7 +363,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 	// Handle selecting a design guideline from dropdown
 	const handleSelectDesignGuideline = (guideline: string) => {
 		const selectedGuideline = designGuidelinesList?.find(
-			(item) => item.design_guideline === guideline
+			(item) => item.design_guideline === guideline,
 		);
 		if (selectedGuideline) {
 			setSelectedDesignGuideline(selectedGuideline);
@@ -370,7 +376,7 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 		} else {
 			toast.error("No reference image available for this guideline.");
 		}
-	}
+	};
 
 	return (
 		<div className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-md w-full max-w-lg border border-gray-200">
@@ -480,31 +486,49 @@ const AddNewDesign: React.FC<AddNewDesignProps> = ({
 			</div>
 
 			{/* File Input for Image */}
-			<div>
+			<div className="space-y-2">
 				<label
 					htmlFor="designImage"
-					className="block text-sm font-medium text-gray-700 mb-1"
+					className="block text-sm font-medium text-gray-700"
 				>
 					Design Image:
 				</label>
-				<div className="flex flex-row items-center gap-2">
-					<input
-						id="designImage"
-						className="flex-grow w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-						type="file"
-						accept="image/*"
-						ref={inputRef}
-						onChange={(e) =>
-							setImageFile(e.target.files ? e.target.files[0] : null)
-						}
-					/>
+
+				<div className="flex items-center justify-between gap-3">
+					<div className="flex items-center gap-3 min-w-0">
+						<input
+							id="designImage"
+							type="file"
+							accept="image/*"
+							ref={inputRef}
+							onChange={(e) =>
+								setImageFile(e.target.files ? e.target.files[0] : null)
+							}
+							className="hidden"
+						/>
+
+						<button
+							type="button"
+							onClick={() => inputRef.current?.click()}
+							className="shrink-0 px-4 py-2 rounded-md bg-indigo-50 text-indigo-700 font-medium hover:bg-indigo-100 transition-colors"
+						>
+							{imageFile || design?.image_url ? "Change Image" : "Upload Image"}
+						</button>
+
+						<span className="text-sm text-gray-500 truncate">
+							{imageFile
+								? imageFile.name
+								: "No file selected"}
+						</span>
+					</div>
+
 					{design && (
 						<button
 							type="button"
 							onClick={() => setIsDesignModalOpen(true)}
-							disabled={!selectedDesignGuideline}
-							className="p-2.5 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 disabled:bg-gray-200 disabled:cursor-not-allowed transition-colors"
-							aria-label="View design guideline details"
+							className="shrink-0 p-2.5 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition-colors"
+							aria-label="Preview design image"
+							title="Preview image"
 						>
 							<FaEye className="text-gray-600" />
 						</button>
