@@ -62,14 +62,14 @@ export const getCategoryOffsetNumber = (product_category: string): number => {
 	switch (product_category.toLowerCase()) {
 		case "adult":
 			return 0;
+		case "accessories":
+			return 50;
 		case "men":
 			return 100;
 		case "women":
 			return 200;
 		case "youth":
 			return 300;
-		case "accessories":
-			return 400;
 		default:
 			return 0; // If there's no match, Consider it as Adult
 	}
@@ -83,9 +83,15 @@ export const createUniqueSKU = (
 	product_category: string,
 	originalStoreCode: string,
 	offsetNumber: number,
-	createdSageCodes: string[]
+	createdSageCodes: string[],
 ): string => {
-	let designCode: number = getCategoryOffsetNumber(product_category);
+	let designCode: number =
+		((product_category == "Adult" || product_category == "Accessories") &&
+			offsetNumber < 50) ||
+		offsetNumber < 100
+			? getCategoryOffsetNumber(product_category)
+			: 400 + getCategoryOffsetNumber(product_category);
+			
 	designCode += offsetNumber;
 
 	// ✅ Create new sage code using template literals
@@ -107,7 +113,7 @@ export const createUniqueProductNames = (
 	category_: string,
 	brandName: string,
 	namingMethod: string,
-	namingFields: Record<string, string>
+	namingFields: Record<string, string>,
 ): string => {
 	const brand = namingFields["brandName"] || brandName || "Default Brand";
 	const category = category_;
@@ -121,7 +127,7 @@ export const createUniqueProductNames = (
 		for (const field of fields) {
 			if (!namingFields[field] || namingFields[field].trim() === "") {
 				throw new Error(
-					`Missing required field "${field}" for naming method ${namingMethod}`
+					`Missing required field "${field}" for naming method ${namingMethod}`,
 				);
 			}
 		}
@@ -179,7 +185,7 @@ export const createUniqueProductNames = (
 	}
 
 	console.log(
-		`Creating product with name: "${name}" using naming method: ${namingMethod}`
+		`Creating product with name: "${name}" using naming method: ${namingMethod}`,
 	);
 
 	return name.replace(/\s+/g, " ").trim();

@@ -36,9 +36,9 @@ export const handleCreateStore = async (
 		const storeProductsList = await getStoreProducts(store.store_code);
 
 		// If the store is being modified, fetch existing sage codes to avoid duplicates.
-		let createdSageCodes: string[] = [];
+		let createdSKUs: string[] = [];
 		if (store.status === "Modify") {
-			createdSageCodes = await getExistingSKUs(store.store_code);
+			createdSKUs = await getExistingSKUs(store.store_code);
 		}
 
 		if (!storeProductsList || Object.keys(storeProductsList).length === 0) {
@@ -82,7 +82,7 @@ export const handleCreateStore = async (
 				designId,
 				store.store_code,
 				relatedCategories,
-				createdSageCodes,
+				createdSKUs,
 				logger,
 				currentOffset,
 			);
@@ -92,10 +92,6 @@ export const handleCreateStore = async (
 			batches.push(configs);
 			currentOffset = nextOffset;
 		}
-
-		// save the current offset number for future use
-		console.log("[handleCreateStore] Saving final offset number:", currentOffset);
-		await updateMaxOffset(store.store_code, currentOffset);
 
 		// --- REPORT GENERATION: Add all products to report, regardless of creation success ---
 		reportGenerator.processProductData(processedProductsByDesign);
@@ -201,7 +197,14 @@ export const handleCreateStore = async (
 		console.log(
 			"[handleCreateStore] All batches processed. Updating store status to 'Approved'.",
 		);
+		
+		// save the current offset number for future use
+		console.log("[handleCreateStore] Saving final offset number:", currentOffset);
+		await updateMaxOffset(store.store_code, currentOffset);
+
+		// update store status to Approved after processing all batches
 		await updateStoreStatus(store.store_code, "Approved");
+
 		logger.logStoreStatusUpdate("Approved");
 
 		logger.completeWithSuccess({

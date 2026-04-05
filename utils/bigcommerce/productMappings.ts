@@ -142,7 +142,7 @@ const getTheOffsetNumber = async (
 	const offsetNumber = skuParts[1];
 
 	// return the modulus of the offset number to get the original offset
-	const originalOffset = parseInt(offsetNumber, 10) % 100;
+	const originalOffset = offsetNumber <= 100 ? parseInt(offsetNumber, 10) % 50 : parseInt(offsetNumber, 10) % 100;
 	return originalOffset;
 };
 
@@ -186,7 +186,7 @@ export const getProductConfigs = async (
 	designId: string,
 	storeCode: string,
 	relatedCategoryIds: Record<string, number>,
-	createdSageCodes: string[] = [],
+	createdSKUs: string[] = [],
 	logger: StoreCreationLogger,
 	startOffset: number = 1,
 ): Promise<{ configs: productConfig[]; nextOffset: number }> => {
@@ -236,7 +236,6 @@ export const getProductConfigs = async (
 		console.log("[Get Offset] Retrieved offset number:", offsetNumber);
 
 		for (const product of group) {
-			// Get the offset number based on the product
 
 			// Skip products that have already been added to BigCommerce
 			if (product.product_status === "added") {
@@ -264,7 +263,9 @@ export const getProductConfigs = async (
 				continue;
 			}
 
-			const sizeVariants = product.sizeVariations?.split(","); //Outputs a list ex:['SM','LG','XL']
+			const sizeVariants = (product.sizeVariations || "")
+				.split(",")
+				.filter((v) => v.trim() !== ""); // Ensures no empty strings or whitespace-only variants
 
 			logger.addEntry(
 				"INFO",
@@ -281,7 +282,7 @@ export const getProductConfigs = async (
 				product.category,
 				storeCode,
 				offsetNumber,
-				createdSageCodes,
+				createdSKUs,
 			);
 
 			logger.logProductSageCodeProcessing(product.productName, {
@@ -309,7 +310,7 @@ export const getProductConfigs = async (
 				product.productName = `${randomUUID()}`; // Fallback to a default name if missing
 			}
 
-			const productConfig: ProductCreationProps = {
+			let productConfig: ProductCreationProps = {
 				name: product.productName, // Default if name is missing
 				type: "physical", // Default type
 				sku:
@@ -327,9 +328,12 @@ export const getProductConfigs = async (
 				custom_url: {
 					url: `/${newSKU || "default-product"}`, // Generate a URL
 					is_customized: true,
-				},
-				variants: sizeVariants?.length
-					? sizeVariants.map((variant) => ({
+				}
+			};
+
+			if (sizeVariants.length > 0) {
+				productConfig = {...productConfig,
+					variants : sizeVariants.map((variant) => ({
 							sku: `${getVariantSKU(newSKU, variant, product.sageCode)}`,
 							price: 10.0, // Default price
 							inventory_level: 50, // Default inventory for variants
@@ -342,9 +346,8 @@ export const getProductConfigs = async (
 									option_display_name: "Size",
 								},
 							],
-						}))
-					: [], // No variants if no sizes are selected
-			};
+						}))}
+			}
 
 			productList.push({
 				productConfigs: productConfig,
@@ -357,11 +360,7 @@ export const getProductConfigs = async (
 			});
 		}
 		// Get the max value out of prev offset and current offset
-		if (offsetNumber >= startOffset) {
-			offsetNumber++
-		} else {
-			offsetNumber = startOffset
-		}
+		offsetNumber = Math.max((offsetNumber+1), startOffset);
 	}
 
 	return { configs: productList, nextOffset: offsetNumber };
