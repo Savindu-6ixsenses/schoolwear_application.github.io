@@ -12,7 +12,9 @@ const required = [
 	"color",
 	"color_code",
 	"related_product",
+	"sort_order",
 	"type",
+	"tax_class", // New: Tax Class
 ] as const;
 
 type ColorOption = { name: string; code: string | null };
@@ -21,6 +23,7 @@ type SageOption = {
 	Type: string | number | null;
 	"Product Name": string | null;
 	"Brand Name": string | null;
+	"Sort Order": number | null;
 };
 
 export default function SingleAddForm() {
@@ -36,7 +39,9 @@ export default function SingleAddForm() {
 	const [colorCode, setColorCode] = useState("");
 	const [brand_name, setBrandName] = useState("");
 	const [selectedType, setSelectedType] = useState("");
+	const [sortOrder, setSortOrder] = useState("");
 	const [category, setCategory] = useState("");
+	const [taxClass, setTaxClass] = useState("0"); // New state for Tax Class, default to '0' (Default Tax Class)
 
 	// Fetch colors and sage products from the database on component mount
 	useEffect(() => {
@@ -77,6 +82,7 @@ export default function SingleAddForm() {
 
 		console.log("Selected Sage Option:", option);
 		setSelectedType(String(option?.Type ?? ""));
+		setSortOrder(String(option?.["Sort Order"] ?? ""));
 		setBrandName(option?.["Brand Name"] ?? "");
 	};
 
@@ -96,6 +102,9 @@ export default function SingleAddForm() {
 		setErrors({});
 		const form = e.currentTarget;
 		const fd = new FormData(form);
+
+		// Add taxClass to FormData manually if it's a controlled component and not directly named in the form
+		fd.set("tax_class", taxClass); // Ensure tax_class is in FormData
 
 		// Normalize booleans (unchecked checkboxes won't appear in FormData)
 		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach((name: string) => {
@@ -134,7 +143,10 @@ export default function SingleAddForm() {
 			if (result.ok) {
 				setMessage({ type: "success", text: "Product added successfully." });
 				form.reset();
+				setColorCode("");
+				setSelectedType("");
 				setCategory("");
+				setTaxClass("0"); // Reset Tax Class
 			} else {
 				setMessage({
 					type: "error",
@@ -180,7 +192,7 @@ export default function SingleAddForm() {
 				Fields marked with <span className="text-red-600">*</span> are required.
 			</p>
 
-			{/* Row: SKU / Product Name */}
+			{/* Row: Sage Code / Product Name */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div>
 					{labelReq("Sage Code", "sage_code")}
@@ -206,28 +218,6 @@ export default function SingleAddForm() {
 						<p className="mt-1 text-xs text-red-600">{errors.product_name}</p>
 					)}
 				</div>
-			</div>
-
-			{/* Row: Category / Color Code */}
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-				{/* <div>
-					{labelReq("Item Type", "item_type")}
-					<input
-						id="item_type"
-						name="item_type"
-						className={inputBase}
-						placeholder="e.g., Shirt"
-					/>
-				</div> */}
-				{/* <div>
-					{labelReq("Product Type", "product_type")}
-					<input
-						id="product_type"
-						name="product_type"
-						className={inputBase}
-						placeholder="e.g., Top"
-					/>
-				</div> */}
 				<div>
 					{labelReq("Category", "category")}
 					<select
@@ -252,7 +242,14 @@ export default function SingleAddForm() {
 							</option>
 						))}
 					</select>
+					{errors.category && (
+						<p className="mt-1 text-xs text-red-600">{errors.category}</p>
+					)}
 				</div>
+			</div>
+
+			{/* Row: Color / Related Product Code */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 				<div>
 					{labelReq("Color", "color")}
 					<select
@@ -283,36 +280,7 @@ export default function SingleAddForm() {
 					)}
 				</div>
 				<div>
-					{labelReq("Color Code", "color_code")}
-					<input
-						id="color_code"
-						name="color_code"
-						className={inputBase}
-						placeholder="RED"
-						value={colorCode}
-						onChange={(e) => setColorCode(e.target.value)}
-						readOnly
-					/>
-					{errors.color_code && (
-						<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
-					)}
-				</div>
-			</div>
-
-			{/* Row: Brand / SAGE Code / Type */}
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-				<div>
-					{labelReq("Brand Name", "brand_name")}
-					<input
-						id="brand_name"
-						name="brand_name"
-						className={inputBase}
-						placeholder="Select a Sage Code to auto-fill"
-						value={brand_name}
-					/>
-				</div>
-				<div>
-					{labelReq("Related Product Code", "related_product_type")}
+					{labelReq("Related Product Code", "related_product")}
 					<select
 						id="related_product"
 						name="related_product"
@@ -335,6 +303,116 @@ export default function SingleAddForm() {
 							</option>
 						))}
 					</select>
+					{errors.related_product && (
+						<p className="mt-1 text-xs text-red-600">
+							{errors.related_product}
+						</p>
+					)}
+				</div>
+			</div>
+
+			{/* New Row: Tax Class (Editable Field) */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div>
+					{labelReq("Tax Class", "tax_class")}
+					<select
+						id="tax_class"
+						name="tax_class"
+						className={inputBase}
+						value={taxClass}
+						onChange={(e) => setTaxClass(e.target.value)}
+					>
+						<option value="0">0: Default Tax Class</option>
+						<option value="1">1: Non-Taxable Product</option>
+						<option value="2">2: Shipping</option>
+						<option value="3">3: Gift Wrapping</option>
+						<option value="4">4: Youth Tax</option>
+					</select>
+					{errors.tax_class && (
+						<p className="mt-1 text-xs text-red-600">{errors.tax_class}</p>
+					)}
+				</div>
+			</div>
+
+			{/* Row: Color Code / Sort Order / Type (Auto-generated fields) */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div>
+					{labelReq("Color Code", "color_code")}
+					<input
+						id="color_code"
+						name="color_code"
+						className={inputBase}
+						placeholder="RED"
+						value={colorCode}
+						onChange={(e) => setColorCode(e.target.value)}
+						readOnly
+					/>
+					{errors.color_code && (
+						<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
+					)}
+				</div>
+				<div>
+					{labelReq("Color Code", "color_code")}
+					<input
+						id="color_code"
+						name="color_code"
+						className={inputBase}
+						placeholder="RED"
+						value={colorCode}
+						onChange={(e) => setColorCode(e.target.value)}
+						readOnly
+					/>
+					{errors.color_code && (
+						<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
+					)}
+				</div>
+				<div>
+					{labelReq("Related Product Code", "related_product")}
+					<select
+						id="related_product"
+						name="related_product"
+						className={inputBase}
+						onChange={handleSageChange}
+						defaultValue=""
+					>
+						<option
+							value=""
+							disabled
+						>
+							Select SAGE Code
+						</option>
+						{sageOptions.map((s) => (
+							<option
+								key={s["Sage Code"]}
+								value={s["Sage Code"]}
+							>
+								{s["Sage Code"]} - {s["Product Name"]}
+							</option>
+						))}
+					</select>
+					{errors.related_product && (
+						<p className="mt-1 text-xs text-red-600">
+							{errors.related_product}
+						</p>
+					)}
+				</div>
+			</div>
+
+			{/* Row: Color Code / Sort Order / Type (Auto-generated fields) */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div>
+					{labelReq("Sort Order", "sort_order")}
+					<input
+						id="sort_order"
+						name="sort_order"
+						className={inputBase}
+						value={sortOrder}
+						readOnly
+						placeholder="Auto-populated"
+					/>
+					{errors.sort_order && (
+						<p className="mt-1 text-xs text-red-600">{errors.sort_order}</p>
+					)}
 				</div>
 				<div>
 					{labelReq("Type", "type")}
@@ -346,6 +424,41 @@ export default function SingleAddForm() {
 						readOnly
 						placeholder="Auto-populated"
 					/>
+					{errors.type && (
+						<p className="mt-1 text-xs text-red-600">{errors.type}</p>
+					)}
+				</div>
+			</div>
+
+			{/* Row: Brand Name (Auto-generated field) */}
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div>
+					{labelReq("Brand Name", "brand_name")}
+					<input
+						id="brand_name"
+						name="brand_name"
+						className={inputBase}
+						placeholder="Auto-populated"
+						value={brand_name}
+						readOnly
+					/>
+					{errors.type && (
+						<p className="mt-1 text-xs text-red-600">{errors.type}</p>
+					)}
+				</div>
+				<div>
+					{labelReq("Brand Name", "brand_name")}
+					<input
+						id="brand_name"
+						name="brand_name"
+						className={inputBase}
+						placeholder="Auto-populated"
+						value={brand_name}
+						readOnly
+					/>
+					{errors.brand_name && (
+						<p className="mt-1 text-xs text-red-600">{errors.brand_name}</p>
+					)}
 				</div>
 			</div>
 
@@ -406,6 +519,7 @@ export default function SingleAddForm() {
 						setMessage(null);
 						setColorCode("");
 						setSelectedType("");
+						setSortOrder("");
 						setCategory("");
 					}}
 				>

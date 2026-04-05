@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import AddColorForm from "./AddColorForm";
 import SingleAddForm from "./SingleAddForm";
 import BulkCsvUploader from "./BulkCsvUploader";
+import EditProductForm from "./EditProductForm";
 
 export default function ProductsManager() {
-	const [activeTab, setActiveTab] = useState<"single" | "bulk" | "color">(
-		"single"
+	const [activeTab, setActiveTab] = useState<"single" | "bulk" | "color" | "edit">(
+		"single" // Default to 'single'
 	);
 
 	return (
@@ -46,11 +47,22 @@ export default function ProductsManager() {
 				>
 					Add Color
 				</button>
+				<button
+					onClick={() => setActiveTab("edit")}
+					className={`px-4 py-2 rounded-lg text-sm font-medium ${
+						activeTab === "edit"
+							? "bg-white shadow"
+							: "text-gray-600 hover:text-gray-800"
+					}`}
+				>
+					Edit Product
+				</button>
 			</div>
 
 			{activeTab === "single" && <SingleAddForm />}
 			{activeTab === "bulk" && <BulkCsvUploader />}
 			{activeTab === "color" && <AddColorForm />}
+			{activeTab === "edit" && <EditProductForm />}
 		</div>
 	);
 }

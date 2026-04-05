@@ -1,5 +1,3 @@
-import { de } from "date-fns/locale";
-
 // Function to create a unique sage code
 // export const createUniqueSKU_2 = (
 // 	productName: string,
