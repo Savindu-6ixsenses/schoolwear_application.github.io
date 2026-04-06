@@ -12,7 +12,7 @@ export const productSchema = z.object({
   product_description: z.string().optional(),
   product_weight: z.coerce.number().optional(),
   is_created: z.coerce.boolean().optional().default(false),
-  tax_class: z.string().optional(),
+  tax_class_id: z.string().optional(),
   sort_order: z.string().optional(),
   xs: z.coerce.boolean().optional(),
   sm: z.coerce.boolean().optional(),

@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { FaSpinner } from "react-icons/fa";
 import {
 	getAllColors,
 	getAllSageProducts,
 	getSingleProductBySageCode,
 	updateSingleProduct,
+	getAllProductSageCodes,
 } from "./actions";
 import { GLOBAL_SUBCATEGORIES } from "@/constants/products";
 
@@ -19,10 +21,15 @@ const required = [
 	"related_product",
 	"sort_order",
 	"type",
-	"tax_class",
+	"tax_class_id",
 ] as const;
 
 type ColorOption = { name: string; code: string | null };
+type ProductOption = {
+	"SAGE Code": string;
+	"Product Name": string;
+
+};
 type SageOption = {
 	"Sage Code": string;
 	Type: string | number | null;
@@ -41,7 +48,7 @@ type ProductData = {
 	"Related Product Code": string; // This would be the Sage Code of the related product
 	Type: string | number;
 	sort_order: number; // Corrected to match DB field name
-	tax_class: string; // Assuming it's stored as a string or number
+	tax_class_id: string; // Assuming it's stored as a string or number
 	"Product Description": string;
 	XS: boolean;
 	SM: boolean;
@@ -53,7 +60,9 @@ type ProductData = {
 	// Add other fields as necessary from new_all_products_4
 };
 
-export default function EditProductForm() {
+export default function EditProductForm(params: {
+	sageCode: string | undefined;
+}) {
 	const [busy, setBusy] = useState(false);
 	const [errors, setErrors] = useState<FieldError>({});
 	const [message, setMessage] = useState<{
@@ -63,24 +72,45 @@ export default function EditProductForm() {
 
 	const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
 	const [sageOptions, setSageOptions] = useState<SageOption[]>([]);
+	const [products, setProducts] = useState<ProductOption[]>([]);
 	const [colorCode, setColorCode] = useState("");
 	const [brand_name, setBrandName] = useState("");
 	const [selectedType, setSelectedType] = useState("");
 	const [sortOrder, setSortOrder] = useState("");
 	const [category, setCategory] = useState("");
-	const [taxClass, setTaxClass] = useState("0");
+	const [taxClassId, setTaxClassId] = useState("0");
 	const [color, setColor] = useState(""); // New state for color name for dropdown
 
 	const [selectedProductSageCode, setSelectedProductSageCode] = useState("");
 	const [productData, setProductData] = useState<ProductData | null>(null);
+	const [searchTerm, setSearchTerm] = useState("");
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Handle clicking outside to close the dropdown
+	useEffect(() => {
+		function handleClickOutside(event: MouseEvent) {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
+				setIsDropdownOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
 
 	// Fetch colors and sage products from the database on component mount
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
-				const [colorsResult, sageResult] = await Promise.all([
+				const [colorsResult, sageResult, productsResult] = await Promise.all([
 					getAllColors(),
 					getAllSageProducts(),
+					getAllProductSageCodes(), // Fetch all product sage codes for the dropdown
 				]);
 
 				if (colorsResult.ok && colorsResult.data) {
@@ -90,6 +120,10 @@ export default function EditProductForm() {
 				if (sageResult.ok && sageResult.data) {
 					setSageOptions(sageResult.data);
 				}
+
+				if (productsResult.ok && productsResult.data) {
+					setProducts(productsResult.data);
+				}
 			} catch (error) {
 				console.error("Failed to fetch data:", error);
 			}
@@ -97,11 +131,20 @@ export default function EditProductForm() {
 		fetchData();
 	}, []);
 
+	// Initialize from props if sageCode is provided via URL/Params
+	useEffect(() => {
+		if (params.sageCode && !selectedProductSageCode) {
+			setSelectedProductSageCode(params.sageCode);
+			setSearchTerm(params.sageCode);
+		}
+	}, [params.sageCode]);
+
 	// Effect to load product data when selectedProductSageCode changes
 	useEffect(() => {
 		if (selectedProductSageCode) {
 			const fetchProductData = async () => {
 				setBusy(true);
+                setProductData(null);
 				try {
 					const result = await getSingleProductBySageCode(
 						selectedProductSageCode,
@@ -117,7 +160,7 @@ export default function EditProductForm() {
 						setColorCode(data.color_code || "");
 						setSelectedType(String(data.Type || ""));
 						setSortOrder(String(data.sort_order || "")); // Use sort_order
-						setTaxClass(String(data.tax_class || "0"));
+						setTaxClassId(String(data.tax_class_id || "0"));
 
 						// Find color name for dropdown based on color_code
 						const foundColor = colorOptions.find(
@@ -149,7 +192,7 @@ export default function EditProductForm() {
 			setProductData(null);
 			resetFormStates();
 		}
-	}, [selectedProductSageCode, colorOptions]); // Add colorOptions to dependency array
+	}, [selectedProductSageCode, colorOptions]);
 
 	const resetFormStates = () => {
 		setColorCode("");
@@ -157,8 +200,9 @@ export default function EditProductForm() {
 		setSelectedType("");
 		setSortOrder("");
 		setCategory("");
-		setTaxClass("0");
+		setTaxClassId("0");
 		setColor(""); // Reset color name
+		setSearchTerm(""); // Reset search term
 		// Reset other form fields as needed
 	};
 
@@ -203,7 +247,7 @@ export default function EditProductForm() {
 		const fd = new FormData(form);
 
 		// Add taxClass to FormData manually if it's a controlled component and not directly named in the form
-		fd.set("tax_class", taxClass); // Ensure tax_class is in FormData
+		fd.set("tax_class_id", taxClassId); // Ensure tax_class_id is in FormData
 
 		// Normalize booleans (unchecked checkboxes won't appear in FormData)
 		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach((name: string) => {
@@ -222,6 +266,7 @@ export default function EditProductForm() {
 		}
 
 		console.log("Validating required fields for update:");
+        console.log("Values of validation object:", v);
 		required.forEach((field) => {
 			console.log(`- ${field}: "${fd.get(field)}"`);
 		});
@@ -259,7 +304,10 @@ export default function EditProductForm() {
 	}
 
 	const labelReq = (label: string, name?: string) => (
-		<label htmlFor={name} className="text-sm font-medium text-gray-700">
+		<label
+			htmlFor={name}
+			className="text-sm font-medium text-gray-700"
+		>
 			{label}{" "}
 			{required.includes(name as any) && (
 				<span className="text-red-600">*</span>
@@ -271,7 +319,10 @@ export default function EditProductForm() {
 		"block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500";
 
 	return (
-		<form onSubmit={onUpdate} className="bg-white p-6 rounded-2xl shadow space-y-6">
+		<form
+			onSubmit={onUpdate}
+			className="bg-white p-6 rounded-2xl shadow space-y-6"
+		>
 			<h2 className="text-xl font-semibold">Edit Product</h2>
 			<p className="text-sm text-gray-600">
 				Fields marked with <span className="text-red-600">*</span> are required.
@@ -279,36 +330,69 @@ export default function EditProductForm() {
 
 			{/* Product Selection for Editing */}
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-				<div>
+				<div className="relative" ref={dropdownRef}>
 					{labelReq("Select Product to Edit", "select_product_sage_code")}
-					<select
-						id="select_product_sage_code"
-						name="select_product_sage_code"
-						className={inputBase}
-						value={selectedProductSageCode}
-						onChange={(e) => setSelectedProductSageCode(e.target.value)}
-						disabled={sageOptions.length === 0 || busy}
-					>
-						<option value="" disabled>
-							{sageOptions.length > 0
-								? "Select SAGE Code"
-								: "Loading products..."}
-						</option>
-						{sageOptions.map((s) => (
-							<option key={s["Sage Code"]} value={s["Sage Code"]}>
-								{s["Sage Code"]} - {s["Product Name"]}
-							</option>
-						))}
-					</select>
+					<div className="flex flex-col">
+						<input
+							type="text"
+							className={inputBase}
+							placeholder={products.length > 0 ? "Search SAGE Code..." : "Loading products..."}
+							value={searchTerm}
+							onFocus={() => setIsDropdownOpen(true)}
+							onChange={(e) => {
+								setSearchTerm(e.target.value);
+								setIsDropdownOpen(true);
+							}}
+							disabled={products.length === 0 || busy}
+						/>
+						{isDropdownOpen && products.length > 0 && (
+							<div className="absolute z-50 w-full top-full mt-1 max-h-60 overflow-auto bg-white border border-gray-300 rounded-lg shadow-xl">
+								{(() => {
+									const filtered = products.filter((p) =>
+										p["SAGE Code"].toLowerCase().includes(searchTerm.toLowerCase())
+									);
+									
+									if (filtered.length === 0) {
+										return <div className="px-4 py-2 text-sm text-gray-500 italic">No matches found</div>;
+									}
+
+									return filtered.map((p) => (
+										<div
+											key={p["SAGE Code"]}
+											className="px-4 py-2 cursor-pointer hover:bg-blue-600 hover:text-white transition-colors text-sm"
+											onClick={() => {
+												setSelectedProductSageCode(p["SAGE Code"]);
+												setSearchTerm(p["SAGE Code"]);
+												setIsDropdownOpen(false);
+											}}
+										>
+											{p["SAGE Code"]} - {p["Product Name"]}
+										</div>
+									));
+								})()}
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 
+			{busy && !productData && (
+				<div className="flex flex-col items-center justify-center py-12 space-y-4 border-2 border-dashed border-gray-100 rounded-xl">
+					<FaSpinner className="h-8 w-8 animate-spin text-blue-600" />
+					<p className="text-sm text-gray-500 font-medium">Loading product data...</p>
+				</div>
+			)}
+
 			{productData && (
-				<>
+				<React.Fragment key={selectedProductSageCode}>
 					{/* Row: Sage Code / Product Name / Category */}
+					{/* 
+						Adding a key to the fragment above forces the entire block to remount 
+						whenever the selectedProductSageCode changes, resetting defaultValues. 
+					*/}
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
-							{labelReq("Sage Code", "sage_code")}
+							{labelReq("SAGE Code", "sage_code")}
 							<input
 								id="sage_code"
 								name="sage_code"
@@ -345,11 +429,17 @@ export default function EditProductForm() {
 								value={category}
 								onChange={(e) => setCategory(e.target.value)}
 							>
-								<option value="" disabled>
+								<option
+									value=""
+									disabled
+								>
 									Select a category
 								</option>
 								{GLOBAL_SUBCATEGORIES.map((cat) => (
-									<option key={cat} value={cat}>
+									<option
+										key={cat}
+										value={cat}
+									>
 										{cat}
 									</option>
 								))}
@@ -372,11 +462,17 @@ export default function EditProductForm() {
 								onChange={handleColorChange}
 								disabled={colorOptions.length === 0}
 							>
-								<option value="" disabled>
+								<option
+									value=""
+									disabled
+								>
 									{colorOptions.length > 0 ? "Select a color" : "Loading..."}
 								</option>
 								{colorOptions.map((c) => (
-									<option key={c.name} value={c.name}>
+									<option
+										key={c.name}
+										value={c.name}
+									>
 										{c.name}
 									</option>
 								))}
@@ -394,11 +490,17 @@ export default function EditProductForm() {
 								onChange={handleRelatedProductChange}
 								defaultValue={productData["Related Product Code"]} // Use defaultValue for initial render
 							>
-								<option value="" disabled>
+								<option
+									value=""
+									disabled
+								>
 									Select SAGE Code
 								</option>
 								{sageOptions.map((s) => (
-									<option key={s["Sage Code"]} value={s["Sage Code"]}>
+									<option
+										key={s["Sage Code"]}
+										value={s["Sage Code"]}
+									>
 										{s["Sage Code"]} - {s["Product Name"]}
 									</option>
 								))}
@@ -414,13 +516,13 @@ export default function EditProductForm() {
 					{/* Row: Tax Class (New Editable Field) */}
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
-							{labelReq("Tax Class", "tax_class")}
+							{labelReq("Tax Class", "tax_class_id")}
 							<select
-								id="tax_class"
-								name="tax_class"
+								id="tax_class_id"
+								name="tax_class_id"
 								className={inputBase}
-								value={taxClass}
-								onChange={(e) => setTaxClass(e.target.value)}
+								value={taxClassId}
+								onChange={(e) => setTaxClassId(e.target.value)}
 							>
 								<option value="0">0: Default Tax Class</option>
 								<option value="1">1: Non-Taxable Product</option>
@@ -428,8 +530,8 @@ export default function EditProductForm() {
 								<option value="3">3: Gift Wrapping</option>
 								<option value="4">4: Youth Tax</option>
 							</select>
-							{errors.tax_class && (
-								<p className="mt-1 text-xs text-red-600">{errors.tax_class}</p>
+							{errors.tax_class_id && (
+								<p className="mt-1 text-xs text-red-600">{errors.tax_class_id}</p>
 							)}
 						</div>
 					</div>
@@ -448,9 +550,7 @@ export default function EditProductForm() {
 								readOnly
 							/>
 							{errors.color_code && (
-								<p className="mt-1 text-xs text-red-600">
-									{errors.color_code}
-								</p>
+								<p className="mt-1 text-xs text-red-600">{errors.color_code}</p>
 							)}
 						</div>
 						<div>
@@ -464,9 +564,7 @@ export default function EditProductForm() {
 								placeholder="Auto-populated"
 							/>
 							{errors.sort_order && (
-								<p className="mt-1 text-xs text-red-600">
-									{errors.sort_order}
-								</p>
+								<p className="mt-1 text-xs text-red-600">{errors.sort_order}</p>
 							)}
 						</div>
 						<div>
@@ -498,9 +596,7 @@ export default function EditProductForm() {
 								readOnly
 							/>
 							{errors.brand_name && (
-								<p className="mt-1 text-xs text-red-600">
-									{errors.brand_name}
-								</p>
+								<p className="mt-1 text-xs text-red-600">{errors.brand_name}</p>
 							)}
 						</div>
 					</div>
@@ -528,14 +624,17 @@ export default function EditProductForm() {
 							</legend>
 							<div className="grid grid-cols-4 gap-2 text-sm">
 								{["xs", "sm", "md", "lg", "xl", "x2", "x3"].map((sz) => (
-									<label key={sz} className="flex items-center gap-2">
+									<label
+										key={sz}
+										className="flex items-center gap-2"
+									>
 										<input
 											type="checkbox"
 											name={sz}
 											value="true"
 											className="h-4 w-4"
 											defaultChecked={
-												productData[sz as keyof ProductData] as boolean
+												productData[sz.toUpperCase() as keyof ProductData] as boolean
 											}
 										/>
 										<span>{sz.toUpperCase()}</span>
@@ -552,7 +651,7 @@ export default function EditProductForm() {
 							disabled={busy}
 							className="rounded-lg bg-blue-600 px-5 py-2.5 text-white hover:bg-blue-700 disabled:bg-blue-300"
 						>
-							{busy ? "Updating…" : "Update Product"}
+							Update Product
 						</button>
 						<button
 							type="reset"
@@ -578,7 +677,7 @@ export default function EditProductForm() {
 							</span>
 						)}
 					</div>
-				</>
+				</React.Fragment>
 			)}
 		</form>
 	);

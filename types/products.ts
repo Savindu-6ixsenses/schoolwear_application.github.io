@@ -218,6 +218,8 @@ export interface StoreProduct {
 	product_status?: string;
 	color_code?: string;
 	type?: string;
+	sort_order?: number;
+	tax_class_id?: number;
 	// Size Variations Flags
 	XS?: boolean;
 	SM?: boolean;
@@ -238,6 +240,8 @@ export interface SupabaseProduct {
 	"Product Weight": number;
 	Category: string;
 	"Product Code/SKU": string;
+	sort_order: number;
+	tax_class_id: string;
 	size_variations: string;
 	naming_method?: string;
 	naming_fields?: { [key: string]: string };

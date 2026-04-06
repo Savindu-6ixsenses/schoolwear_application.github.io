@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { FaCopy } from "react-icons/fa";
+import { FaCopy, FaEdit } from "react-icons/fa"; // Import FaEdit
 import AddToList from "./AddToList";
+import { getUserRole } from "@/app/actions/userActions"; // Import getUserRole
 import { StoreProduct } from "@/types/products";
 import { GLOBAL_NAMING_METHODS, GLOBAL_SIZES } from "@/constants/products";
 import RemoveFromList from "./RemoveFromList";
@@ -34,6 +36,7 @@ const SingleRecord = ({
 	storeStatus,
 }: SingleRecordProps) => {
 	const { added_products } = useStoreState();
+	const router = useRouter();
 	// State to track selected sizes
 	const [selectedSizes, setSelectedSizes] = useState<{
 		[key: string]: boolean;
@@ -42,11 +45,21 @@ const SingleRecord = ({
 	type MethodKey = keyof typeof GLOBAL_NAMING_METHODS;
 
 	const [selectedMethod, setSelectedMethod] = useState<MethodKey>(
-		(item.naming_method as MethodKey) || "1"
+		(item.naming_method as MethodKey) || "1",
 	);
 	const [methodFields, setMethodFields] = useState<{ [key: string]: string }>(
-		item.naming_fields || {}
+		item.naming_fields || {},
 	);
+	const [isAdmin, setIsAdmin] = useState(false); // State to track admin status
+
+	// Check user role on component mount
+	useEffect(() => {
+		const checkAdmin = async () => {
+			const role = await getUserRole(); // Assuming getUserRole is a client-callable action
+			setIsAdmin(role === "admin");
+		};
+		checkAdmin();
+	}, []);
 
 	const [added_to_list, setAddedToList] = useState(item.isAdded || false);
 
@@ -67,9 +80,10 @@ const SingleRecord = ({
 
 	// Get the latest product status from the store state if available
 	const storedProduct = added_products[design_id]?.find(
-		(p) => p.sage_code === item.sageCode
+		(p) => p.sage_code === item.sageCode,
 	);
-	const currentProductStatus = storedProduct?.product_status || item.product_status;
+	const currentProductStatus =
+		storedProduct?.product_status || item.product_status;
 
 	// const handleFieldChange = (field: string, value: string) => {
 	// 	setMethodFields((prev) => ({
@@ -120,7 +134,7 @@ const SingleRecord = ({
 		detailsString += `\nNaming Method: Method ${selectedMethod}`;
 
 		const fieldEntries = Object.entries(methodFields).filter(
-			([, value]) => value
+			([, value]) => value,
 		);
 		if (fieldEntries.length > 0) {
 			detailsString += `\nFields:\n`;
@@ -149,12 +163,17 @@ const SingleRecord = ({
 		}
 	};
 
+	// Handler for the Edit button
+	const handleEditClick = () => {
+		router.push(`/admin/products?sageCode=${item.sageCode}`);
+	};
+
 	const sizes = GLOBAL_SIZES;
 
 	return (
 		<div className="border border-gray-300 rounded-lg shadow-md bg-white mb-2">
 			{/* Product Title */}
-			<div className="bg-gray-800 text-white px-4 py-2 rounded-t-md flex flex-row gap-3">
+			<div className="bg-gray-800 text-white px-4 py-2 rounded-t-md flex flex-row gap-3 items-center">
 				<h2 className="text-md font-semibold truncate">{item.productName}</h2>
 				<button
 					onClick={handleCopyDetails}
@@ -178,6 +197,15 @@ const SingleRecord = ({
 						>
 							{item.sageCode}
 						</button>
+						{isAdmin && ( // Conditionally render edit button for admins
+							<button
+								onClick={handleEditClick}
+								className="p-2 text-gray-200 rounded-md hover:text-gray-300 ml-auto" // ml-auto pushes it to the right
+								title="Edit product"
+							>
+								<FaEdit />
+							</button>
+						)}
 					</div>
 				</div>
 
@@ -238,7 +266,7 @@ const SingleRecord = ({
 								>
 									{size}
 								</button>
-							)
+							),
 					)}
 				</div>
 

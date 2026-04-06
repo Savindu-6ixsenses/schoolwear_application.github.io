@@ -6,10 +6,12 @@ import SingleAddForm from "./SingleAddForm";
 import BulkCsvUploader from "./BulkCsvUploader";
 import EditProductForm from "./EditProductForm";
 
-export default function ProductsManager() {
-	const [activeTab, setActiveTab] = useState<"single" | "bulk" | "color" | "edit">(
-		"single" // Default to 'single'
-	);
+export default function ProductsManager(params: {
+	sageCode: string | undefined;
+}) {
+	const [activeTab, setActiveTab] = useState<
+		"single" | "bulk" | "color" | "edit"
+	>(params.sageCode ? "edit" : "single");
 
 	return (
 		<div className="w-full max-w-5xl mx-auto">
@@ -62,7 +64,7 @@ export default function ProductsManager() {
 			{activeTab === "single" && <SingleAddForm />}
 			{activeTab === "bulk" && <BulkCsvUploader />}
 			{activeTab === "color" && <AddColorForm />}
-			{activeTab === "edit" && <EditProductForm />}
+			{activeTab === "edit" && <EditProductForm sageCode={params.sageCode} />}
 		</div>
 	);
 }

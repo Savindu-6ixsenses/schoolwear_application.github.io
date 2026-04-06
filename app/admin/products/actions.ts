@@ -63,7 +63,7 @@ export async function addSingleProduct(formData: FormData) {
 			Category: parsed.category,
 			created_by: user_id,
 			Type: parsed.type,
-			tax_class: parseInt(parsed.tax_class || "0"), // New: Add tax_class
+			tax_class_id: parseInt(parsed.tax_class_id || "0"), // New: Add tax_class_id
 			sort_order: parseInt(parsed.sort_order || "-1"), // New: Add sort_order
 		};
 
@@ -104,7 +104,7 @@ export async function addSingleProduct(formData: FormData) {
 		}
 		return {
 			ok: false,
-			message: "An unexpected error occurred. Please check the server logs.",
+			message: "An unexpected error occurred. Please check the server logs. 3",
 		};
 	}
 }
@@ -236,7 +236,7 @@ type ProductData = {
 	"Related Product Code": string;
 	Type: string | number;
 	sort_order: number;
-	tax_class: string;
+	tax_class_id: string;
 	"Product Description": string;
 	XS: boolean;
 	SM: boolean;
@@ -247,17 +247,29 @@ type ProductData = {
 	X3: boolean;
 };
 
+function getBaseSageCodeFromVariant(
+	sageCode: string,
+	colorCode?: string | null,
+): string {
+	const parts = sageCode.split("-");
+	if (parts.length <= 1) return sageCode;
+
+	return parts.slice(0, -1).join("-");
+}
+
 export async function getSingleProductBySageCode(
 	sageCode: string,
 ): Promise<{ ok: boolean; data?: ProductData; message?: string }> {
 	console.log(
 		`\n--- [Action: getSingleProductBySageCode] - Initiated for ${sageCode} ---`,
 	);
+
 	try {
 		const { supabase } = await createClientbyRole();
 		console.log(`[LOG] Fetching product with SAGE Code: ${sageCode}`);
 
-		const { data, error } = await supabase
+		// 1. Fetch from new_all_products_4
+		const { data: product, error: productError } = await supabase
 			.from("new_all_products_4")
 			.select(
 				`
@@ -266,39 +278,75 @@ export async function getSingleProductBySageCode(
 				Category,
 				"Brand Name",
 				color_code,
-				"Related Product Code",
 				Type,
 				sort_order,
-				tax_class,
+				tax_class_id,
 				"Product Description",
 				XS, SM, MD, LG, XL, X2, X3
-				`,
+			`,
 			)
-			.eq('"SAGE Code"', sageCode)
-			.single(); // Use .single() to get a single record or null
+			.eq("SAGE Code", sageCode)
+			.single();
 
-		if (error) {
-			console.error("[ERROR] Supabase error fetching single product:", error);
-			throw error;
+		if (productError) {
+			console.error("[ERROR] Supabase error fetching product:", productError);
+			throw productError;
 		}
 
-		if (!data) {
+		if (!product) {
 			console.warn(`[WARN] No product found for SAGE Code: ${sageCode}`);
 			return { ok: false, message: "Product not found." };
 		}
 
-		console.log(`[LOG] Successfully fetched product: ${data["Product Name"]}`);
+		// 2. Derive related/base code from variant code
+		const relatedProductCode = getBaseSageCodeFromVariant(
+			product["SAGE Code"],
+			product.color_code,
+		);
+
+		// 3. Fetch from most_selling_products
+		const { data: relatedProduct, error: relatedError } = await supabase
+			.from("most_selling_products")
+			.select(
+				`
+				"Sage Code",
+				"Product Name",
+				"Brand Name",
+				"Type",
+				"Sort Order"
+			`,
+			)
+			.eq("Sage Code", relatedProductCode)
+			.maybeSingle();
+
+		if (relatedError) {
+			console.error(
+				"[ERROR] Supabase error fetching related product:",
+				relatedError,
+			);
+			throw relatedError;
+		}
+
+		console.log(
+			`[LOG] Successfully fetched product: ${product["Product Name"]}`,
+		);
+		console.log(
+			`[LOG] Related product code resolved as: ${relatedProduct?.["Sage Code"] ?? relatedProductCode}`,
+		);
 		console.log(
 			"--- [Action: getSingleProductBySageCode] - Completed Successfully ---\n",
 		);
 
 		const mappedData: ProductData = {
-			...data,
-			"Related Product Code": data["Related Product Code"] || "",
-			tax_class: String(data.tax_class),
-			Type: data.Type || "",
-			sort_order: data.sort_order || 0,
+			...product,
+			"Related Product Code":
+				relatedProduct?.["Sage Code"] ?? relatedProductCode ?? "",
+			tax_class_id: String(product.tax_class_id ?? "0"),
+			Type: product.Type ?? "",
+			sort_order: product.sort_order ?? relatedProduct?.["Sort Order"] ?? 0,
 		};
+
+		console.log("[LOG] Mapped product data to return:", mappedData);
 
 		return { ok: true, data: mappedData };
 	} catch (error) {
@@ -306,12 +354,14 @@ export async function getSingleProductBySageCode(
 			"[FATAL] An error occurred in getSingleProductBySageCode action:",
 			error,
 		);
+
 		if (error instanceof Error) {
 			return { ok: false, message: error.message };
 		}
+
 		return {
 			ok: false,
-			message: "An unexpected error occurred. Please check the server logs.",
+			message: "An unexpected error occurred. Please check the server logs 2.",
 		};
 	}
 }
@@ -353,7 +403,7 @@ export async function updateSingleProduct(formData: FormData) {
 			"Product Description": parsed.product_description,
 			Type: parsed.type,
 			sort_order: parseInt(parsed.sort_order || "-1"),
-			tax_class: parseInt(parsed.tax_class || "0"),
+			tax_class_id: parseInt(parsed.tax_class_id || "0"),
 			XS: parsed.xs,
 			SM: parsed.sm,
 			MD: parsed.md,
@@ -402,7 +452,37 @@ export async function updateSingleProduct(formData: FormData) {
 		}
 		return {
 			ok: false,
-			message: "An unexpected error occurred. Please check the server logs.",
+			message: "An unexpected error occurred. Please check the server logs. 1",
+		};
+	}
+}
+
+export async function getAllProductSageCodes() {
+	console.log("\n--- [Action: getAllProductSageCodes] - Initiated ---");
+	try {
+		const { supabase } = await createClientbyRole();
+		console.log(
+			`[LOG] Fetching all SAGE Codes from "new_all_products_4" table.`,
+		);
+
+		const { data, error } = await supabase // Fetch Product Name along with Sage Code
+			.from("new_all_products_4")
+			.select('"SAGE Code", "Product Name"')
+			.order('"Product Name"', { ascending: true });
+
+		if (error) {
+			console.error("[ERROR] Supabase error fetching all products:", error);
+			throw error;
+		}
+
+		console.log(`[LOG] Successfully fetched ${data.length} products.`);
+		console.log("--- [Action: getAllProducts] - Completed Successfully ---\n");
+		return { ok: true, data };
+	} catch (error) {
+		console.error("[FATAL] An error occurred in getAllProducts action:", error);
+		return {
+			ok: false,
+			message: "Failed to fetch products. Please check the server logs.",
 		};
 	}
 }

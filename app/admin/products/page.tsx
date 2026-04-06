@@ -1,9 +1,13 @@
-import ProductsManager from './ProductsManager';
+import ProductsManager from "./ProductsManager";
 
-export default function Page() {
-  return (
-    <div className="p-6">
-      <ProductsManager />
-    </div>
-  );
+export default function Page({
+	searchParams,
+}: {
+	searchParams: { sageCode?: string };
+}) {
+	return (
+		<div className="p-6">
+			<ProductsManager sageCode={searchParams.sageCode} />
+		</div>
+	);
 }
