@@ -206,6 +206,8 @@ export const getStoreProducts = async (
 					product_status: product["product_status"],
 					color_code: product["color_code"],
 					type: product["type"],
+					sort_order: product["sort_order"],
+					tax_class_id: product["tax_class_id"],
 				})
 			);
 

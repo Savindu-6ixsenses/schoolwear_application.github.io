@@ -144,6 +144,9 @@ export const createBigCommerceProducts = async (
 					product.sku ? product.sku : "N/A",
 					product.variants
 				);
+				// TODO: Remove following part after testing
+				console.log(`Successfully created product: ${product.name} with SKU: ${product.sku} with following payload: \n`, product);
+				// console.log("Response from BigCommerce:", response.data);
 
 				// After successful creation, update the database record
 				if (_product.db_identifiers && response.data.id && response.data.sku) {

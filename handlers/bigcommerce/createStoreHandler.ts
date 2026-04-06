@@ -35,6 +35,9 @@ export const handleCreateStore = async (
 
 		const storeProductsList = await getStoreProducts(store.store_code);
 
+		// Log the fetched products for debugging
+		console.log("Fetched Products:", storeProductsList);
+
 		// If the store is being modified, fetch existing sage codes to avoid duplicates.
 		let createdSKUs: string[] = [];
 		if (store.status === "Modify") {
@@ -200,10 +203,10 @@ export const handleCreateStore = async (
 		
 		// save the current offset number for future use
 		console.log("[handleCreateStore] Saving final offset number:", currentOffset);
-		await updateMaxOffset(store.store_code, currentOffset);
+		// await updateMaxOffset(store.store_code, currentOffset);
 
 		// update store status to Approved after processing all batches
-		await updateStoreStatus(store.store_code, "Approved");
+		// await updateStoreStatus(store.store_code, "Approved");
 
 		logger.logStoreStatusUpdate("Approved");
 

@@ -323,7 +323,9 @@ export const getProductConfigs = async (
 				brand_name: product.brandName || "Default Brand", // Use the brand name or default
 				inventory_level: 100, // Default inventory
 				// is_visible: product.isAdded, // Map directly to is_visible
-				is_visible: false, //TODO0: Default to false, adjust if necessary
+				is_visible: false, //TODO: Default to false, adjust if necessary
+				sort_order: product.sort_order || 0, // Use sort_order and color code for sorting
+				tax_class_id: product.tax_class_id || 0, // Default tax class ID
 				page_title: `${product.productName} | SchoolWear.ca`, // Generate a page title
 				custom_url: {
 					url: `/${newSKU || "default-product"}`, // Generate a URL

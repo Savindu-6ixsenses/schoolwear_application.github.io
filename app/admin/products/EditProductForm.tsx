@@ -286,6 +286,13 @@ export default function EditProductForm(params: {
 				setMessage({ type: "success", text: "Product updated successfully." });
 				// Optionally, re-fetch the updated product data or clear selection
 				setSelectedProductSageCode(""); // Clear selection to reset form
+				// If params are there that means user came from a link with sage code, so we can let the user redirect back to their store after update.
+				if (params.sageCode) {
+					// Go back to the previous page after a short delay to show the success message
+					setTimeout(() => {
+						window.history.back();
+					}, 1500);
+				}
 			} else {
 				setMessage({
 					type: "error",
@@ -332,7 +339,7 @@ export default function EditProductForm(params: {
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<div className="relative" ref={dropdownRef}>
 					{labelReq("Select Product to Edit", "select_product_sage_code")}
-					<div className="flex flex-col">
+					<div className="flex flex-col pt-2">
 						<input
 							type="text"
 							className={inputBase}
@@ -373,6 +380,17 @@ export default function EditProductForm(params: {
 							</div>
 						)}
 					</div>
+					{!productData && (<div className="pt-2 pl-2">{message && (
+							<span
+								className={
+									message.type === "success"
+										? "text-green-700 text-sm"
+										: "text-red-600 text-sm"
+								}
+							>
+								{message.text}
+							</span>
+						)}</div>)}
 				</div>
 			</div>
 
