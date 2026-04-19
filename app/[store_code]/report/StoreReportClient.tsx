@@ -25,7 +25,10 @@ import { discardUpdates } from "@/services/stores/storeServices-Server";
 import { useRouter } from "next/navigation";
 import EditableProductName from "@/app/components/EditableProductName";
 
-// Helper to fetch a signed URL from your API
+/**
+ * Requests a short-lived signed URL for files that are no longer available locally.
+ * The caller is responsible for caching the result long enough to avoid redundant requests.
+ */
 const fetchSignedUrl = async (type: "log" | "report", storeCode: string) => {
 	const res = await fetch(
 		`/api/get-signed-url?type=${type}&storeCode=${storeCode}`
@@ -66,10 +69,9 @@ const StoreReportClient = ({
 		Object.values(added_products).flat();
 
 	useEffect(() => {
-		// If store is not initialized, fetch initial data
+		// The store state is shared across report interactions, so we only bootstrap it once per code.
 		if (!isInitialized && storeCode) {
 			setStore(storeCode);
-			// Initialize products and categories
 		}
 	}, [isInitialized, storeCode, setStore]);
 
@@ -78,7 +80,7 @@ const StoreReportClient = ({
 		if (success) {
 			toast.success("Store Creation log downloaded successfully.");
 		} else {
-			// Not in local, try to get from Supabase
+			// Signed URLs expire, so we only reuse one while its local TTL is still valid.
 			const now = Date.now();
 			if (logUrl && logUrlExpiry && now < logUrlExpiry) {
 				window.open(logUrl, "_blank");
@@ -98,7 +100,7 @@ const StoreReportClient = ({
 		if (success) {
 			toast.success("Store Report downloaded successfully.");
 		} else {
-			// Not in local, try to get from Supabase
+			// Reports use the same short-lived fallback path as logs when no local file exists.
 			const now = Date.now();
 			if (reportUrl && reportUrlExpiry && now < reportUrlExpiry) {
 				window.open(reportUrl, "_blank");
@@ -115,6 +117,7 @@ const StoreReportClient = ({
 
 	const handleDiscardUpdates = async () => {
 		try {
+			// This rolls the store back to its last persisted state before the current modify session.
 			await discardUpdates(storeCode);
 			toast.success("Store updates discarded successfully.");
 			router.refresh();
@@ -129,6 +132,7 @@ const StoreReportClient = ({
 	};
 
 	const getProductStatusColor = (status?: string) => {
+		// Keep badge colors aligned with the product workflow statuses used elsewhere in the PL flow.
 		switch (status) {
 			case "new":
 				return "bg-blue-100";
@@ -255,6 +259,7 @@ const StoreReportClient = ({
 													variant="outline"
 													className="ml-2"
 												>
+													{/* Design guideline is stored per grouped design, so the first product carries the shared value. */}
 													Guideline: {products[0].designGuideline}
 												</Badge>
 												<Button
@@ -381,6 +386,7 @@ const StoreReportClient = ({
 						Download Report
 					</Button>
 					{store.status === "Modify" && (
+						// Only stores in modify mode can abandon a draft and revert pending edits.
 						<div
 							className="flex justify-center items-center mt-3 mr-3 bg-red-700 shadow-md text-white w-32 h-12 rounded-md cursor-pointer"
 							onClick={handleDiscardUpdates}

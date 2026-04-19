@@ -3,6 +3,10 @@
 import { productSchema } from "@/lib/products/productSchema";
 import { createClientbyRole } from "@/utils/adminHelper";
 
+/**
+ * Creates a single catalog variant in `new_all_products_4` and records the action
+ * in `import_logs` so manual inserts show up in the same audit trail as bulk imports.
+ */
 export async function addSingleProduct(formData: FormData) {
 	console.log("\n--- [Action: addSingleProduct] - Initiated ---");
 	try {
@@ -17,7 +21,7 @@ export async function addSingleProduct(formData: FormData) {
 		});
 		console.log("[LOG] Data after Zod parsing and normalization:", parsed);
 
-		// Duplicate check
+		// Variant rows are treated as unique by SAGE Code in this flow, even though the UI message still mentions SKU.
 		console.log(
 			`[LOG] Checking for duplicates with SAGE Code: ${parsed.sage_code} OR SKU: ${parsed.sku}`,
 		);
@@ -41,7 +45,7 @@ export async function addSingleProduct(formData: FormData) {
 		}
 		console.log("[LOG] No duplicates found. Proceeding with insert.");
 
-		// Map the parsed data to the correct database column names
+		// The variant display name is persisted as "<product>-<color>" because downstream listings expect the color suffix.
 		const dataToInsert = {
 			"Item Type": "Product",
 			"Product Name": parsed.product_name + "-" + parsed.color,
@@ -109,6 +113,10 @@ export async function addSingleProduct(formData: FormData) {
 	}
 }
 
+/**
+ * Adds a reusable color code entry for product forms.
+ * Codes are normalized to uppercase before persistence so the dropdown values stay consistent.
+ */
 export async function addColor(formData: FormData) {
 	console.log("\n--- [Action: addColor] - Initiated ---");
 	try {
@@ -162,6 +170,9 @@ export async function addColor(formData: FormData) {
 	}
 }
 
+/**
+ * Returns colors in a frontend-friendly shape instead of the legacy table column names.
+ */
 export async function getAllColors() {
 	console.log("\n--- [Action: getAllColors] - Initiated ---");
 	try {
@@ -247,6 +258,10 @@ type ProductData = {
 	X3: boolean;
 };
 
+/**
+ * Derives the parent SAGE code from a variant code by removing the trailing segment.
+ * This assumes color variants are encoded as the final hyphen-delimited token.
+ */
 function getBaseSageCodeFromVariant(
 	sageCode: string,
 	colorCode?: string | null,
@@ -257,6 +272,10 @@ function getBaseSageCodeFromVariant(
 	return parts.slice(0, -1).join("-");
 }
 
+/**
+ * Loads an editable product row and enriches it with parent-product metadata from
+ * `most_selling_products` so readonly fields can still be shown in the edit form.
+ */
 export async function getSingleProductBySageCode(
 	sageCode: string,
 ): Promise<{ ok: boolean; data?: ProductData; message?: string }> {
@@ -298,7 +317,7 @@ export async function getSingleProductBySageCode(
 			return { ok: false, message: "Product not found." };
 		}
 
-		// 2. Derive related/base code from variant code
+		// The edit screen needs the base product even when only the variant code is stored on the row.
 		const relatedProductCode = getBaseSageCodeFromVariant(
 			product["SAGE Code"],
 			product.color_code,
@@ -341,6 +360,7 @@ export async function getSingleProductBySageCode(
 			...product,
 			"Related Product Code":
 				relatedProduct?.["Sage Code"] ?? relatedProductCode ?? "",
+			// Form controls expect strings and concrete defaults even when legacy rows have null numeric fields.
 			tax_class_id: String(product.tax_class_id ?? "0"),
 			Type: product.Type ?? "",
 			sort_order: product.sort_order ?? relatedProduct?.["Sort Order"] ?? 0,
@@ -366,6 +386,10 @@ export async function getSingleProductBySageCode(
 	}
 }
 
+/**
+ * Updates the existing product row identified by the original SAGE code.
+ * The action preserves SAGE Code identity even if editable form fields are changed.
+ */
 export async function updateSingleProduct(formData: FormData) {
 	console.log("\n--- [Action: updateSingleProduct] - Initiated ---");
 	try {
@@ -383,8 +407,7 @@ export async function updateSingleProduct(formData: FormData) {
 		const values = Object.fromEntries(formData.entries());
 		console.log("[LOG] Raw form data received for update:", values);
 
-		// Assuming productSchema can also validate for updates, or a separate schema is used.
-		// For now, using the same schema.
+		// Updates reuse the create schema, but the persisted key must stay anchored to the original row.
 		const parsed = productSchema.parse({
 			...values,
 			sage_code: originalSageCode, // Ensure the sage_code for parsing is the original one

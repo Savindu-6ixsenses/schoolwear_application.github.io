@@ -10,6 +10,10 @@ export const useStoreCategories = (
 } => {
 	const [added_category_list, setAddedCategoryList] = useState<string[]>([]);
 
+	/**
+	 * Fetches the categories already associated with the current store so product
+	 * filtering and category pickers can reflect persisted store state.
+	 */
 	const fetchStoreCategories = async () => {
 		const response = await fetch("/api/initial_fetch/get_store_categories", {
 			method: "POST",
@@ -29,6 +33,7 @@ export const useStoreCategories = (
 	};
 
 	useEffect(() => {
+		// The initial category snapshot is loaded once; callers must update local state manually after in-page edits.
 		fetchStoreCategories()
 			.then((data) => {
 				setAddedCategoryList(data.relatedCategories);

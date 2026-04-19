@@ -13,6 +13,9 @@ export default function AddColorForm() {
 		text: string;
 	} | null>(null);
 
+	/**
+	 * Mirrors the server-required fields so obvious omissions are caught before the round trip.
+	 */
 	const validate = (fd: FormData) => {
 		const e: FieldError = {};
 		if (!String(fd.get("colour") ?? "").trim()) {
@@ -119,7 +122,7 @@ export default function AddColorForm() {
 				</div>
 			</div>
 
-			{/* Actions */}
+			{/* Keep reset local so we do not clear server feedback by remounting the whole form. */}
 			<div className="flex items-center gap-3">
 				<button
 					type="submit"

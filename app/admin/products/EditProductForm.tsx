@@ -60,6 +60,11 @@ type ProductData = {
 	// Add other fields as necessary from new_all_products_4
 };
 
+/**
+ * Edit flow for existing product variants.
+ * The form hydrates readonly metadata from related catalog tables so admins can update
+ * mutable fields without re-entering parent-product details by hand.
+ */
 export default function EditProductForm(params: {
 	sageCode: string | undefined;
 }) {
@@ -131,7 +136,7 @@ export default function EditProductForm(params: {
 		fetchData();
 	}, []);
 
-	// Initialize from props if sageCode is provided via URL/Params
+	// A deep-linked SAGE code should open directly into edit mode without requiring another search.
 	useEffect(() => {
 		if (params.sageCode && !selectedProductSageCode) {
 			setSelectedProductSageCode(params.sageCode);
@@ -139,7 +144,7 @@ export default function EditProductForm(params: {
 		}
 	}, [params.sageCode]);
 
-	// Effect to load product data when selectedProductSageCode changes
+	// Reloading on color option changes lets us resolve the stored color code back to its display name.
 	useEffect(() => {
 		if (selectedProductSageCode) {
 			const fetchProductData = async () => {
@@ -194,6 +199,9 @@ export default function EditProductForm(params: {
 		}
 	}, [selectedProductSageCode, colorOptions]);
 
+	/**
+	 * Clears derived, readonly fields so stale metadata is not shown while switching products.
+	 */
 	const resetFormStates = () => {
 		setColorCode("");
 		setBrandName("");
@@ -246,10 +254,10 @@ export default function EditProductForm(params: {
 		const form = e.currentTarget;
 		const fd = new FormData(form);
 
-		// Add taxClass to FormData manually if it's a controlled component and not directly named in the form
+		// Controlled selects may not survive all reset paths, so we force the current tax class into the payload.
 		fd.set("tax_class_id", taxClassId); // Ensure tax_class_id is in FormData
 
-		// Normalize booleans (unchecked checkboxes won't appear in FormData)
+		// Unchecked size boxes are absent from FormData; the schema expects explicit falsey values.
 		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach((name: string) => {
 			if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
 		});
@@ -262,6 +270,7 @@ export default function EditProductForm(params: {
 			currentCategory !== "Accessories" &&
 			!sizes.some((sz) => fd.get(sz) === "true")
 		) {
+			// Accessories are the only category allowed to exist without any size flags.
 			v["sizes"] = "At least one size is required.";
 		}
 
@@ -284,11 +293,9 @@ export default function EditProductForm(params: {
 			const result = await updateSingleProduct(fd); // New action
 			if (result.ok) {
 				setMessage({ type: "success", text: "Product updated successfully." });
-				// Optionally, re-fetch the updated product data or clear selection
 				setSelectedProductSageCode(""); // Clear selection to reset form
-				// If params are there that means user came from a link with sage code, so we can let the user redirect back to their store after update.
+				// Deep-linked edits usually come from another screen, so we return the user there after a visible success state.
 				if (params.sageCode) {
-					// Go back to the previous page after a short delay to show the success message
 					setTimeout(() => {
 						window.history.back();
 					}, 1500);
@@ -404,10 +411,7 @@ export default function EditProductForm(params: {
 			{productData && (
 				<React.Fragment key={selectedProductSageCode}>
 					{/* Row: Sage Code / Product Name / Category */}
-					{/* 
-						Adding a key to the fragment above forces the entire block to remount 
-						whenever the selectedProductSageCode changes, resetting defaultValues. 
-					*/}
+					{/* Remounting resets uncontrolled `defaultValue` fields when the selected product changes. */}
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
 							{labelReq("SAGE Code", "sage_code")}

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import SchoolFormTabs from "./components/SchoolForm2";
+import SchoolFormTabs from "./components/SchoolForm";
 
 export default function Home() {
 

@@ -59,19 +59,26 @@ import { revalidatePath } from "next/cache";
 // 	return [normalizedProducts, totalPages];
 // }
 
+/**
+ * Normalizes the next product-list workflow state before persisting it.
+ * "approve" is treated as terminal, while any other non-modify input falls back to
+ * "Pending" so the list can be reviewed again.
+ */
 export async function generate_pl(store_code: string, store_status: string) {
 	let _status = store_status.toLowerCase();
 	if (_status === "modify") {
 		_status = "Modify";
 	} else if (_status === "approve") {
+		// Approved lists are locked from regeneration to avoid overwriting a finalized PL.
 		throw new Error(
 			"Product List has already been approved. Cannot generate again.",
 		);
 	} else {
+		// Unknown or empty statuses re-enter the review flow instead of preserving stale values.
 		_status = "Pending";
 	}
 
-	// Check whether the store contact details are complete
+	// Store generation depends on contact details because downstream docs use them.
 	if (await checkContactDetailsExist(store_code)) {
 		const store_data = await updateStoreStatus(store_code, _status);
 		return store_data;
@@ -80,6 +87,10 @@ export async function generate_pl(store_code: string, store_status: string) {
 	}
 }
 
+/**
+ * Clears the cached store list so mutations made from the report screen are visible
+ * when the user navigates back to the list view.
+ */
 export async function revalidateStoreList() {
 	revalidatePath("/list");
 }

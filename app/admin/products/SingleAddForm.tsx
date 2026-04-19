@@ -26,6 +26,11 @@ type SageOption = {
 	"Sort Order": number | null;
 };
 
+/**
+ * Single-product entry flow for creating one product variant at a time.
+ * Related product selection drives readonly catalog metadata so admins do not
+ * manually type values that should stay aligned with the base product.
+ */
 export default function SingleAddForm() {
 	const [busy, setBusy] = useState(false);
 	const [errors, setErrors] = useState<FieldError>({});
@@ -75,7 +80,7 @@ export default function SingleAddForm() {
 		setColorCode(selectedColor?.code ?? "");
 	};
 
-	// Handler for sage dropdown change
+	// Selecting the related/base product copies catalog-controlled fields into the new variant.
 	const handleSageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const selectedSage = e.target.value;
 		const option = sageOptions.find((s) => s["Sage Code"] === selectedSage);
@@ -103,10 +108,10 @@ export default function SingleAddForm() {
 		const form = e.currentTarget;
 		const fd = new FormData(form);
 
-		// Add taxClass to FormData manually if it's a controlled component and not directly named in the form
+		// Controlled selects may not survive all reset paths, so we force the current tax class into the payload.
 		fd.set("tax_class_id", taxClassId); // Ensure tax_class is in FormData
 
-		// Normalize booleans (unchecked checkboxes won't appear in FormData)
+		// Unchecked size boxes are absent from FormData; the schema expects explicit falsey values.
 		["xs", "sm", "md", "lg", "xl", "x2", "x3"].forEach((name: string) => {
 			if (!fd.has(name)) fd.set(name, ""); // Set to '0' for false
 			// Zod treats any non-empty string as true
@@ -122,6 +127,7 @@ export default function SingleAddForm() {
 			currentCategory !== "Accessories" &&
 			!sizes.some((sz) => fd.get(sz) === "true")
 		) {
+			// Accessories are the only category allowed to exist without any size flags.
 			v["sizes"] = "At least one size is required.";
 		}
 

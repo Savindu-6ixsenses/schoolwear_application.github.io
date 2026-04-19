@@ -7,6 +7,10 @@ export function useProductsQueryState(defaults: Partial<ProductsQuery> = {}) {
   const router = useRouter();
   const sp = useSearchParams();
 
+  /**
+   * Normalizes URL params into the query shape expected by the product hooks so the
+   * page can be deep-linked and refreshed without losing filter state.
+   */
   const query: ProductsQuery = useMemo(() => ({
     store_code: defaults.store_code ?? "",
     designId: sp.get("designId"),
@@ -21,6 +25,7 @@ export function useProductsQueryState(defaults: Partial<ProductsQuery> = {}) {
 
     if (next.designId !== undefined) {
       next.designId ? params.set("designId", next.designId) : params.delete("designId");
+      // Switching designs invalidates the current result window, so pagination resets to the first page.
       params.set("page", "1");
     }
 
@@ -31,6 +36,7 @@ export function useProductsQueryState(defaults: Partial<ProductsQuery> = {}) {
     if (next.categories !== undefined) {
       params.delete("category");
       next.categories.forEach((c) => params.append("category", c));
+      // Category filters can shrink the result set, so keeping the old page risks landing on an empty page.
       params.set("page", "1");
     }
 

@@ -1,5 +1,8 @@
 import ProductsManager from "./ProductsManager";
 
+/**
+ * Passes through an optional deep-link SAGE code so the manager can open directly in edit mode.
+ */
 export default function Page({
 	searchParams,
 }: {

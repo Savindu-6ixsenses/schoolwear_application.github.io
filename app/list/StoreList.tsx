@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
-import ListItem from "./ListItem";
+import ListItem from "../components/ListItem";
 import { StoreSummary } from "@/types/store";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 

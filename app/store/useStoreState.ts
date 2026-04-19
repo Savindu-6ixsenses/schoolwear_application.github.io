@@ -1,4 +1,10 @@
 // store/useStoreState.ts
+/**
+ * Central client-side workspace for the active store-creation flow.
+ * This Zustand store keeps the selected store metadata, grouped products,
+ * related categories, and design items in sync across report and editing screens,
+ * while persisting enough local state to survive navigation within the app.
+ */
 import { fetchStore } from "@/services/stores";
 import { DesignView } from "@/types/designs";
 import { StoreProductReport } from "@/types/products";
@@ -76,7 +82,7 @@ export const useStoreState = create<StoreState>()(
 						},
 					});
 
-					// Add category if not present
+					// Category filters are built from the in-memory product set, so new categories must be added eagerly.
 					const categories = get().category_list;
 					if (!categories.includes(product.category)) {
 						set({ category_list: [...categories, product.category] });
@@ -111,6 +117,10 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
+			/**
+			 * Re-initializes the persisted store workspace for the requested store code.
+			 * Switching stores clears the previous store's cached products/designs before fresh data is loaded.
+			 */
 			setStore: async (store_code: string) => {
 				const currentStoreCode = get().store.store_code;
 				const newStoreCode = store_code;
@@ -124,7 +134,7 @@ export const useStoreState = create<StoreState>()(
 					get().resetStoreState(); // wipes previous data
 				}
 
-				// Always fetch store details to ensure freshness
+				// Store metadata is always re-fetched so persisted local state does not outlive server changes.
 				const store = await fetchStore(newStoreCode);
 				if (!store) {
 					console.error(`[Zustand] Failed to fetch store: ${newStoreCode}`);
@@ -134,6 +144,7 @@ export const useStoreState = create<StoreState>()(
 
 				set({ isInitialized: false });
 				try {
+					// The store is not considered usable until products, categories, and designs have all been hydrated.
 					await Promise.all([
 						get().initializeProductsFromServer(newStoreCode),
 						get().loadInitialCategoryList(newStoreCode),
@@ -171,6 +182,10 @@ export const useStoreState = create<StoreState>()(
 				}
 			},
 
+			/**
+			 * Clears the persisted workspace back to an empty shell.
+			 * This is primarily used when navigating between store codes to avoid mixing data across stores.
+			 */
 			resetStoreState: () => {
 				set({
 					store: {
@@ -232,14 +247,14 @@ export const useStoreState = create<StoreState>()(
 
 					set({ added_products: designItems });
 					
-					// Handle case where there are no products at initialization
+					// An empty product payload means the store should start with no derived categories.
 					if (Object.keys(designItems).length === 0) {
 						console.warn("[Zustand] No products found for the store");
 						set({ category_list: [] }); // Reset categories if no products
 						return;
 					}
 
-					// Collect unique categories from products
+					// Categories are derived from the loaded product payload so filters match what is actually present.
 					const categorySet = new Set<string>();
 					Object.values(designItems).forEach((value) => {
 						if (Array.isArray(value)) {
@@ -294,6 +309,7 @@ export const useStoreState = create<StoreState>()(
 		}),
 		{
 			name: "store-state", // localStorage key
+			// Initialization is intentionally transient so each page load can revalidate server-backed data.
 			partialize: (state) => ({ ...state, isInitialized: false }),
 			onRehydrateStorage: () => {
 				console.log("[Zustand] Hydration starting");

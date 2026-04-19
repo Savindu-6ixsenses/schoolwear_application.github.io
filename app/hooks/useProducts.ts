@@ -19,6 +19,7 @@ export function useProducts(q: {
   q: string | null;
   categories: string[];
 }): UseQueryResult<ProductsResponse, Error> {
+  // Design "0" is treated as "no design selected", so we suppress the fetch until a real design is chosen.
   const enabled = !!q.store_code && !!q.designId && q.designId !== "0";
 
   return useQuery<ProductsResponse, Error, ProductsResponse, (string | number | null)[]>({
@@ -29,6 +30,7 @@ export function useProducts(q: {
       q.page,
       q.pageSize,
       q.q,
+      // Sorting keeps equivalent category selections on the same cache key regardless of click order.
       q.categories.slice().sort().join(","),
     ],
     queryFn: () =>

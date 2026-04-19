@@ -41,6 +41,9 @@ export default function BulkCsvUploader() {
 	};
 
 	/* --------------------------------- Helpers -------------------------------- */
+	/**
+	 * Rejects non-CSV files client-side so we do not spend an upload on a file the API will refuse anyway.
+	 */
 	const handleFile = (f: File) => {
 		if (!f.name.toLowerCase().endsWith(".csv")) {
 			setMessage({ type: "error", text: "Only .csv files are allowed." });
@@ -56,6 +59,10 @@ export default function BulkCsvUploader() {
 		if (f) handleFile(f);
 	};
 
+	/**
+	 * Generates the canonical import headers locally so admins always start from the exact shape
+	 * the bulk endpoint expects, even when offline from storage.
+	 */
 	const downloadTemplate = () => {
 		const header = [
 			"Item Type",
@@ -114,6 +121,10 @@ export default function BulkCsvUploader() {
 	};
 
 	/* ---------------------------------- Upload -------------------------------- */
+	/**
+	 * Delegates validation and insertion to the API route because the import can produce
+	 * per-row outcomes and an error CSV that would be awkward to model as a server action.
+	 */
 	const uploadToApiRoute = async () => {
 		if (!file) return;
 		setBusy(true);
@@ -352,6 +363,7 @@ export default function BulkCsvUploader() {
 
 							{errorCsvUrl && (
 								<div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
+									{/* Partial success is expected here: valid rows can insert while failed rows are exported for correction. */}
 									Some rows need fixes.{" "}
 									<a
 										href={errorCsvUrl}

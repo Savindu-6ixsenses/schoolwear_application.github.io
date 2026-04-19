@@ -19,6 +19,12 @@ import {
 	updateProductDesignStatus,
 } from "@/services/bigCommerce/products/bigCommerceProductServices";
 
+/**
+ * Orchestrates the full BigCommerce store publish flow for a prepared store workspace.
+ * This includes creating the storefront container, deriving product operations from the
+ * persisted store data, executing those operations in the required order, and recording
+ * both logs and report data for downstream auditing.
+ */
 export const handleCreateStore = async (
 	store: StoreCreationProps,
 	category_list: string[],
@@ -38,7 +44,7 @@ export const handleCreateStore = async (
 		// Log the fetched products for debugging
 		console.log("Fetched Products:", storeProductsList);
 
-		// If the store is being modified, fetch existing sage codes to avoid duplicates.
+		// Modify mode reuses an existing BigCommerce store, so we pre-load live SKUs to avoid recreating products.
 		let createdSKUs: string[] = [];
 		if (store.status === "Modify") {
 			createdSKUs = await getExistingSKUs(store.store_code);
@@ -58,7 +64,7 @@ export const handleCreateStore = async (
 			logger,
 		);
 
-		// --- PRODUCT CREATION & LOGGING ---
+		// Configs are grouped by design first so reporting can preserve the same structure the UI shows.
 		const processedProductsByDesign: Record<string, productConfig[]> = {};
 
 		console.log(
@@ -66,6 +72,7 @@ export const handleCreateStore = async (
 		);
 
 		const batches: productConfig[][] = [];
+		// Offsets are threaded across designs so generated product ordering stays globally unique within the store.
 		let currentOffset = store.maximum_offset || 1;
 
 		// print the storeProductsList keys + Values
@@ -96,7 +103,7 @@ export const handleCreateStore = async (
 			currentOffset = nextOffset;
 		}
 
-		// --- REPORT GENERATION: Add all products to report, regardless of creation success ---
+		// Reporting happens before API writes so the final report reflects the attempted payload, not only successful creates.
 		reportGenerator.processProductData(processedProductsByDesign);
 
 		let totalSuccessCount = 0;
@@ -106,7 +113,7 @@ export const handleCreateStore = async (
 			`[handleCreateStore] Starting to process ${batches.length} batches.`,
 		);
 		for (const batch of batches) {
-			// Separate the products which doesn't involve variant or remove variant actions
+			// Each config category maps to a different BigCommerce operation, so we split them before execution.
 			const productCreationBatch = batch.filter(
 				(p) => p.category !== "variant" && p.category !== "remove_variant" && p.category !== "remove_product",
 			);
@@ -128,7 +135,7 @@ export const handleCreateStore = async (
 				\n${variantAdditionBatch.length} variants to add.`,
 			);
 			
-			// Process product removals
+			// Full product removals happen first so stale catalog entries do not conflict with recreated replacements.
 			if (productRemovalBatch.length > 0) {
 				console.log("[handleCreateStore] Processing product removals...");
 				const { successCount: removeSuccess, failedCount: removeFailed } =
@@ -145,7 +152,7 @@ export const handleCreateStore = async (
 			totalFailedCount = totalFailedCount + failedCount;
 
 
-			// Process variant removals first
+			// Variant deletions must run before additions so size changes do not collide with existing option values.
 			if (variantRemovalBatch.length > 0)
 				console.log("[handleCreateStore] Processing variant removals...");
 			for (const variantConfig of variantRemovalBatch) {
@@ -182,7 +189,7 @@ export const handleCreateStore = async (
 						`  - Variant '${sizeLabel}' for product ${productId} processed for addition.`,
 					);
 
-					// After adding the variant, update the product status back to 'added'
+					// Successful variant syncs clear the temporary modify-state marker stored against the design/product row.
 					if (variantConfig.db_identifiers) {
 						await updateProductDesignStatus(
 							variantConfig.db_identifiers,
@@ -192,7 +199,7 @@ export const handleCreateStore = async (
 					}
 				} catch (e: any) {
 					logger.addEntry("ERROR", `Failed to add variant: ${e.message}`);
-					// Note: You might want to mark the product as 'rejected' here if a variant fails.
+					// Variant failures are logged and the batch continues so one bad size does not abort the whole store publish.
 				}
 			}
 		}
@@ -201,12 +208,12 @@ export const handleCreateStore = async (
 			"[handleCreateStore] All batches processed. Updating store status to 'Approved'.",
 		);
 		
-		// save the current offset number for future use
+		// The final offset is intended to be persisted so future modify runs can continue numbering from the last published value.
 		console.log("[handleCreateStore] Saving final offset number:", currentOffset);
-		// await updateMaxOffset(store.store_code, currentOffset);
+		await updateMaxOffset(store.store_code, currentOffset);
 
 		// update store status to Approved after processing all batches
-		// await updateStoreStatus(store.store_code, "Approved");
+		await updateStoreStatus(store.store_code, "Approved");
 
 		logger.logStoreStatusUpdate("Approved");
 
@@ -228,6 +235,6 @@ export const handleCreateStore = async (
 		// Optionally, you can add more context to the log here
 	}
 
-	// Return logger and reportGenerator for persistence in route.ts
+	// The caller persists the logger/report artifacts after this orchestration step finishes.
 	return { logger, reportGenerator };
 };

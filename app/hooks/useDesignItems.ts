@@ -10,6 +10,10 @@ export const useDesignItems = () :{
 	
 	const [designItems, setDesignItems] = useState<any[]>([]);
 
+	/**
+	 * Loads the shared design-item catalog once for the current client session.
+	 * Consumers can still mutate local state afterward through `setDesignItems`.
+	 */
 	const fetchDesignItems = async () => {
 		const response = await fetch("/api/initial_fetch/get_design_items", {
 			method: "GET",
@@ -26,6 +30,7 @@ export const useDesignItems = () :{
 	};
 
 	useEffect(() => {
+		// This hook intentionally does a one-time bootstrap fetch; it does not auto-refresh after mutations elsewhere.
 		fetchDesignItems().then((data) => {
 			console.log("Fetched design items:", data);
             setDesignItems(data)

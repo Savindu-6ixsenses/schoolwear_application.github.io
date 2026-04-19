@@ -6,6 +6,10 @@ import SingleAddForm from "./SingleAddForm";
 import BulkCsvUploader from "./BulkCsvUploader";
 import EditProductForm from "./EditProductForm";
 
+/**
+ * Hosts the product admin workflows and defaults to the edit tab when a SAGE code
+ * is supplied from navigation elsewhere in the app.
+ */
 export default function ProductsManager(params: {
 	sageCode: string | undefined;
 }) {
